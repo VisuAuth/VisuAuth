@@ -212,3 +212,135 @@ body {
 .htmx-request.htmx-indicator {
     opacity: 1;
 }
+
+.va-row-link {
+    color: var(--visuauth-primary);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.va-row-link:hover {
+    text-decoration: underline;
+}
+
+.va-back {
+    display: inline-block;
+    margin-bottom: 0.5rem;
+    color: var(--visuauth-primary);
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.va-back:hover {
+    text-decoration: underline;
+}
+
+.va-detail-subtitle {
+    margin-top: 0.25rem;
+    font-size: 0.95rem;
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.va-detail-id {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.8rem;
+    background: var(--visuauth-surface);
+    padding: 0.1rem 0.4rem;
+    border-radius: var(--visuauth-radius);
+    border: 1px solid var(--visuauth-border);
+}
+
+.va-detail-status {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    align-items: center;
+}
+
+.va-detail-card {
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.va-detail-card h2 {
+    margin: 0 0 1rem;
+    font-size: 1.05rem;
+    color: var(--visuauth-fg);
+}
+
+.va-count {
+    font-weight: 400;
+    font-size: 0.9rem;
+}
+
+.va-dl {
+    display: grid;
+    grid-template-columns: 12rem 1fr;
+    gap: 0.5rem 1rem;
+    margin: 0;
+}
+
+.va-dl dt {
+    font-weight: 600;
+    color: var(--visuauth-muted);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    align-self: center;
+}
+
+.va-dl dd {
+    margin: 0;
+    color: var(--visuauth-fg);
+}
+
+.va-dl code,
+.va-table code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.85rem;
+    background: var(--visuauth-surface);
+    padding: 0.1rem 0.35rem;
+    border-radius: 0.25rem;
+    border: 1px solid var(--visuauth-border);
+}
+
+.va-chip-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.va-chip {
+    display: inline-block;
+    padding: 0.25rem 0.6rem;
+    background: var(--visuauth-surface);
+    border: 1px solid var(--visuauth-border);
+    border-radius: 9999px;
+    font-size: 0.85rem;
+}
+
+.va-empty-inline {
+    margin: 0;
+    color: var(--visuauth-muted);
+    font-size: 0.9rem;
+}
+
+.va-detail-card .va-table {
+    border-top: 1px solid var(--visuauth-border);
+}
+
+@media (max-width: 720px) {
+    .va-dl {
+        grid-template-columns: 1fr;
+        gap: 0.25rem;
+    }
+
+    .va-dl dt {
+        margin-top: 0.5rem;
+    }
+}

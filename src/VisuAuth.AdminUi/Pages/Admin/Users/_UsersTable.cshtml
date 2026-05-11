@@ -20,7 +20,9 @@
             @foreach (var user in result.Items)
             {
                 <tr>
-                    <td>@user.Email</td>
+                    <td>
+                        <a class="va-row-link" href="/visuauth/admin/users/@user.Id">@user.Email</a>
+                    </td>
                     <td>@(user.UserName ?? "—")</td>
                     <td>
                         @if (user.IsEnabled)

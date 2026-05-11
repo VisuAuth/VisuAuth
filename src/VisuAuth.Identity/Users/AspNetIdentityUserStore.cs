@@ -53,6 +53,66 @@ public sealed class AspNetIdentityUserStore<TUser>(
     }
 
     /// <inheritdoc />
+    public async Task<UserDetail?> GetDetailAsync(string id, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(id);
+
+        // FindByIdAsync (not the IQueryable path) is required here: claim/role/login
+        // lookups below are wired to the tracked entity by Identity.
+        var user = await _userManager.FindByIdAsync(id);
+        if (user is null)
+        {
+            return null;
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var roles = await _userManager.GetRolesAsync(user);
+        var claims = await _userManager.GetClaimsAsync(user);
+        var logins = await _userManager.GetLoginsAsync(user);
+
+        var now = _timeProvider.GetUtcNow();
+        var isLockedOut = user.LockoutEnd is { } end && end > now;
+
+        return new UserDetail
+        {
+            Id = user.Id,
+            Email = user.Email ?? string.Empty,
+            UserName = user.UserName,
+            PhoneNumber = user.PhoneNumber,
+            EmailConfirmed = user.EmailConfirmed,
+            PhoneNumberConfirmed = user.PhoneNumberConfirmed,
+            IsEnabled = !isLockedOut,
+            TwoFactorEnabled = user.TwoFactorEnabled,
+            LockoutEnabled = user.LockoutEnabled,
+            LockoutEnd = user.LockoutEnd,
+            AccessFailedCount = user.AccessFailedCount,
+            // TenantId / CreatedAt / LastSignInAt live on custom TUser fields —
+            // adapter specializations can override this mapping later.
+            TenantId = null,
+            CreatedAt = default,
+            LastSignInAt = null,
+            Roles = roles.OrderBy(r => r, StringComparer.OrdinalIgnoreCase).ToList(),
+            Claims = claims
+                .Select(c => new UserClaim
+                {
+                    Type = c.Type,
+                    Value = c.Value,
+                    Issuer = string.IsNullOrEmpty(c.Issuer) ? null : c.Issuer,
+                })
+                .ToList(),
+            ExternalLogins = logins
+                .Select(l => new ExternalLogin
+                {
+                    Provider = l.LoginProvider,
+                    ProviderKey = l.ProviderKey,
+                    DisplayName = l.ProviderDisplayName,
+                })
+                .ToList(),
+        };
+    }
+
+    /// <inheritdoc />
     public async Task<PagedResult<UserSummary>> ListAsync(UserFilter filter, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(filter);

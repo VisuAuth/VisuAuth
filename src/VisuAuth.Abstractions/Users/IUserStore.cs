@@ -18,6 +18,12 @@ public interface IUserStore
 
     Task<UserSummary?> GetAsync(string id, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Loads the full detail projection of a user (claims, roles, external logins, lockout
+    /// and 2FA state). Returns <c>null</c> when no user matches <paramref name="id"/>.
+    /// </summary>
+    Task<UserDetail?> GetDetailAsync(string id, CancellationToken cancellationToken = default);
+
     Task<PagedResult<UserSummary>> ListAsync(UserFilter filter, CancellationToken cancellationToken = default);
 
     Task<UserResult> CreateAsync(CreateUserCommand command, CancellationToken cancellationToken = default);

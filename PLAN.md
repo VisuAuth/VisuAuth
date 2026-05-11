@@ -11,7 +11,7 @@ Updated as PRs land. Long-term direction lives in `CLAUDE.md` section 13 (Roadma
 - **Latest shipped on NuGet**: `VisuAuth 0.0.1-alpha` (placeholder, name reservation)
 - **Default branch**: `main` at <https://github.com/VisuAuth/visuauth>
 - **Build state**: green (`dotnet build src/VisuAuth.slnx -c Release` → 0 errors, 0 warnings)
-- **Test state**: 3 / 3 passing
+- **Test state**: 6 / 6 passing
 
 ---
 
@@ -59,25 +59,29 @@ Updated as PRs land. Long-term direction lives in `CLAUDE.md` section 13 (Roadma
 
 ## In flight
 
-Nothing currently in flight. Pick the next feature from "Next up" below.
+### `feat/admin-ui-user-detail`
+
+Read-only detail page at `/visuauth/admin/users/{id}` showing profile, security
+state (lockout, 2FA, failed attempts), roles, claims, and external logins.
+Mutations are deferred to the next PR.
+
+- `IUserStore.GetDetailAsync` added to `VisuAuth.Abstractions` with new
+  `UserDetail`, `UserClaim`, and `ExternalLogin` records
+- `AspNetIdentityUserStore<TUser>.GetDetailAsync` implemented via `UserManager`
+  (`FindByIdAsync`, `GetRolesAsync`, `GetClaimsAsync`, `GetLoginsAsync`)
+- `Pages/Admin/Users/Detail.cshtml(.cs)` with capability-aware sections
+  (the Roles / Claims / External logins panels render only when the backend
+  declares the matching capability)
+- `_UsersTable.cshtml` links each email cell to the detail page
+- CSS: definition-list layout, chip list for roles, status badges, back link
+- Three new smoke tests covering full render, 404 on unknown id, and the
+  row → detail link from the list page
 
 ---
 
 ## Next up (ordered)
 
-### 1. `feat/admin-ui-user-detail`
-
-Clicking a user row in the list opens `/visuauth/admin/users/{id}` showing all user data: profile fields, claims, roles, lockout state, external logins, two-factor configuration. Read-only in this PR; mutations come in the next one.
-
-**Touches**:
-
-- `IUserStore` — add `GetDetailAsync` returning a richer `UserDetail` DTO (claims, roles, logins)
-- `AspNetIdentityUserStore<TUser>.GetDetailAsync` implementation
-- `Pages/Admin/Users/Detail.cshtml(.cs)`
-- Updated `_UsersTable.cshtml` rows linking to the detail page
-- New smoke tests
-
-### 2. `feat/admin-ui-user-mutations`
+### 1. `feat/admin-ui-user-mutations`
 
 Lockout / unlock, reset password (generate a one-time link or temporary password), force logout, reset 2FA, change email, change username. Each action posts to a small dedicated handler; the page refreshes via htmx after success.
 
@@ -88,11 +92,11 @@ Lockout / unlock, reset password (generate a one-time link or temporary password
 - Per-action partial views and confirmation modals
 - Tests covering happy path and validation failures
 
-### 3. `feat/admin-ui-create-edit-user`
+### 2. `feat/admin-ui-create-edit-user`
 
 Forms for creating and editing users. Tenant-aware (when multi-tenancy is enabled, an inactive tenant selector appears for super-admins).
 
-### 4. `feat/multitenant-tenantid-column`
+### 3. `feat/multitenant-tenantid-column`
 
 The full multi-tenancy primitive set:
 
@@ -105,27 +109,27 @@ The full multi-tenancy primitive set:
 - Per-tenant password policy and lockout config
 - Tests with multiple tenants and verified isolation
 
-### 5. `feat/end-user-login-page`
+### 4. `feat/end-user-login-page`
 
 The first end-user UI page: `/visuauth/login` with email + password form, error feedback via htmx, redirect on success. Uses ASP.NET Identity's `SignInManager`.
 
-### 6. `feat/end-user-register-and-reset`
+### 5. `feat/end-user-register-and-reset`
 
 Registration, forgot password, reset password, confirm email, logout. Each is its own page; they share a layout.
 
-### 7. `feat/mobile-rest-api-and-jwt`
+### 6. `feat/mobile-rest-api-and-jwt`
 
 `POST /visuauth/api/auth/login`, `POST /visuauth/api/auth/register`, `POST /visuauth/api/auth/refresh`, JWT issuance with HS256. WebView callback flow added on top.
 
-### 8. `feat/theming-programmatic-config`
+### 7. `feat/theming-programmatic-config`
 
 `services.AddVisuAuth().Configure<VisuAuthTheme>(...)` generates CSS variables at runtime, overriding the defaults from `wwwroot/visuauth.css`. View override (layer 3) and per-tenant theme (layer 4) deferred to v0.2.
 
-### 9. `feat/i18n-pt-br-and-en`
+### 8. `feat/i18n-pt-br-and-en`
 
 `IStringLocalizer` wired up. All hardcoded English strings in views moved to resource files. pt-BR translation added.
 
-### 10. `feat/embedded-htmx-asset`
+### 9. `feat/embedded-htmx-asset`
 
 Replace the htmx CDN reference with an embedded static asset at `wwwroot/htmx.min.js`. Required for offline / air-gapped deployments.
 

@@ -32,8 +32,8 @@ public sealed class AspNetIdentityUserStore<TUser>(
         SupportsImpersonation = true,
         SupportsCustomClaims = true,
         SupportsRoleManagement = true,
-        SupportsAuditLog = false,        // Plugin opcional
-        SupportsBulkOperations = false,  // PR seguinte
+        SupportsAuditLog = false,        // Optional plugin
+        SupportsBulkOperations = false,  // Coming in a follow-up PR
         SupportsSessionRevocation = true,
         SupportsExternalProviders = true,
         SupportsEmailConfirmation = true,
@@ -62,8 +62,8 @@ public sealed class AspNetIdentityUserStore<TUser>(
         if (!string.IsNullOrWhiteSpace(filter.SearchTerm))
         {
             var term = filter.SearchTerm.Trim().ToUpperInvariant();
-            // NormalizedEmail / NormalizedUserName são populadas pelo Identity em CreateAsync
-            // e indexadas — busca eficiente sem trazer todos os registros pra memória.
+            // NormalizedEmail / NormalizedUserName are populated by Identity on CreateAsync
+            // and indexed — efficient search without pulling every row into memory.
             query = query.Where(u =>
                 (u.NormalizedEmail != null && u.NormalizedEmail.Contains(term)) ||
                 (u.NormalizedUserName != null && u.NormalizedUserName.Contains(term)));
@@ -136,9 +136,9 @@ public sealed class AspNetIdentityUserStore<TUser>(
             UserSortBy.UserName => filter.Descending
                 ? query.OrderByDescending(u => u.UserName)
                 : query.OrderBy(u => u.UserName),
-            // CreatedAt e LastSignInAt vivem em campos custom do TUser e não
-            // podem ser ordenados genericamente. Caem no fallback por Id, que
-            // é uma proxy razoável da ordem de criação em GUIDs sequenciais.
+            // CreatedAt and LastSignInAt live on custom TUser fields and cannot
+            // be ordered generically. They fall back to ordering by Id, which is
+            // a reasonable proxy for creation order with sequential GUIDs.
             UserSortBy.CreatedAt or UserSortBy.LastSignInAt => filter.Descending
                 ? query.OrderByDescending(u => u.Id)
                 : query.OrderBy(u => u.Id),
@@ -161,8 +161,8 @@ public sealed class AspNetIdentityUserStore<TUser>(
             EmailConfirmed = user.EmailConfirmed,
             TwoFactorEnabled = user.TwoFactorEnabled,
             LockoutEnd = user.LockoutEnd,
-            // TenantId / CreatedAt / LastSignInAt dependem do TUser custom do
-            // consumidor — adapters específicos podem sobrescrever este map.
+            // TenantId / CreatedAt / LastSignInAt depend on the consumer's custom
+            // TUser — specific adapters can override this mapping.
             TenantId = null,
             CreatedAt = default,
             LastSignInAt = null,

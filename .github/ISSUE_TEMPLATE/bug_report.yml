@@ -1,0 +1,48 @@
+name: Bug report
+description: Report a defect or unexpected behavior in VisuAuth
+labels: ["bug", "needs triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug report. Please fill in as much detail as you can.
+
+  - type: input
+    id: visuauth-version
+    attributes:
+      label: VisuAuth version
+      placeholder: "0.1.0-alpha.x"
+    validations:
+      required: true
+
+  - type: input
+    id: dotnet-version
+    attributes:
+      label: .NET SDK version
+      description: "Output of `dotnet --version`"
+      placeholder: "10.0.203"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Describe the issue and what you expected to happen instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal reproduction
+      description: Steps or a snippet that reproduces the issue. A repo or `dotnet new web` project that demonstrates the problem is ideal.
+      render: csharp
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / stack trace
+      render: text

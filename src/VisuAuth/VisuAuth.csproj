@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>VisuAuth</RootNamespace>
+    <AssemblyName>VisuAuth</AssemblyName>
+  </PropertyGroup>
+
+  <PropertyGroup Label="NuGet">
+    <PackageId>VisuAuth</PackageId>
+    <Version>0.1.0-alpha.1</Version>
+    <Title>VisuAuth</Title>
+    <Description>The visual admin for ASP.NET Core Identity. Drop-in admin dashboard, multi-tenancy, and themeable end-user auth pages. Install this meta-package to get everything, or pick individual VisuAuth.* packages for finer control.</Description>
+    <Summary>Visual admin UI, multi-tenancy and themeable auth pages for ASP.NET Core Identity.</Summary>
+    <PackageTags>visuauth;aspnetcore;identity;admin;multitenant;dashboard;htmx;authentication;authorization;ui</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageReleaseNotes>0.1.0-alpha.1 — initial scaffolding release. Public surface still in flux; not for production use.</PackageReleaseNotes>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup Label="Meta-package: bring everything in">
+    <ProjectReference Include="..\VisuAuth.Abstractions\VisuAuth.Abstractions.csproj" />
+    <ProjectReference Include="..\VisuAuth.Identity\VisuAuth.Identity.csproj" />
+    <ProjectReference Include="..\VisuAuth.AdminUi\VisuAuth.AdminUi.csproj" />
+    <ProjectReference Include="..\VisuAuth.EndUserUi\VisuAuth.EndUserUi.csproj" />
+  </ItemGroup>
+
+</Project>

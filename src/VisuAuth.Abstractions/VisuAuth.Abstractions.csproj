@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>VisuAuth.Abstractions</RootNamespace>
+    <AssemblyName>VisuAuth.Abstractions</AssemblyName>
+  </PropertyGroup>
+
+  <PropertyGroup Label="NuGet">
+    <PackageId>VisuAuth.Abstractions</PackageId>
+    <Version>0.1.0-alpha.1</Version>
+    <Title>VisuAuth Abstractions</Title>
+    <Description>Public contracts and capability model for VisuAuth. Reference this package to write adapters or extensions that plug into VisuAuth (admin UI, auth flows, theming).</Description>
+    <PackageTags>visuauth;aspnetcore;identity;abstractions;contracts</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+</Project>

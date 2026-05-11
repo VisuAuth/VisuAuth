@@ -1,0 +1,214 @@
+/*
+ * VisuAuth admin UI default theme.
+ *
+ * Override any of the CSS variables below in your own stylesheet (loaded
+ * AFTER this file) to rebrand the dashboard without forking the views.
+ */
+
+:root {
+    --visuauth-primary: #6366f1;
+    --visuauth-primary-fg: #ffffff;
+    --visuauth-bg: #ffffff;
+    --visuauth-fg: #0f172a;
+    --visuauth-muted: #64748b;
+    --visuauth-border: #e2e8f0;
+    --visuauth-surface: #f8fafc;
+    --visuauth-danger: #dc2626;
+    --visuauth-success: #16a34a;
+    --visuauth-radius: 0.5rem;
+    --visuauth-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    font-family: var(--visuauth-font);
+    color: var(--visuauth-fg);
+    background: var(--visuauth-bg);
+    line-height: 1.5;
+}
+
+.va-shell {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    min-height: 100vh;
+}
+
+.va-sidebar {
+    background: var(--visuauth-surface);
+    border-right: 1px solid var(--visuauth-border);
+    padding: 1.5rem 1rem;
+}
+
+.va-brand {
+    font-weight: 700;
+    font-size: 1.15rem;
+    color: var(--visuauth-primary);
+    text-decoration: none;
+    display: block;
+    margin-bottom: 1.5rem;
+}
+
+.va-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.va-nav a {
+    color: var(--visuauth-fg);
+    text-decoration: none;
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--visuauth-radius);
+    font-size: 0.95rem;
+}
+
+.va-nav a:hover {
+    background: var(--visuauth-border);
+}
+
+.va-nav a.va-active {
+    background: var(--visuauth-primary);
+    color: var(--visuauth-primary-fg);
+}
+
+.va-main {
+    padding: 2rem;
+    max-width: 1200px;
+}
+
+.va-page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+}
+
+.va-page-header h1 {
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+.va-search {
+    width: 100%;
+    max-width: 360px;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--visuauth-border);
+    border-radius: var(--visuauth-radius);
+    font-size: 0.95rem;
+    font-family: inherit;
+    margin-bottom: 1rem;
+}
+
+.va-search:focus {
+    outline: 2px solid var(--visuauth-primary);
+    outline-offset: -1px;
+    border-color: var(--visuauth-primary);
+}
+
+.va-card {
+    border: 1px solid var(--visuauth-border);
+    border-radius: var(--visuauth-radius);
+    background: var(--visuauth-bg);
+    overflow: hidden;
+}
+
+.va-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+}
+
+.va-table th,
+.va-table td {
+    text-align: left;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--visuauth-border);
+}
+
+.va-table th {
+    background: var(--visuauth-surface);
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--visuauth-muted);
+}
+
+.va-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.va-table tbody tr:hover {
+    background: var(--visuauth-surface);
+}
+
+.va-badge {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    font-size: 0.8rem;
+    border-radius: 9999px;
+    background: var(--visuauth-surface);
+    border: 1px solid var(--visuauth-border);
+    color: var(--visuauth-muted);
+}
+
+.va-badge.va-success {
+    background: #ecfdf5;
+    color: var(--visuauth-success);
+    border-color: #bbf7d0;
+}
+
+.va-badge.va-danger {
+    background: #fef2f2;
+    color: var(--visuauth-danger);
+    border-color: #fecaca;
+}
+
+.va-muted {
+    color: var(--visuauth-muted);
+}
+
+.va-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    border-top: 1px solid var(--visuauth-border);
+    background: var(--visuauth-surface);
+    font-size: 0.9rem;
+}
+
+.va-pagination a,
+.va-pagination span.va-disabled {
+    color: var(--visuauth-primary);
+    text-decoration: none;
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--visuauth-radius);
+}
+
+.va-pagination span.va-disabled {
+    color: var(--visuauth-muted);
+    pointer-events: none;
+}
+
+.va-pagination a:hover {
+    background: var(--visuauth-border);
+}
+
+.va-empty {
+    padding: 3rem 1rem;
+    text-align: center;
+    color: var(--visuauth-muted);
+}
+
+.htmx-indicator {
+    opacity: 0;
+    transition: opacity 200ms;
+}
+
+.htmx-request .htmx-indicator,
+.htmx-request.htmx-indicator {
+    opacity: 1;
+}

@@ -1,0 +1,34 @@
+@{
+    var title = ViewData["Title"] as string ?? "VisuAuth Admin";
+}<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@title</title>
+    <link rel="stylesheet" href="/_content/VisuAuth.AdminUi/visuauth.css" />
+    @*
+       TODO: Embed htmx as a static asset under wwwroot/ in a future PR for
+       offline/airgapped support. Using the CDN keeps this PR small.
+    *@
+    <script src="https://unpkg.com/htmx.org@2.0.4"
+            integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+"
+            crossorigin="anonymous"
+            defer></script>
+</head>
+<body>
+    <div class="va-shell">
+        <aside class="va-sidebar">
+            <a class="va-brand" href="/visuauth/admin/users">VisuAuth</a>
+            <nav class="va-nav">
+                <a href="/visuauth/admin/users" class="va-active">Users</a>
+                <a href="#" aria-disabled="true" class="va-muted">Roles (soon)</a>
+                <a href="#" aria-disabled="true" class="va-muted">Tenants (soon)</a>
+            </nav>
+        </aside>
+        <main class="va-main">
+            @RenderBody()
+        </main>
+    </div>
+</body>
+</html>

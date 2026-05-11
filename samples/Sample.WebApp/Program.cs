@@ -1,12 +1,42 @@
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+
+using Sample.WebApp.Data;
+
 using VisuAuth;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Drop-in registration. In a real consumer app, services.AddIdentity<TUser,TRole>()
-// + an EF Core DbContext would be configured before this line.
-builder.Services.AddVisuAuth();
+// SQLite database file lives next to the binaries — zero setup for the sample.
+var dbPath = Path.Combine(builder.Environment.ContentRootPath, "visuauth-sample.db");
+
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlite($"Data Source={dbPath}"));
+
+builder.Services
+    .AddIdentity<ApplicationUser, IdentityRole>(options =>
+    {
+        // Sample defaults — relaxed so the seeded password works without ceremony.
+        options.Password.RequiredLength = 8;
+        options.Password.RequireNonAlphanumeric = true;
+        options.Password.RequireDigit = true;
+        options.Password.RequireLowercase = true;
+        options.Password.RequireUppercase = true;
+        options.User.RequireUniqueEmail = true;
+    })
+    .AddEntityFrameworkStores<AppDbContext>()
+    .AddDefaultTokenProviders();
+
+// Drop-in: one call wires the Identity adapter, the admin UI, and the
+// end-user UI (the last one is stub-only until the next PR).
+builder.Services.AddVisuAuth<ApplicationUser>();
 
 var app = builder.Build();
+
+await UserSeeder.SeedAsync(app.Services);
+
+app.UseStaticFiles();
+app.UseRouting();
 
 app.MapGet("/", () => Results.Content("""
     <!doctype html>
@@ -22,12 +52,10 @@ app.MapGet("/", () => Results.Content("""
     </head>
     <body>
       <h1>VisuAuth sample app</h1>
-      <p>Pre-alpha scaffolding. When the real packages land, you'll see:</p>
+      <p>Sample app for VisuAuth's drop-in admin UI. Try:</p>
       <ul>
-        <li><a href="/visuauth/login"><code>/visuauth/login</code></a> &mdash; end-user login</li>
-        <li><a href="/visuauth/admin"><code>/visuauth/admin</code></a> &mdash; admin dashboard</li>
+        <li><a href="/visuauth/admin/users"><code>/visuauth/admin/users</code></a> &mdash; admin dashboard (users list)</li>
       </ul>
-      <p>For now this app only verifies that the package graph compiles and boots.</p>
     </body>
     </html>
     """, "text/html"));
@@ -35,3 +63,8 @@ app.MapGet("/", () => Results.Content("""
 app.MapVisuAuth();
 
 app.Run();
+
+/// <summary>
+/// Marker type used by <c>WebApplicationFactory&lt;Program&gt;</c> in tests.
+/// </summary>
+public partial class Program;

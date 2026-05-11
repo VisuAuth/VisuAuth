@@ -45,6 +45,17 @@ appsettings.Local.json
 secrets.json
 *.pfx
 
+# Local databases (sample app uses SQLite for zero-setup demos;
+# may also appear next to the binaries when running from source)
+*.db
+*.db-shm
+*.db-wal
+*.db-journal
+*.sqlite
+*.sqlite3
+*.sqlite-shm
+*.sqlite-wal
+
 # Generated
 Generated/
 GeneratedFiles/

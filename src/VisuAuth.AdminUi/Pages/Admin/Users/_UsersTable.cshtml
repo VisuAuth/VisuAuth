@@ -1,0 +1,95 @@
+@model VisuAuth.AdminUi.Pages.Admin.Users.IndexModel
+@{
+    var result = Model.Result;
+    var hasResults = result.Items.Count > 0;
+}
+<div id="va-users-table" class="va-card">
+    @if (hasResults)
+    {
+        <table class="va-table">
+            <thead>
+            <tr>
+                <th>Email</th>
+                <th>Username</th>
+                <th>Status</th>
+                <th>2FA</th>
+                <th>Email verified</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var user in result.Items)
+            {
+                <tr>
+                    <td>@user.Email</td>
+                    <td>@(user.UserName ?? "—")</td>
+                    <td>
+                        @if (user.IsEnabled)
+                        {
+                            <span class="va-badge va-success">Active</span>
+                        }
+                        else
+                        {
+                            <span class="va-badge va-danger">Locked</span>
+                        }
+                    </td>
+                    <td>
+                        <span class="va-badge">@(user.TwoFactorEnabled ? "On" : "Off")</span>
+                    </td>
+                    <td>
+                        <span class="va-badge @(user.EmailConfirmed ? "va-success" : "")">
+                            @(user.EmailConfirmed ? "Yes" : "Pending")
+                        </span>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+
+        <div class="va-pagination">
+            <div>
+                Showing @(((result.Page - 1) * result.PageSize) + 1)–@Math.Min(result.Page * result.PageSize, result.Total)
+                of @result.Total
+            </div>
+            <div>
+                @if (result.HasPrevious)
+                {
+                    <a href="?q=@Model.SearchTerm&page=@(result.Page - 1)"
+                       hx-get="/visuauth/admin/users?q=@Model.SearchTerm&page=@(result.Page - 1)"
+                       hx-target="#va-users-table"
+                       hx-swap="outerHTML"
+                       hx-push-url="true">‹ Previous</a>
+                }
+                else
+                {
+                    <span class="va-disabled">‹ Previous</span>
+                }
+                <span class="va-muted">Page @result.Page of @Math.Max(result.TotalPages, 1)</span>
+                @if (result.HasNext)
+                {
+                    <a href="?q=@Model.SearchTerm&page=@(result.Page + 1)"
+                       hx-get="/visuauth/admin/users?q=@Model.SearchTerm&page=@(result.Page + 1)"
+                       hx-target="#va-users-table"
+                       hx-swap="outerHTML"
+                       hx-push-url="true">Next ›</a>
+                }
+                else
+                {
+                    <span class="va-disabled">Next ›</span>
+                }
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="va-empty">
+            @if (!string.IsNullOrWhiteSpace(Model.SearchTerm))
+            {
+                <p>No users match <strong>@Model.SearchTerm</strong>.</p>
+            }
+            else
+            {
+                <p>No users yet.</p>
+            }
+        </div>
+    }
+</div>

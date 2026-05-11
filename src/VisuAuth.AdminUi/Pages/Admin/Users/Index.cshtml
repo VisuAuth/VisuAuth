@@ -1,0 +1,27 @@
+@page "/visuauth/admin/users"
+@model VisuAuth.AdminUi.Pages.Admin.Users.IndexModel
+@{
+    ViewData["Title"] = "Users — VisuAuth Admin";
+}
+
+<div class="va-page-header">
+    <h1>Users <span class="va-muted" style="font-weight:400;font-size:1rem;">(@Model.Result.Total)</span></h1>
+    <span class="va-muted htmx-indicator" id="va-search-indicator">searching…</span>
+</div>
+
+<input type="search"
+       class="va-search"
+       name="q"
+       value="@Model.SearchTerm"
+       placeholder="Search by email or username…"
+       autocomplete="off"
+       hx-get="/visuauth/admin/users"
+       hx-trigger="keyup changed delay:300ms, search"
+       hx-target="#va-users-table"
+       hx-swap="outerHTML"
+       hx-indicator="#va-search-indicator"
+       hx-push-url="true" />
+
+<div id="va-users-table">
+    <partial name="_UsersTable" model="Model" />
+</div>

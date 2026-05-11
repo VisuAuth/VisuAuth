@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -16,18 +17,25 @@ namespace VisuAuth;
 public static class VisuAuthBuilderExtensions
 {
     /// <summary>
-    /// Registers the full VisuAuth stack: Identity adapter, admin dashboard,
-    /// and end-user pages.
+    /// Registers the full VisuAuth stack backed by the supplied Identity user type.
     /// </summary>
-    public static IServiceCollection AddVisuAuth(this IServiceCollection services)
+    /// <typeparam name="TUser">The Identity user type used by the consumer (e.g. <c>ApplicationUser</c>).</typeparam>
+    public static IServiceCollection AddVisuAuth<TUser>(this IServiceCollection services)
+        where TUser : IdentityUser
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        services.AddVisuAuthIdentityAdapter();
+        services.AddVisuAuthIdentityAdapter<TUser>();
         services.AddVisuAuthAdminUi();
         services.AddVisuAuthEndUserUi();
         return services;
     }
+
+    /// <summary>
+    /// Registers the full VisuAuth stack using the default <see cref="IdentityUser"/>.
+    /// </summary>
+    public static IServiceCollection AddVisuAuth(this IServiceCollection services)
+        => services.AddVisuAuth<IdentityUser>();
 
     /// <summary>
     /// Maps both the admin dashboard (default prefix <c>/visuauth/admin</c>)

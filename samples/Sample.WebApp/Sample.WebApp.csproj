@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Sample.WebApp</RootNamespace>
+    <AssemblyName>Sample.WebApp</AssemblyName>
+    <UserSecretsId>visuauth-sample-webapp</UserSecretsId>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\VisuAuth\VisuAuth.csproj" />
+  </ItemGroup>
+
+</Project>

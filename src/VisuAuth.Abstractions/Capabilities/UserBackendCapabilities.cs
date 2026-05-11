@@ -1,0 +1,54 @@
+namespace VisuAuth.Abstractions.Capabilities;
+
+/// <summary>
+/// Declares which features a user backend supports. The admin UI and end-user UI
+/// inspect these flags at runtime and hide controls for unsupported operations.
+/// </summary>
+/// <remarks>
+/// Different backends have very different capabilities. ASP.NET Core Identity owns
+/// its data and supports the full surface. Microsoft Entra ID, in contrast, is a
+/// cloud IAM where login flows are hosted by Microsoft and many operations are
+/// exposed only through Microsoft Graph. Adapters describe their reality through
+/// this record so the UI degrades gracefully.
+/// </remarks>
+public sealed record UserBackendCapabilities
+{
+    /// <summary>The backend can authenticate users locally (email + password form).</summary>
+    public bool SupportsLocalLogin { get; init; }
+
+    /// <summary>Self-service registration is possible.</summary>
+    public bool SupportsRegistration { get; init; }
+
+    /// <summary>Password reset flow is supported.</summary>
+    public bool SupportsPasswordReset { get; init; }
+
+    /// <summary>The admin can reset the two-factor configuration of a user.</summary>
+    public bool SupportsTwoFactorReset { get; init; }
+
+    /// <summary>The admin can impersonate (log in as) another user.</summary>
+    public bool SupportsImpersonation { get; init; }
+
+    /// <summary>Custom claims can be read and written through the backend.</summary>
+    public bool SupportsCustomClaims { get; init; }
+
+    /// <summary>The backend exposes role management.</summary>
+    public bool SupportsRoleManagement { get; init; }
+
+    /// <summary>An audit log of identity events is available.</summary>
+    public bool SupportsAuditLog { get; init; }
+
+    /// <summary>Bulk operations (mass enable/disable, invite, etc.) are supported.</summary>
+    public bool SupportsBulkOperations { get; init; }
+
+    /// <summary>The backend can revoke active sessions.</summary>
+    public bool SupportsSessionRevocation { get; init; }
+
+    /// <summary>External identity providers (Google, Apple, etc.) can be configured.</summary>
+    public bool SupportsExternalProviders { get; init; }
+
+    /// <summary>The backend uses an explicit email-confirmation step.</summary>
+    public bool SupportsEmailConfirmation { get; init; }
+
+    /// <summary>The backend supports lockout after failed attempts.</summary>
+    public bool SupportsLockout { get; init; }
+}

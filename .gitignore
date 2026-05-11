@@ -1,0 +1,56 @@
+# Build artifacts
+bin/
+obj/
+out/
+publish/
+
+# IDE files
+.vs/
+.idea/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Tool output
+.dotnet/
+.fake/
+artifacts/
+TestResults/
+coverage*/
+*.coverage
+*.coveragexml
+*.trx
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+
+# NuGet
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+
+# Secrets / env
+.env
+.env.*
+appsettings.Development.json
+appsettings.Local.json
+secrets.json
+*.pfx
+
+# Generated
+Generated/
+GeneratedFiles/
+
+# Node (in case Docusaurus is added later)
+node_modules/
+.docusaurus/
+.cache-loader/
+build/

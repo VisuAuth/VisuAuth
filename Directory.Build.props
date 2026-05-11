@@ -1,0 +1,37 @@
+<Project>
+
+  <PropertyGroup Label="Language">
+    <TargetFramework Condition="'$(TargetFramework)' == ''">net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+  </PropertyGroup>
+
+  <PropertyGroup Label="Build">
+    <DebugType>embedded</DebugType>
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+    <NeutralLanguage>en-US</NeutralLanguage>
+  </PropertyGroup>
+
+  <PropertyGroup Label="Package metadata shared across all VisuAuth.* packages">
+    <Authors>Thiago Luga</Authors>
+    <Company>VisuAuth</Company>
+    <Product>VisuAuth</Product>
+    <Copyright>Copyright (c) 2026 Thiago Luga and VisuAuth contributors</Copyright>
+    <PackageProjectUrl>https://github.com/VisuAuth/visuauth</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/VisuAuth/visuauth</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+  </PropertyGroup>
+
+  <ItemGroup Label="SourceLink">
+    <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" Condition="'$(IsPackable)' != 'false'" />
+  </ItemGroup>
+
+</Project>

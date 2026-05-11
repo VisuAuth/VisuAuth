@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>VisuAuth.AdminUi</RootNamespace>
+    <AssemblyName>VisuAuth.AdminUi</AssemblyName>
+    <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
+  </PropertyGroup>
+
+  <PropertyGroup Label="NuGet">
+    <PackageId>VisuAuth.AdminUi</PackageId>
+    <Version>0.1.0-alpha.1</Version>
+    <Title>VisuAuth Admin Dashboard</Title>
+    <Description>Drop-in admin dashboard for VisuAuth. Razor Pages + htmx, no JavaScript framework, no build step on the consumer side. Mount at /visuauth/admin (or any prefix you choose) and manage users, roles, claims, lockout, password resets, and tenants.</Description>
+    <PackageTags>visuauth;admin;dashboard;razor;htmx;aspnetcore</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\VisuAuth.Abstractions\VisuAuth.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+</Project>

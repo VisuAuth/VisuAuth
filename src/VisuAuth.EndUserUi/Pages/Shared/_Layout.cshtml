@@ -1,0 +1,28 @@
+@{
+    var title = ViewData["Title"] as string ?? "VisuAuth";
+    var brand = ViewData["Brand"] as string ?? "VisuAuth";
+}<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@title</title>
+    @* Reuse the admin theme stylesheet — same design tokens (buttons, inputs,
+       alerts) keep visual continuity between the public sign-in pages and the
+       admin dashboard. *@
+    <link rel="stylesheet" href="/_content/VisuAuth.AdminUi/visuauth.css" asp-append-version="true" />
+    <link rel="stylesheet" href="/_content/VisuAuth.EndUserUi/visuauth-enduser.css" asp-append-version="true" />
+    <script src="https://unpkg.com/htmx.org@2.0.4"
+            integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+"
+            crossorigin="anonymous"
+            defer></script>
+</head>
+<body class="va-enduser-body">
+    <main class="va-enduser-shell">
+        <div class="va-enduser-card">
+            <a class="va-brand va-enduser-brand" href="/">@brand</a>
+            @RenderBody()
+        </div>
+    </main>
+</body>
+</html>

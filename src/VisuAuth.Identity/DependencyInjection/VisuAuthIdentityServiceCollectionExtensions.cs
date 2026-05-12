@@ -2,9 +2,11 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
+using VisuAuth.Abstractions.Authentication;
 using VisuAuth.Abstractions.Roles;
 using VisuAuth.Abstractions.Tenancy;
 using VisuAuth.Abstractions.Users;
+using VisuAuth.Identity.Authentication;
 using VisuAuth.Identity.MultiTenancy;
 using VisuAuth.Identity.Roles;
 using VisuAuth.Identity.Users;
@@ -36,6 +38,7 @@ public static class VisuAuthIdentityServiceCollectionExtensions
         services.TryAddScoped<ITenantContext, NoOpTenantContext>();
         services.AddScoped<IUserStore, AspNetIdentityUserStore<TUser>>();
         services.AddScoped<IRoleStore, AspNetIdentityRoleStore<TUser, TRole>>();
+        services.AddScoped<IAuthenticationFlow, AspNetIdentitySignInFlow<TUser>>();
 
         return services;
     }

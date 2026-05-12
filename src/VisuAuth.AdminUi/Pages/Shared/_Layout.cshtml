@@ -21,11 +21,18 @@
 </head>
 <body>
     <div class="va-shell">
+        @{
+            // Highlight the sidebar entry that matches the current URL. Razor
+            // partials inherit the host request, so Request.Path is the live URL.
+            var path = Context.Request.Path.Value ?? string.Empty;
+            string NavClass(string segment) =>
+                path.StartsWith(segment, StringComparison.OrdinalIgnoreCase) ? "va-active" : "";
+        }
         <aside class="va-sidebar">
             <a class="va-brand" href="/visuauth/admin/users">VisuAuth</a>
             <nav class="va-nav">
-                <a href="/visuauth/admin/users" class="va-active">Users</a>
-                <a href="#" aria-disabled="true" class="va-muted">Roles (soon)</a>
+                <a href="/visuauth/admin/users" class="@NavClass("/visuauth/admin/users")">Users</a>
+                <a href="/visuauth/admin/roles" class="@NavClass("/visuauth/admin/roles")">Roles</a>
                 <a href="#" aria-disabled="true" class="va-muted">Tenants (soon)</a>
             </nav>
         </aside>

@@ -11,7 +11,7 @@ Updated as PRs land. Long-term direction lives in `CLAUDE.md` section 13 (Roadma
 - **Latest shipped on NuGet**: `VisuAuth 0.0.1-alpha` (placeholder, name reservation)
 - **Default branch**: `main` at <https://github.com/VisuAuth/visuauth>
 - **Build state**: green (`dotnet build src/VisuAuth.slnx -c Release` → 0 errors, 0 warnings)
-- **Test state**: 19 / 19 passing (on `main`; this branch adds more)
+- **Test state**: 24 / 24 passing (on `main`; this branch adds more)
 
 ---
 
@@ -40,12 +40,13 @@ Updated as PRs land. Long-term direction lives in `CLAUDE.md` section 13 (Roadma
   - `IMultiTenantEntity` marker
 - `VisuAuth.Identity`:
   - `AspNetIdentityUserStore<TUser>` with `ListAsync`, `GetAsync`, `GetDetailAsync`, `CreateAsync`, `UpdateAsync`, `DeleteAsync`, `SetEnabledAsync` (lock / unlock), `ResetPasswordAsync` (generates a policy-compliant temporary password), `ResetTwoFactorAsync`, `RevokeSessionsAsync`
+  - `AspNetIdentityRoleStore<TUser, TRole>` with the full `IRoleStore` surface (list / get / create / rename / delete / getRolesForUser / assign / remove)
   - `TemporaryPasswordGenerator` (CSPRNG, policy-compliant, avoids visually ambiguous characters)
-  - DI extension `AddVisuAuthIdentityAdapter<TUser>()`
+  - DI extensions `AddVisuAuthIdentityAdapter<TUser>()` and `AddVisuAuthIdentityAdapter<TUser, TRole>()`
 - `VisuAuth.AdminUi`:
   - Razor Pages library setup verified (pages discovered from the referenced assembly via `AddApplicationPart`)
   - `/visuauth/admin/users` page with htmx-powered live search and pagination
-  - `/visuauth/admin/users/{id}` detail page with inline profile edit, lock / unlock, reset password (one-time temporary password), reset 2FA, revoke sessions, delete
+  - `/visuauth/admin/users/{id}` detail page with inline profile edit, lock / unlock, reset password (one-time temporary password), reset 2FA, revoke sessions, delete, role assign / remove
   - `/visuauth/admin/users/new` create-user form (autogenerates a temporary password when blank)
   - One-time secret display with click-to-copy widget (vanilla JS, no framework, animated confirmation)
   - Default CSS theme with custom property hooks for branding
@@ -63,43 +64,34 @@ Updated as PRs land. Long-term direction lives in `CLAUDE.md` section 13 (Roadma
 
 ## In flight
 
-### `feat/admin-ui-role-management`
+### `feat/admin-ui-roles-catalogue`
 
-Wire the role store adapter and let admins assign / remove roles from
-the user detail page. The Roles section becomes interactive: each chip
-is removable, and a dropdown attaches any of the roles already present
-in the backend.
+Add the role catalogue page and let admins assign roles at the moment
+they create a user.
 
-- `AspNetIdentityRoleStore<TUser, TRole>` implementing the full `IRoleStore`
-  surface (list, get, create, rename, delete, getRolesForUser, assign,
-  remove)
-- `AddVisuAuthIdentityAdapter<TUser, TRole>` and `AddVisuAuth<TUser, TRole>`
-  overloads, with backward-compatible defaults to `IdentityRole`
-- `_RolesSection.cshtml` partial: removable chips + assign dropdown
-- `OnPostAssignRoleAsync` / `OnPostRemoveRoleAsync` handlers on the
-  detail page (htmx swap of the detail content)
-- Sample app seeds three roles (`Admin`, `Manager`, `Support`) and pins
-  a couple onto seeded users so the dashboard demonstrates the feature
-- Tests for the store (assign / remove / duplicates) and for the UI
-  (chip rendering, dropdown filtering, full round-trip)
+- `/visuauth/admin/roles` page listing every role in the backend with
+  member counts and inline create / delete actions
+- `RoleSummary.MemberCount` populated by `AspNetIdentityRoleStore.ListAsync`
+- Role checkboxes on the create-user form (`/visuauth/admin/users/new`);
+  newly created users land in the picked roles via `IRoleStore.AssignRoleAsync`
+- Sidebar "Roles" entry promoted from `(soon)` to a real link
+- Sample app home links the new URL
+- Tests for the catalogue (render, create, delete, validation) and for
+  the create-with-roles flow on the user form
 
-**Out of scope** (deferred to `feat/admin-ui-roles-catalogue`):
+**Out of scope** (deferred):
 
-- `/visuauth/admin/roles` page with member counts and inline CRUD on the
-  role catalogue itself
-- Role checkboxes on the create-user form
+- Inline rename of a role — needs an in-place view↔edit toggle; will
+  ship in a small follow-up PR if the owner wants it
+- Optimised member-count query — current implementation is N+1 (one
+  `GetUsersInRoleAsync` per role); fine for v0.1 demo workloads, can be
+  swapped for a single grouped query later
 
 ---
 
 ## Next up (ordered)
 
-### 1. `feat/admin-ui-roles-catalogue`
-
-`/visuauth/admin/roles` page listing every role with a member count,
-plus inline create / rename / delete. Surfaces role checkboxes on the
-create-user form so admins can assign roles at creation time.
-
-### 2. `feat/multitenant-tenantid-column`
+### 1. `feat/multitenant-tenantid-column`
 
 The full multi-tenancy primitive set:
 
@@ -112,27 +104,27 @@ The full multi-tenancy primitive set:
 - Per-tenant password policy and lockout config
 - Tests with multiple tenants and verified isolation
 
-### 3. `feat/end-user-login-page`
+### 2. `feat/end-user-login-page`
 
 The first end-user UI page: `/visuauth/login` with email + password form, error feedback via htmx, redirect on success. Uses ASP.NET Identity's `SignInManager`.
 
-### 4. `feat/end-user-register-and-reset`
+### 3. `feat/end-user-register-and-reset`
 
 Registration, forgot password, reset password, confirm email, logout. Each is its own page; they share a layout.
 
-### 5. `feat/mobile-rest-api-and-jwt`
+### 4. `feat/mobile-rest-api-and-jwt`
 
 `POST /visuauth/api/auth/login`, `POST /visuauth/api/auth/register`, `POST /visuauth/api/auth/refresh`, JWT issuance with HS256. WebView callback flow added on top.
 
-### 6. `feat/theming-programmatic-config`
+### 5. `feat/theming-programmatic-config`
 
 `services.AddVisuAuth().Configure<VisuAuthTheme>(...)` generates CSS variables at runtime, overriding the defaults from `wwwroot/visuauth.css`. View override (layer 3) and per-tenant theme (layer 4) deferred to v0.2.
 
-### 7. `feat/i18n-pt-br-and-en`
+### 6. `feat/i18n-pt-br-and-en`
 
 `IStringLocalizer` wired up. All hardcoded English strings in views moved to resource files. pt-BR translation added.
 
-### 8. `feat/embedded-htmx-asset`
+### 7. `feat/embedded-htmx-asset`
 
 Replace the htmx CDN reference with an embedded static asset at `wwwroot/htmx.min.js`. Required for offline / air-gapped deployments.
 

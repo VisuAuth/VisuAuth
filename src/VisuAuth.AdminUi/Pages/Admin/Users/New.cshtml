@@ -103,6 +103,30 @@
             <span>Email already verified (skip the confirmation flow)</span>
         </label>
 
+        @if (Model.Capabilities.SupportsRoleManagement && Model.AvailableRoles.Count > 0)
+        {
+            <fieldset class="va-fieldset">
+                <legend class="va-field-label">Roles</legend>
+                <p class="va-muted va-empty-inline">
+                    Select the roles the new user should land in. You can change
+                    these later from the user detail page.
+                </p>
+                <div class="va-checkbox-grid">
+                    @foreach (var role in Model.AvailableRoles)
+                    {
+                        var isChecked = Model.Form.SelectedRoles.Contains(role.Name, StringComparer.OrdinalIgnoreCase) ? "checked" : null;
+                        <label class="va-checkbox">
+                            <input type="checkbox"
+                                   name="Form.SelectedRoles"
+                                   value="@role.Name"
+                                   checked="@isChecked" />
+                            <span>@role.Name</span>
+                        </label>
+                    }
+                </div>
+            </fieldset>
+        }
+
         <div class="va-form-actions">
             <button type="submit" class="va-btn va-btn-primary">Create user</button>
             <a class="va-btn va-btn-ghost" href="/visuauth/admin/users">Cancel</a>

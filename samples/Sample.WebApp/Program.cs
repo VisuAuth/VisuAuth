@@ -88,6 +88,7 @@ app.MapGet("/", async (IUserStore userStore, CancellationToken cancellationToken
             <li><a href="/visuauth/admin/users"><code>/visuauth/admin/users</code></a> &mdash; users list (search + pagination)</li>
             <li><a href="/visuauth/admin/users/new"><code>/visuauth/admin/users/new</code></a> &mdash; create user form</li>
             {{detailLine}}
+            <li><a href="/visuauth/admin/roles"><code>/visuauth/admin/roles</code></a> &mdash; roles catalogue (member counts, inline create / delete)</li>
           </ul>
 
           <h2>End-user UI</h2>

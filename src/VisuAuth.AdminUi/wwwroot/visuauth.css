@@ -552,6 +552,45 @@ body {
     color: var(--visuauth-danger);
 }
 
+.va-fieldset {
+    border: 1px solid var(--visuauth-border);
+    border-radius: var(--visuauth-radius);
+    padding: 0.75rem 1rem 1rem;
+    margin: 0 0 1rem;
+}
+
+.va-fieldset legend {
+    padding: 0 0.4rem;
+}
+
+.va-checkbox-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+    gap: 0.25rem 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.va-checkbox-grid .va-checkbox {
+    margin: 0;
+}
+
+.va-col-actions {
+    width: 1%;
+    white-space: nowrap;
+    text-align: right;
+}
+
+.va-row-actions {
+    display: inline-flex;
+    gap: 0.4rem;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.va-row-actions form {
+    margin: 0;
+}
+
 .va-danger-zone {
     border-color: #fecaca;
 }

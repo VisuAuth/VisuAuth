@@ -1,7 +1,10 @@
+@using VisuAuth.Abstractions.Tenancy
+@inject ITenantContext TenantContext
 @model VisuAuth.AdminUi.Pages.Admin.Users.IndexModel
 @{
     var result = Model.Result;
     var hasResults = result.Items.Count > 0;
+    var showTenantColumn = TenantContext.IsMultiTenancyEnabled;
 }
 <div id="va-users-table" class="va-card">
     @if (hasResults)
@@ -11,6 +14,10 @@
             <tr>
                 <th>Email</th>
                 <th>Username</th>
+                @if (showTenantColumn)
+                {
+                    <th>Tenant</th>
+                }
                 <th>Status</th>
                 <th>2FA</th>
                 <th>Email verified</th>
@@ -24,6 +31,19 @@
                         <a class="va-row-link" href="/visuauth/admin/users/@user.Id">@user.Email</a>
                     </td>
                     <td>@(user.UserName ?? "—")</td>
+                    @if (showTenantColumn)
+                    {
+                        <td>
+                            @if (!string.IsNullOrEmpty(user.TenantId))
+                            {
+                                <code class="va-tenant-id">@user.TenantId</code>
+                            }
+                            else
+                            {
+                                <span class="va-muted">—</span>
+                            }
+                        </td>
+                    }
                     <td>
                         @if (user.IsEnabled)
                         {

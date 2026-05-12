@@ -18,20 +18,23 @@ public static class UserSeeder
         "Support",
     ];
 
-    private static readonly (string Email, string UserName)[] Users =
+    /// <summary>Tenants the sample app demonstrates isolation across.</summary>
+    public static readonly string[] Tenants = ["acme", "globex", "initech"];
+
+    private static readonly (string Email, string UserName, string TenantId)[] Users =
     [
-        ("admin@visuauth.dev", "admin"),
-        ("alice.silva@example.com", "alice.silva"),
-        ("bruno.costa@example.com", "bruno.costa"),
-        ("carla.dias@example.com", "carla.dias"),
-        ("daniel.eloi@example.com", "daniel.eloi"),
-        ("eduarda.ferraz@example.com", "eduarda.ferraz"),
-        ("fabio.gomes@example.com", "fabio.gomes"),
-        ("gabriela.henriques@example.com", "gabriela.henriques"),
-        ("hugo.iglesias@example.com", "hugo.iglesias"),
-        ("isabela.jorge@example.com", "isabela.jorge"),
-        ("joao.kruger@example.com", "joao.kruger"),
-        ("laura.matos@example.com", "laura.matos"),
+        ("admin@visuauth.dev", "admin", "acme"),
+        ("alice.silva@example.com", "alice.silva", "acme"),
+        ("bruno.costa@example.com", "bruno.costa", "acme"),
+        ("carla.dias@example.com", "carla.dias", "acme"),
+        ("daniel.eloi@example.com", "daniel.eloi", "globex"),
+        ("eduarda.ferraz@example.com", "eduarda.ferraz", "globex"),
+        ("fabio.gomes@example.com", "fabio.gomes", "globex"),
+        ("gabriela.henriques@example.com", "gabriela.henriques", "globex"),
+        ("hugo.iglesias@example.com", "hugo.iglesias", "initech"),
+        ("isabela.jorge@example.com", "isabela.jorge", "initech"),
+        ("joao.kruger@example.com", "joao.kruger", "initech"),
+        ("laura.matos@example.com", "laura.matos", "initech"),
     ];
 
     private static readonly (string Email, string[] Roles)[] RoleAssignments =
@@ -66,19 +69,22 @@ public static class UserSeeder
 
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
-        foreach (var (email, userName) in Users)
+        foreach (var (email, userName, tenantId) in Users)
         {
             if (await userManager.FindByEmailAsync(email) is not null)
             {
                 continue;
             }
 
+            // TenantId is set explicitly here so the interceptor (which auto-fills
+            // it from HttpContext, absent in seeders) doesn't need a fake context.
             var user = new ApplicationUser
             {
                 Email = email,
                 UserName = userName,
                 EmailConfirmed = true,
                 CreatedAt = DateTimeOffset.UtcNow,
+                TenantId = tenantId,
             };
 
             var result = await userManager.CreateAsync(user, DefaultPassword);

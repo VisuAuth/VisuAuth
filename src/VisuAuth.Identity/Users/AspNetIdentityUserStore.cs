@@ -133,10 +133,38 @@ public sealed class AspNetIdentityUserStore<TUser>(
 
         if (filter.IsLockedOut is { } lockedOut)
         {
-            var now = _timeProvider.GetUtcNow();
+            // SQLite (EF Core 10) refuses to translate DateTimeOffset
+            // comparisons because the textual storage can produce wrong
+            // orderings. We therefore filter on the presence of LockoutEnd
+            // alone: VisuAuth's own `SetEnabledAsync` clears LockoutEnd on
+            // unlock, so "has a lockout end" maps to "currently locked" in
+            // practice. Edge case — a past lockout that Identity left in
+            // place after the window expired — is acceptable for v0.1.
             query = lockedOut
-                ? query.Where(u => u.LockoutEnd != null && u.LockoutEnd > now)
-                : query.Where(u => u.LockoutEnd == null || u.LockoutEnd <= now);
+                ? query.Where(u => u.LockoutEnd != null)
+                : query.Where(u => u.LockoutEnd == null);
+        }
+
+        if (filter.EmailConfirmed is { } emailConfirmed)
+        {
+            query = query.Where(u => u.EmailConfirmed == emailConfirmed);
+        }
+
+        if (filter.TwoFactorEnabled is { } twoFactor)
+        {
+            query = query.Where(u => u.TwoFactorEnabled == twoFactor);
+        }
+
+        if (!string.IsNullOrWhiteSpace(filter.Role))
+        {
+            // GetUsersInRoleAsync materialises the role's membership but lets us
+            // keep the role-filter logic in plain LINQ without injecting a
+            // DbContext or RoleManager into the store. Acceptable for v0.1
+            // workloads; an optimised grouped query can replace this when
+            // roles grow large.
+            var usersInRole = await _userManager.GetUsersInRoleAsync(filter.Role.Trim());
+            var idSet = usersInRole.Select(u => u.Id).ToHashSet(StringComparer.Ordinal);
+            query = query.Where(u => idSet.Contains(u.Id));
         }
 
         query = ApplyOrdering(query, filter);

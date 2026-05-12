@@ -5,6 +5,20 @@
     var result = Model.Result;
     var hasResults = result.Items.Count > 0;
     var showTenantColumn = TenantContext.IsMultiTenancyEnabled;
+
+    // Build a query-string carrying every active filter so pagination
+    // preserves the user's narrowing instead of resetting to the unfiltered
+    // first page on every Next / Previous click.
+    string PageLink(int page)
+    {
+        var qs = new List<string> { $"page={page}" };
+        if (!string.IsNullOrEmpty(Model.SearchTerm)) qs.Add($"q={Uri.EscapeDataString(Model.SearchTerm)}");
+        if (!string.IsNullOrEmpty(Model.RoleFilter)) qs.Add($"role={Uri.EscapeDataString(Model.RoleFilter)}");
+        if (!string.IsNullOrEmpty(Model.StatusFilter)) qs.Add($"status={Uri.EscapeDataString(Model.StatusFilter)}");
+        if (!string.IsNullOrEmpty(Model.VerifiedFilter)) qs.Add($"verified={Uri.EscapeDataString(Model.VerifiedFilter)}");
+        if (!string.IsNullOrEmpty(Model.TwoFactorFilter)) qs.Add($"twofa={Uri.EscapeDataString(Model.TwoFactorFilter)}");
+        return $"/visuauth/admin/users?{string.Join("&", qs)}";
+    }
 }
 <div id="va-users-table" class="va-card">
     @if (hasResults)
@@ -20,7 +34,7 @@
                 }
                 <th>Status</th>
                 <th>2FA</th>
-                <th>Email verified</th>
+                <th>Verified</th>
             </tr>
             </thead>
             <tbody>
@@ -75,8 +89,8 @@
             <div>
                 @if (result.HasPrevious)
                 {
-                    <a href="?q=@Model.SearchTerm&page=@(result.Page - 1)"
-                       hx-get="/visuauth/admin/users?q=@Model.SearchTerm&page=@(result.Page - 1)"
+                    <a href="@PageLink(result.Page - 1)"
+                       hx-get="@PageLink(result.Page - 1)"
                        hx-target="#va-users-table"
                        hx-swap="outerHTML"
                        hx-push-url="true">‹ Previous</a>
@@ -88,8 +102,8 @@
                 <span class="va-muted">Page @result.Page of @Math.Max(result.TotalPages, 1)</span>
                 @if (result.HasNext)
                 {
-                    <a href="?q=@Model.SearchTerm&page=@(result.Page + 1)"
-                       hx-get="/visuauth/admin/users?q=@Model.SearchTerm&page=@(result.Page + 1)"
+                    <a href="@PageLink(result.Page + 1)"
+                       hx-get="@PageLink(result.Page + 1)"
                        hx-target="#va-users-table"
                        hx-swap="outerHTML"
                        hx-push-url="true">Next ›</a>

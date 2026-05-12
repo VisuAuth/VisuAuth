@@ -8,7 +8,8 @@
       "Bash(\"/c/Program Files/dotnet/dotnet.exe\" --version)",
       "Bash(\"/c/Program Files/dotnet/dotnet.exe\" build src/VisuAuth.slnx -c Release)",
       "Bash(\"/c/Program Files/dotnet/dotnet.exe\" test src/VisuAuth.slnx -c Release)",
-      "Bash(\"/c/Program Files/dotnet/dotnet.exe\" test src/VisuAuth.slnx -c Release --no-build)"
+      "Bash(\"/c/Program Files/dotnet/dotnet.exe\" test src/VisuAuth.slnx -c Release --no-build)",
+      "Bash(\"/c/Program Files/dotnet/dotnet.exe\" test src/VisuAuth.slnx -c Release --filter \"FullyQualifiedName~Filtering_by_locked_status\" --logger \"console;verbosity=detailed\")"
     ]
   }
 }

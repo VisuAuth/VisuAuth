@@ -17,10 +17,12 @@ var dbPath = Path.Combine(builder.Environment.ContentRootPath, "visuauth-sample.
 builder.Services.AddVisuAuth<ApplicationUser>();
 
 // Opt into multi-tenancy. Without this the sample is single-tenant — every
-// other VisuAuth feature works the same.
-builder.Services.EnableVisuAuthTenancy(options =>
+// other VisuAuth feature works the same. The generic overload also wires the
+// tenant catalogue store at /visuauth/admin/tenants.
+builder.Services.EnableVisuAuthTenancy<AppDbContext, ApplicationUser>(options =>
 {
     options.HeaderName = "X-Tenant-Id";
+    options.CookieName = "va-tenant";
 });
 
 builder.Services.AddDbContext<AppDbContext>((sp, options) =>
@@ -108,15 +110,18 @@ app.MapGet("/", async (IUserStore userStore, CancellationToken cancellationToken
             <li><a href="/visuauth/admin/users"><code>/visuauth/admin/users</code></a> &mdash; users list (search + pagination)</li>
             <li><a href="/visuauth/admin/users/new"><code>/visuauth/admin/users/new</code></a> &mdash; create user form</li>
             {{detailLine}}
-            <li><a href="/visuauth/admin/roles"><code>/visuauth/admin/roles</code></a> &mdash; roles catalogue (member counts, inline create / delete)</li>
+            <li><a href="/visuauth/admin/roles"><code>/visuauth/admin/roles</code></a> &mdash; roles catalogue (member counts, inline create / rename / delete)</li>
+            <li><a href="/visuauth/admin/tenants"><code>/visuauth/admin/tenants</code></a> &mdash; tenants catalogue (member counts, inline create / rename / delete)</li>
           </ul>
 
           <h2>Multi-tenancy</h2>
           <p>
             The sample seeds users across three tenants: <code>acme</code>,
-            <code>globex</code>, <code>initech</code>. To scope an admin view
-            to a single tenant, send the <code>X-Tenant-Id</code> header. A
-            request with no header sees every tenant's users.
+            <code>globex</code>, <code>initech</code>. Pick a tenant in the
+            sidebar dropdown to set the scope cookie — every other admin
+            view will filter to that tenant's users. APIs can also scope by
+            sending the <code>X-Tenant-Id</code> header (header beats cookie).
+            "(global)" in the dropdown clears the cookie.
           </p>
           <pre style="background:#f1f5f9;padding:0.75rem;border-radius:0.5rem;overflow:auto;">curl -H "X-Tenant-Id: acme" http://localhost:5239/visuauth/admin/users</pre>
 

@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 
+using VisuAuth.Abstractions.Tenancy;
+
 namespace VisuAuth.Identity.MultiTenancy;
 
 /// <summary>
@@ -28,6 +30,9 @@ public sealed class TenantResolverMiddleware(RequestDelegate next, IOptions<Tena
 
         string? tenantId = null;
 
+        // Resolution precedence: header beats cookie. APIs that explicitly set
+        // the header always win; browser flows fall through to the cookie set
+        // by the sidebar switcher.
         if (_options.UseHeader &&
             context.Request.Headers.TryGetValue(_options.HeaderName, out var headerValue))
         {
@@ -35,6 +40,15 @@ public sealed class TenantResolverMiddleware(RequestDelegate next, IOptions<Tena
             if (!string.IsNullOrWhiteSpace(candidate))
             {
                 tenantId = candidate.Trim();
+            }
+        }
+
+        if (tenantId is null && _options.UseCookie &&
+            context.Request.Cookies.TryGetValue(_options.CookieName, out var cookieValue))
+        {
+            if (!string.IsNullOrWhiteSpace(cookieValue))
+            {
+                tenantId = cookieValue.Trim();
             }
         }
 

@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
 using VisuAuth.Abstractions.Tenancy;
+using TenantOptions = VisuAuth.Abstractions.Tenancy.TenantOptions;
 
 namespace VisuAuth.Identity.MultiTenancy;
 
@@ -35,6 +37,32 @@ public static class TenancyServiceCollectionExtensions
         services.RemoveAll<ITenantContext>();
         services.AddScoped<ITenantContext, HttpContextTenantContext>();
         services.AddScoped<TenantSaveChangesInterceptor>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// Multi-tenant overload that also wires the tenant catalogue store. Pass
+    /// the consumer DbContext type so VisuAuth can reach the
+    /// <c>VisuAuthTenants</c> table without knowing it at compile time.
+    /// </summary>
+    /// <typeparam name="TDbContext">The consumer DbContext (typically extends
+    /// <see cref="MultiTenantIdentityDbContext{TUser}"/>).</typeparam>
+    /// <typeparam name="TUser">The Identity user type used by the consumer.</typeparam>
+    public static IServiceCollection EnableVisuAuthTenancy<TDbContext, TUser>(
+        this IServiceCollection services,
+        Action<TenantOptions>? configure = null)
+        where TDbContext : DbContext, IVisuAuthMetadataDbContext
+        where TUser : IdentityUser, IMultiTenantEntity
+    {
+        services.EnableVisuAuthTenancy(configure);
+
+        // Surface the consumer DbContext under the metadata interface so the
+        // tenant store can read / write VisuAuthTenants generically.
+        services.AddScoped<IVisuAuthMetadataDbContext>(sp =>
+            sp.GetRequiredService<TDbContext>());
+
+        services.AddScoped<ITenantStore, AspNetIdentityTenantStore<TUser>>();
 
         return services;
     }

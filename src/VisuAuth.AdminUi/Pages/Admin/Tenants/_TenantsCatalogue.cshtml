@@ -1,0 +1,132 @@
+@model VisuAuth.AdminUi.Pages.Admin.Tenants.IndexModel
+
+@if (Model.ActionErrors.Count > 0)
+{
+    <div class="va-alert va-alert-danger" role="alert">
+        <strong>Could not complete the action.</strong>
+        <ul>
+            @foreach (var err in Model.ActionErrors)
+            {
+                <li>@err</li>
+            }
+        </ul>
+    </div>
+}
+else if (Model.ActionMessage is { Length: > 0 } msg)
+{
+    <div class="va-alert va-alert-success" role="status">@msg</div>
+}
+
+<section class="va-card va-detail-card">
+    <div class="va-detail-card-header">
+        <h2>Create tenant</h2>
+    </div>
+    <form method="post"
+          hx-post="/visuauth/admin/tenants?handler=Create"
+          hx-target="#va-tenants-catalogue"
+          hx-swap="innerHTML"
+          class="va-inline-form">
+        <label class="va-field va-inline-field">
+            <span class="va-field-label">Id (routing key)</span>
+            <input type="text"
+                   name="NewTenantId"
+                   value="@Model.NewTenantId"
+                   placeholder="e.g. acme"
+                   class="va-input"
+                   required />
+        </label>
+        <label class="va-field va-inline-field">
+            <span class="va-field-label">Display name</span>
+            <input type="text"
+                   name="NewTenantDisplayName"
+                   value="@Model.NewTenantDisplayName"
+                   placeholder="e.g. Acme Corporation"
+                   class="va-input" />
+        </label>
+        <button type="submit" class="va-btn va-btn-primary">Add tenant</button>
+    </form>
+</section>
+
+<section class="va-card">
+    @if (Model.Tenants.Count == 0)
+    {
+        <div class="va-empty">
+            <p>No tenants defined yet. Use the form above to create the first one.</p>
+        </div>
+    }
+    else
+    {
+        <table class="va-table">
+            <thead>
+            <tr>
+                <th>Id</th>
+                <th>Display name</th>
+                <th>Members</th>
+                <th class="va-col-actions">Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var tenant in Model.Tenants)
+            {
+                var inEditMode = string.Equals(Model.EditingTenantId, tenant.Id, StringComparison.Ordinal);
+                <tr>
+                    @if (inEditMode)
+                    {
+                        <td><code class="va-tenant-id">@tenant.Id</code></td>
+                        <td colspan="3">
+                            <form method="post"
+                                  hx-post="/visuauth/admin/tenants?handler=Rename"
+                                  hx-target="#va-tenants-catalogue"
+                                  hx-swap="innerHTML"
+                                  class="va-inline-form">
+                                <input type="hidden" name="id" value="@tenant.Id" />
+                                <label class="va-field va-inline-field">
+                                    <span class="va-field-label">Rename '@tenant.Id' to</span>
+                                    <input type="text"
+                                           name="RenamedDisplayName"
+                                           value="@(Model.RenamedDisplayName ?? tenant.DisplayName)"
+                                           class="va-input"
+                                           required
+                                           autofocus />
+                                </label>
+                                <button type="submit" class="va-btn va-btn-primary va-btn-small">Save</button>
+                                <button type="button"
+                                        class="va-btn va-btn-ghost va-btn-small"
+                                        hx-get="/visuauth/admin/tenants"
+                                        hx-target="#va-tenants-catalogue"
+                                        hx-swap="innerHTML">Cancel</button>
+                            </form>
+                        </td>
+                    }
+                    else
+                    {
+                        <td><code class="va-tenant-id">@tenant.Id</code></td>
+                        <td><strong>@tenant.DisplayName</strong></td>
+                        <td><span class="va-badge">@tenant.MemberCount</span></td>
+                        <td class="va-col-actions">
+                            <div class="va-row-actions">
+                                <button type="button"
+                                        class="va-btn va-btn-ghost va-btn-small"
+                                        hx-get="/visuauth/admin/tenants?handler=EditTenant&amp;id=@tenant.Id"
+                                        hx-target="#va-tenants-catalogue"
+                                        hx-swap="innerHTML"
+                                        aria-label="Rename tenant @tenant.DisplayName">Rename</button>
+                                <form method="post"
+                                      hx-post="/visuauth/admin/tenants?handler=Delete"
+                                      hx-target="#va-tenants-catalogue"
+                                      hx-swap="innerHTML"
+                                      hx-confirm="Delete tenant '@tenant.DisplayName'? It must have no members first.">
+                                    <input type="hidden" name="id" value="@tenant.Id" />
+                                    <button type="submit"
+                                            class="va-btn va-btn-danger va-btn-small"
+                                            aria-label="Delete tenant @tenant.DisplayName">Delete</button>
+                                </form>
+                            </div>
+                        </td>
+                    }
+                </tr>
+            }
+            </tbody>
+        </table>
+    }
+</section>

@@ -163,28 +163,194 @@ public sealed class AspNetIdentityUserStore<TUser>(
         => throw new NotImplementedException("CreateAsync ships in a follow-up PR.");
 
     /// <inheritdoc />
-    public Task<UserResult> UpdateAsync(string id, UpdateUserCommand command, CancellationToken cancellationToken = default)
-        => throw new NotImplementedException("UpdateAsync ships in a follow-up PR.");
+    public async Task<UserResult> UpdateAsync(string id, UpdateUserCommand command, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(id);
+        ArgumentNullException.ThrowIfNull(command);
+
+        var user = await _userManager.FindByIdAsync(id);
+        if (user is null)
+        {
+            return UserResult.Failure($"User '{id}' was not found.");
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var errors = new List<string>();
+
+        if (command.Email is not null && !string.Equals(command.Email, user.Email, StringComparison.OrdinalIgnoreCase))
+        {
+            var result = await _userManager.SetEmailAsync(user, command.Email);
+            CollectErrors(result, errors);
+        }
+
+        if (command.UserName is not null && !string.Equals(command.UserName, user.UserName, StringComparison.OrdinalIgnoreCase))
+        {
+            var result = await _userManager.SetUserNameAsync(user, command.UserName);
+            CollectErrors(result, errors);
+        }
+
+        if (command.PhoneNumber is not null && !string.Equals(command.PhoneNumber, user.PhoneNumber, StringComparison.Ordinal))
+        {
+            var result = await _userManager.SetPhoneNumberAsync(user, command.PhoneNumber);
+            CollectErrors(result, errors);
+        }
+
+        return errors.Count == 0
+            ? UserResult.Success(user.Id)
+            : UserResult.Failure("Update failed.", errors);
+    }
 
     /// <inheritdoc />
     public Task<UserResult> DeleteAsync(string id, CancellationToken cancellationToken = default)
         => throw new NotImplementedException("DeleteAsync ships in a follow-up PR.");
 
     /// <inheritdoc />
-    public Task<UserResult> SetEnabledAsync(string id, bool enabled, CancellationToken cancellationToken = default)
-        => throw new NotImplementedException("SetEnabledAsync ships in a follow-up PR.");
+    public async Task<UserResult> SetEnabledAsync(string id, bool enabled, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(id);
+
+        var user = await _userManager.FindByIdAsync(id);
+        if (user is null)
+        {
+            return UserResult.Failure($"User '{id}' was not found.");
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        // Identity refuses to set a lockout end unless lockout is enabled for
+        // this user. Flip the switch first so admins can lock a freshly seeded
+        // account that has it off.
+        if (!user.LockoutEnabled)
+        {
+            var enableLockout = await _userManager.SetLockoutEnabledAsync(user, true);
+            if (!enableLockout.Succeeded)
+            {
+                return ToFailure(enableLockout, "Failed to enable lockout for user.");
+            }
+        }
+
+        if (enabled)
+        {
+            var clear = await _userManager.SetLockoutEndDateAsync(user, lockoutEnd: null);
+            if (!clear.Succeeded)
+            {
+                return ToFailure(clear, "Failed to unlock user.");
+            }
+            // Reset the failed-attempts counter so the user does not get
+            // re-locked on the next misclick.
+            await _userManager.ResetAccessFailedCountAsync(user);
+            return UserResult.Success(user.Id);
+        }
+
+        // DateTimeOffset.MaxValue is the convention Identity itself uses
+        // for "locked out forever".
+        var lockResult = await _userManager.SetLockoutEndDateAsync(user, DateTimeOffset.MaxValue);
+        return lockResult.Succeeded
+            ? UserResult.Success(user.Id)
+            : ToFailure(lockResult, "Failed to lock user.");
+    }
 
     /// <inheritdoc />
-    public Task<UserResult> ResetPasswordAsync(string id, CancellationToken cancellationToken = default)
-        => throw new NotImplementedException("ResetPasswordAsync ships in a follow-up PR.");
+    public async Task<UserResult> ResetPasswordAsync(string id, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(id);
+
+        var user = await _userManager.FindByIdAsync(id);
+        if (user is null)
+        {
+            return UserResult.Failure($"User '{id}' was not found.");
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var temporary = TemporaryPasswordGenerator.Generate(_userManager.Options.Password);
+        var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+        var apply = await _userManager.ResetPasswordAsync(user, token, temporary);
+
+        if (!apply.Succeeded)
+        {
+            return ToFailure(apply, "Failed to reset password.");
+        }
+
+        // Rotate the security stamp so any active session is signed out — the
+        // user must use the new temporary password to sign in again.
+        await _userManager.UpdateSecurityStampAsync(user);
+
+        return UserResult.Success(user.Id, new Dictionary<string, string>
+        {
+            ["temporaryPassword"] = temporary,
+        });
+    }
 
     /// <inheritdoc />
-    public Task<UserResult> ResetTwoFactorAsync(string id, CancellationToken cancellationToken = default)
-        => throw new NotImplementedException("ResetTwoFactorAsync ships in a follow-up PR.");
+    public async Task<UserResult> ResetTwoFactorAsync(string id, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(id);
+
+        var user = await _userManager.FindByIdAsync(id);
+        if (user is null)
+        {
+            return UserResult.Failure($"User '{id}' was not found.");
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var disable = await _userManager.SetTwoFactorEnabledAsync(user, false);
+        if (!disable.Succeeded)
+        {
+            return ToFailure(disable, "Failed to disable two-factor.");
+        }
+
+        // ResetAuthenticatorKeyAsync nukes the TOTP secret, so the user has to
+        // enrol the authenticator from scratch on their next login.
+        var resetKey = await _userManager.ResetAuthenticatorKeyAsync(user);
+        if (!resetKey.Succeeded)
+        {
+            return ToFailure(resetKey, "Failed to reset authenticator key.");
+        }
+
+        return UserResult.Success(user.Id);
+    }
 
     /// <inheritdoc />
-    public Task<UserResult> RevokeSessionsAsync(string id, CancellationToken cancellationToken = default)
-        => throw new NotImplementedException("RevokeSessionsAsync ships in a follow-up PR.");
+    public async Task<UserResult> RevokeSessionsAsync(string id, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(id);
+
+        var user = await _userManager.FindByIdAsync(id);
+        if (user is null)
+        {
+            return UserResult.Failure($"User '{id}' was not found.");
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var stamp = await _userManager.UpdateSecurityStampAsync(user);
+        return stamp.Succeeded
+            ? UserResult.Success(user.Id)
+            : ToFailure(stamp, "Failed to revoke sessions.");
+    }
+
+    private static void CollectErrors(IdentityResult result, List<string> errors)
+    {
+        if (result.Succeeded)
+        {
+            return;
+        }
+        foreach (var error in result.Errors)
+        {
+            errors.Add(error.Description);
+        }
+    }
+
+    private static UserResult ToFailure(IdentityResult result, string fallback)
+    {
+        var messages = result.Errors.Select(e => e.Description).ToList();
+        return UserResult.Failure(
+            messages.Count == 0 ? fallback : messages[0],
+            messages);
+    }
 
     private static IQueryable<TUser> ApplyOrdering(IQueryable<TUser> query, UserFilter filter)
     {

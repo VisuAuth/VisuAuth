@@ -1,0 +1,94 @@
+@model VisuAuth.AdminUi.Pages.Admin.Users.DetailModel
+@{
+    var detail = Model.Detail;
+    var capabilities = Model.Capabilities;
+    var detailUrl = $"/visuauth/admin/users/{detail.Id}";
+    var isLockedOut = detail.LockoutEnd is { } end && end > DateTimeOffset.UtcNow;
+}
+
+<section class="va-card va-detail-card" id="va-user-security">
+    <div class="va-detail-card-header">
+        <h2>Security</h2>
+    </div>
+
+    <dl class="va-dl">
+        <dt>Lockout enabled</dt>
+        <dd>@(detail.LockoutEnabled ? "Yes" : "No")</dd>
+
+        <dt>Currently locked out</dt>
+        <dd>
+            @if (isLockedOut)
+            {
+                <span class="va-badge va-danger">Until @detail.LockoutEnd!.Value.ToString("u")</span>
+            }
+            else
+            {
+                <span class="va-muted">No</span>
+            }
+        </dd>
+
+        <dt>Failed attempts</dt>
+        <dd>@detail.AccessFailedCount</dd>
+
+        <dt>Two-factor</dt>
+        <dd>@(detail.TwoFactorEnabled ? "Enabled" : "Disabled")</dd>
+    </dl>
+
+    <div class="va-actions">
+        @if (capabilities.SupportsLockout)
+        {
+            if (isLockedOut)
+            {
+                <form method="post"
+                      hx-post="@(detailUrl)?handler=Unlock"
+                      hx-target="#va-user-detail-content"
+                      hx-swap="innerHTML">
+                    <button type="submit" class="va-btn va-btn-primary">Unlock account</button>
+                </form>
+            }
+            else
+            {
+                <form method="post"
+                      hx-post="@(detailUrl)?handler=Lock"
+                      hx-target="#va-user-detail-content"
+                      hx-swap="innerHTML"
+                      hx-confirm="Lock this user's account? They will not be able to sign in until you unlock them.">
+                    <button type="submit" class="va-btn va-btn-warning">Lock account</button>
+                </form>
+            }
+        }
+
+        @if (capabilities.SupportsPasswordReset)
+        {
+            <form method="post"
+                  hx-post="@(detailUrl)?handler=ResetPassword"
+                  hx-target="#va-user-detail-content"
+                  hx-swap="innerHTML"
+                  hx-confirm="Reset the password? A new temporary password will be generated and shown once.">
+                <button type="submit" class="va-btn va-btn-ghost">Reset password</button>
+            </form>
+        }
+
+        @if (capabilities.SupportsTwoFactorReset)
+        {
+            <form method="post"
+                  hx-post="@(detailUrl)?handler=ResetTwoFactor"
+                  hx-target="#va-user-detail-content"
+                  hx-swap="innerHTML"
+                  hx-confirm="Reset two-factor? The user will need to set up their authenticator again.">
+                <button type="submit" class="va-btn va-btn-ghost">Reset 2FA</button>
+            </form>
+        }
+
+        @if (capabilities.SupportsSessionRevocation)
+        {
+            <form method="post"
+                  hx-post="@(detailUrl)?handler=RevokeSessions"
+                  hx-target="#va-user-detail-content"
+                  hx-swap="innerHTML"
+                  hx-confirm="Sign this user out of every device?">
+                <button type="submit" class="va-btn va-btn-ghost">Revoke sessions</button>
+            </form>
+        }
+    </div>
+</section>

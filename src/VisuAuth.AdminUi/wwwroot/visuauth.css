@@ -406,6 +406,17 @@ body {
     background: #fde68a;
 }
 
+.va-btn-danger {
+    background: var(--visuauth-danger);
+    color: #ffffff;
+    border-color: var(--visuauth-danger);
+}
+
+.va-btn-danger:hover {
+    filter: brightness(0.92);
+    background: var(--visuauth-danger);
+}
+
 .va-btn-ghost {
     background: transparent;
 }
@@ -475,6 +486,33 @@ body {
     display: flex;
     gap: 0.5rem;
     margin-top: 0.5rem;
+    align-items: center;
+}
+
+.va-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.25rem 0 1rem;
+    font-size: 0.95rem;
+    cursor: pointer;
+}
+
+.va-checkbox input {
+    width: 1.05rem;
+    height: 1.05rem;
+}
+
+.va-required {
+    color: var(--visuauth-danger);
+}
+
+.va-danger-zone {
+    border-color: #fecaca;
+}
+
+.va-danger-zone h2 {
+    color: var(--visuauth-danger);
 }
 
 .va-alert {
@@ -519,7 +557,6 @@ body {
 
 .va-temp-password {
     display: inline-block;
-    margin-top: 0.25rem;
     padding: 0.5rem 0.75rem;
     font-size: 1.05rem;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -527,4 +564,97 @@ body {
     border: 1px solid var(--visuauth-border);
     border-radius: var(--visuauth-radius);
     user-select: all;
+}
+
+.va-copy-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+    flex-wrap: wrap;
+}
+
+.va-copy-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.4rem 0.7rem;
+    border: 1px solid var(--visuauth-border);
+    border-radius: var(--visuauth-radius);
+    background: var(--visuauth-bg);
+    color: var(--visuauth-fg);
+    font-size: 0.85rem;
+    font-family: inherit;
+    cursor: pointer;
+    line-height: 1.2;
+    transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+.va-copy-btn:hover {
+    background: var(--visuauth-surface);
+}
+
+.va-copy-btn:focus-visible {
+    outline: 2px solid var(--visuauth-primary);
+    outline-offset: 1px;
+}
+
+/* State machine for the copy button. Two distinct rules per child, no
+ * shared selectors — keeps cascade reasoning trivial and survives any
+ * stylesheet ordering quirks. */
+.va-copy-btn .va-copy-default {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.va-copy-btn .va-copy-success {
+    display: none;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.va-copy-btn.va-copied {
+    background: #ecfdf5;
+    border-color: #bbf7d0;
+    color: var(--visuauth-success);
+    animation: va-copy-pop 350ms ease;
+}
+
+.va-copy-btn.va-copied .va-copy-default {
+    display: none;
+}
+
+.va-copy-btn.va-copied .va-copy-success {
+    display: inline-flex;
+    animation: va-copy-fade 220ms ease;
+}
+
+.va-copy-icon {
+    display: block;
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+@keyframes va-copy-pop {
+    0%   { transform: scale(1); }
+    35%  { transform: scale(1.08); }
+    100% { transform: scale(1); }
+}
+
+@keyframes va-copy-fade {
+    from { opacity: 0; transform: translateY(2px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .va-copy-btn,
+    .va-copy-btn.va-copied,
+    .va-copy-btn.va-copied .va-copy-success {
+        animation: none;
+        transition: none;
+    }
 }

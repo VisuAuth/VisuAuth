@@ -61,7 +61,7 @@ public sealed class UserMutationTests : IClassFixture<WebApplicationFactory<Prog
         body.Should().Contain("Temporary password");
         body.Should().Contain("class=\"va-temp-password\"");
 
-        var match = Regex.Match(body, @"<code class=""va-temp-password"">([^<]+)</code>");
+        var match = Regex.Match(body, @"<code class=""va-temp-password""[^>]*>([^<]+)</code>");
         match.Success.Should().BeTrue("the response must render the generated password inline");
         // The generator emits symbols like '&' that Razor HTML-encodes on render.
         // Decode back to the plaintext the user will actually type.

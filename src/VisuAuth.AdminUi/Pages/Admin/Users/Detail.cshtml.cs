@@ -131,6 +131,36 @@ public sealed class DetailModel(IUserStore userStore) : PageModel
             success: "All sessions revoked.",
             cancellationToken);
 
+    public async Task<IActionResult> OnPostDeleteAsync(CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(Id))
+        {
+            return NotFound();
+        }
+
+        var result = await _userStore.DeleteAsync(Id, cancellationToken);
+
+        // Failed delete keeps the admin on the detail page so they can read
+        // the error. Successful delete sends them back to the list — the user
+        // is gone, so there's nothing to render on the detail route any more.
+        if (!result.IsSuccess)
+        {
+            var loaded = await LoadDetailAsync(cancellationToken);
+            if (loaded is null)
+            {
+                return NotFound();
+            }
+
+            ActionErrors = result.ValidationErrors.Count > 0
+                ? result.ValidationErrors
+                : [result.Error ?? "Failed to delete user."];
+
+            return Partial("_DetailContent", this);
+        }
+
+        return Redirect("/visuauth/admin/users");
+    }
+
     private async Task<IActionResult> ExecuteAsync(
         Func<Task<UserResult>> action,
         string success,

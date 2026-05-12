@@ -86,6 +86,7 @@ app.MapGet("/", async (IUserStore userStore, CancellationToken cancellationToken
           <h2>Admin UI</h2>
           <ul>
             <li><a href="/visuauth/admin/users"><code>/visuauth/admin/users</code></a> &mdash; users list (search + pagination)</li>
+            <li><a href="/visuauth/admin/users/new"><code>/visuauth/admin/users/new</code></a> &mdash; create user form</li>
             {{detailLine}}
           </ul>
 

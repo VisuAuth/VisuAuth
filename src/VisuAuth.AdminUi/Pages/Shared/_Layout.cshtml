@@ -6,7 +6,9 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>@title</title>
-    <link rel="stylesheet" href="/_content/VisuAuth.AdminUi/visuauth.css" />
+    @* asp-append-version pins ?v={file-hash}, so a stylesheet rebuild forces
+       browsers to fetch the new content instead of serving a stale cached copy. *@
+    <link rel="stylesheet" href="/_content/VisuAuth.AdminUi/visuauth.css" asp-append-version="true" />
     @*
        TODO: Embed htmx as a static asset under wwwroot/ in a future PR for
        offline/airgapped support. Using the CDN keeps this PR small.
@@ -15,6 +17,7 @@
             integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+"
             crossorigin="anonymous"
             defer></script>
+    <script src="/_content/VisuAuth.AdminUi/visuauth.js" asp-append-version="true" defer></script>
 </head>
 <body>
     <div class="va-shell">

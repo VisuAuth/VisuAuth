@@ -75,22 +75,7 @@ else if (Model.ActionMessage is { Length: > 0 } message)
 
 @if (capabilities.SupportsRoleManagement)
 {
-    <section class="va-card va-detail-card">
-        <h2>Roles <span class="va-muted va-count">(@detail.Roles.Count)</span></h2>
-        @if (detail.Roles.Count == 0)
-        {
-            <p class="va-empty-inline">No roles assigned.</p>
-        }
-        else
-        {
-            <ul class="va-chip-list">
-                @foreach (var role in detail.Roles)
-                {
-                    <li class="va-chip">@role</li>
-                }
-            </ul>
-        }
-    </section>
+    <partial name="_RolesSection" model="Model" />
 }
 
 @if (capabilities.SupportsCustomClaims)

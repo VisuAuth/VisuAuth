@@ -11,7 +11,7 @@ Updated as PRs land. Long-term direction lives in `CLAUDE.md` section 13 (Roadma
 - **Latest shipped on NuGet**: `VisuAuth 0.0.1-alpha` (placeholder, name reservation)
 - **Default branch**: `main` at <https://github.com/VisuAuth/visuauth>
 - **Build state**: green (`dotnet build src/VisuAuth.slnx -c Release` → 0 errors, 0 warnings)
-- **Test state**: 13 / 13 passing (on `main`; this branch adds more)
+- **Test state**: 19 / 19 passing (on `main`; this branch adds more)
 
 ---
 
@@ -39,13 +39,15 @@ Updated as PRs land. Long-term direction lives in `CLAUDE.md` section 13 (Roadma
   - `ITenantContext`
   - `IMultiTenantEntity` marker
 - `VisuAuth.Identity`:
-  - `AspNetIdentityUserStore<TUser>` with `ListAsync`, `GetAsync`, `GetDetailAsync`, `UpdateAsync`, `SetEnabledAsync` (lock / unlock), `ResetPasswordAsync` (generates a policy-compliant temporary password), `ResetTwoFactorAsync`, `RevokeSessionsAsync`
+  - `AspNetIdentityUserStore<TUser>` with `ListAsync`, `GetAsync`, `GetDetailAsync`, `CreateAsync`, `UpdateAsync`, `DeleteAsync`, `SetEnabledAsync` (lock / unlock), `ResetPasswordAsync` (generates a policy-compliant temporary password), `ResetTwoFactorAsync`, `RevokeSessionsAsync`
   - `TemporaryPasswordGenerator` (CSPRNG, policy-compliant, avoids visually ambiguous characters)
   - DI extension `AddVisuAuthIdentityAdapter<TUser>()`
 - `VisuAuth.AdminUi`:
   - Razor Pages library setup verified (pages discovered from the referenced assembly via `AddApplicationPart`)
   - `/visuauth/admin/users` page with htmx-powered live search and pagination
-  - `/visuauth/admin/users/{id}` detail page with inline profile edit, lock / unlock, reset password (one-time temporary password), reset 2FA, revoke sessions
+  - `/visuauth/admin/users/{id}` detail page with inline profile edit, lock / unlock, reset password (one-time temporary password), reset 2FA, revoke sessions, delete
+  - `/visuauth/admin/users/new` create-user form (autogenerates a temporary password when blank)
+  - One-time secret display with click-to-copy widget (vanilla JS, no framework, animated confirmation)
   - Default CSS theme with custom property hooks for branding
 - `VisuAuth.EndUserUi`:
   - Stub package wired into DI; concrete pages still to come
@@ -61,42 +63,41 @@ Updated as PRs land. Long-term direction lives in `CLAUDE.md` section 13 (Roadma
 
 ## In flight
 
-### `feat/admin-ui-create-edit-user`
+### `feat/admin-ui-role-management`
 
-Round out the user lifecycle in the admin UI: a dedicated **Create user**
-form at `/visuauth/admin/users/new` and a **Delete** action on the existing
-detail page. Inline profile editing already shipped in the previous PR;
-this PR fills the create / delete sides of the CRUD.
+Wire the role store adapter and let admins assign / remove roles from
+the user detail page. The Roles section becomes interactive: each chip
+is removable, and a dropdown attaches any of the roles already present
+in the backend.
 
-- `AspNetIdentityUserStore<TUser>` implementations for `CreateAsync` and
-  `DeleteAsync` (currently `NotImplementedException`)
-- `/visuauth/admin/users/new` page with email + username + password
-  (optional, autogenerates a temporary one when blank) + phone +
-  EmailConfirmed flag
-- "New user" button on the users list page
-- "Delete user" action on the detail page with `hx-confirm`
-- Sample app home page lists the new URL
-- Tests for happy path create, validation failure on duplicate email,
-  redirect to detail after create, and delete
+- `AspNetIdentityRoleStore<TUser, TRole>` implementing the full `IRoleStore`
+  surface (list, get, create, rename, delete, getRolesForUser, assign,
+  remove)
+- `AddVisuAuthIdentityAdapter<TUser, TRole>` and `AddVisuAuth<TUser, TRole>`
+  overloads, with backward-compatible defaults to `IdentityRole`
+- `_RolesSection.cshtml` partial: removable chips + assign dropdown
+- `OnPostAssignRoleAsync` / `OnPostRemoveRoleAsync` handlers on the
+  detail page (htmx swap of the detail content)
+- Sample app seeds three roles (`Admin`, `Manager`, `Support`) and pins
+  a couple onto seeded users so the dashboard demonstrates the feature
+- Tests for the store (assign / remove / duplicates) and for the UI
+  (chip rendering, dropdown filtering, full round-trip)
 
-**Out of scope** (deferred to follow-up PRs):
+**Out of scope** (deferred to `feat/admin-ui-roles-catalogue`):
 
-- Role assignment in the create form / on the detail page — needs an
-  `IRoleStore` adapter implementation, which lands in
-  `feat/admin-ui-role-management`
-- Tenant selector — multi-tenancy primitives ship in
-  `feat/multitenant-tenantid-column`; the form will gain the selector
-  there
+- `/visuauth/admin/roles` page with member counts and inline CRUD on the
+  role catalogue itself
+- Role checkboxes on the create-user form
 
 ---
 
 ## Next up (ordered)
 
-### 1. `feat/admin-ui-role-management`
+### 1. `feat/admin-ui-roles-catalogue`
 
-Implement `AspNetIdentityRoleStore<TUser, TRole>` and surface role
-assignment / removal on the user detail page and the create form. Adds
-a `/visuauth/admin/roles` page for managing the role catalogue.
+`/visuauth/admin/roles` page listing every role with a member count,
+plus inline create / rename / delete. Surfaces role checkboxes on the
+create-user form so admins can assign roles at creation time.
 
 ### 2. `feat/multitenant-tenantid-column`
 

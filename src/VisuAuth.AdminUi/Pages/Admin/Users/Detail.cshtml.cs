@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 using VisuAuth.Abstractions.Capabilities;
 using VisuAuth.Abstractions.Common;
+using VisuAuth.Abstractions.Roles;
 using VisuAuth.Abstractions.Users;
 
 namespace VisuAuth.AdminUi.Pages.Admin.Users;
@@ -10,12 +11,13 @@ namespace VisuAuth.AdminUi.Pages.Admin.Users;
 /// <summary>
 /// User detail page. Read-only sections render via <c>_DetailContent</c>;
 /// mutations (profile edit, lockout, password reset, 2FA reset, session
-/// revocation) post to dedicated handlers and refresh the detail content
-/// via htmx.
+/// revocation, role assignment) post to dedicated handlers and refresh the
+/// detail content via htmx.
 /// </summary>
-public sealed class DetailModel(IUserStore userStore) : PageModel
+public sealed class DetailModel(IUserStore userStore, IRoleStore roleStore) : PageModel
 {
     private readonly IUserStore _userStore = userStore ?? throw new ArgumentNullException(nameof(userStore));
+    private readonly IRoleStore _roleStore = roleStore ?? throw new ArgumentNullException(nameof(roleStore));
 
     [BindProperty(SupportsGet = true, Name = "id")]
     public string Id { get; set; } = string.Empty;
@@ -26,6 +28,9 @@ public sealed class DetailModel(IUserStore userStore) : PageModel
     public UserDetail Detail { get; private set; } = default!;
 
     public UserBackendCapabilities Capabilities => _userStore.Capabilities;
+
+    /// <summary>All roles known to the backend, used to populate the assign-role dropdown.</summary>
+    public IReadOnlyList<RoleSummary> AvailableRoles { get; private set; } = [];
 
     /// <summary>When true, the profile section renders in edit mode.</summary>
     public bool ProfileEditMode { get; private set; }
@@ -131,6 +136,43 @@ public sealed class DetailModel(IUserStore userStore) : PageModel
             success: "All sessions revoked.",
             cancellationToken);
 
+    public Task<IActionResult> OnPostAssignRoleAsync(string? roleName, CancellationToken cancellationToken)
+    {
+        var trimmed = roleName?.Trim();
+        if (string.IsNullOrWhiteSpace(trimmed))
+        {
+            return InvalidRoleAsync("Pick a role to assign.", cancellationToken);
+        }
+        return ExecuteAsync(
+            () => _roleStore.AssignRoleAsync(Id, trimmed, cancellationToken),
+            success: $"Role '{trimmed}' assigned.",
+            cancellationToken);
+    }
+
+    public Task<IActionResult> OnPostRemoveRoleAsync(string? roleName, CancellationToken cancellationToken)
+    {
+        var trimmed = roleName?.Trim();
+        if (string.IsNullOrWhiteSpace(trimmed))
+        {
+            return InvalidRoleAsync("Missing role name.", cancellationToken);
+        }
+        return ExecuteAsync(
+            () => _roleStore.RemoveRoleAsync(Id, trimmed, cancellationToken),
+            success: $"Role '{trimmed}' removed.",
+            cancellationToken);
+    }
+
+    private async Task<IActionResult> InvalidRoleAsync(string message, CancellationToken cancellationToken)
+    {
+        var loaded = await LoadDetailAsync(cancellationToken);
+        if (loaded is null)
+        {
+            return NotFound();
+        }
+        ActionErrors = [message];
+        return Partial("_DetailContent", this);
+    }
+
     public async Task<IActionResult> OnPostDeleteAsync(CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(Id))
@@ -224,6 +266,14 @@ public sealed class DetailModel(IUserStore userStore) : PageModel
         }
 
         Detail = detail;
+
+        // Role catalogue powers the assign-role dropdown. Capability-gated so
+        // adapters that opt out of role management do not pay the round-trip.
+        if (Capabilities.SupportsRoleManagement)
+        {
+            AvailableRoles = await _roleStore.ListAsync(detail.TenantId, cancellationToken);
+        }
+
         return detail;
     }
 

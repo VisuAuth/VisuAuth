@@ -17,6 +17,15 @@ public sealed record UserFilter
     /// <summary>If set, filters by lockout state.</summary>
     public bool? IsLockedOut { get; init; }
 
+    /// <summary>If set, returns only users in this role (matched by name).</summary>
+    public string? Role { get; init; }
+
+    /// <summary>If set, filters by email confirmation flag.</summary>
+    public bool? EmailConfirmed { get; init; }
+
+    /// <summary>If set, filters by two-factor enrolment.</summary>
+    public bool? TwoFactorEnabled { get; init; }
+
     public int Page { get; init; } = 1;
 
     public int PageSize { get; init; } = 25;

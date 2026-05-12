@@ -12,18 +12,53 @@
     </div>
 </div>
 
-<input type="search"
-       class="va-search"
-       name="q"
-       value="@Model.SearchTerm"
-       placeholder="Search by email or username…"
-       autocomplete="off"
-       hx-get="/visuauth/admin/users"
-       hx-trigger="keyup changed delay:300ms, search"
-       hx-target="#va-users-table"
-       hx-swap="outerHTML"
-       hx-indicator="#va-search-indicator"
-       hx-push-url="true" />
+@*  Single htmx-aware form — every input updates the table partial. The
+    keyup trigger is scoped to the search box so typing into it stays
+    debounced; selects fire on change, so the whole row stays in sync. *@
+<form id="va-users-filter"
+      hx-get="/visuauth/admin/users"
+      hx-target="#va-users-table"
+      hx-swap="outerHTML"
+      hx-trigger="change, keyup changed delay:300ms from:input.va-search, search from:input.va-search"
+      hx-indicator="#va-search-indicator"
+      hx-push-url="true"
+      class="va-filters">
+    <input type="search"
+           class="va-search va-input"
+           name="q"
+           value="@Model.SearchTerm"
+           placeholder="Search by email or username…"
+           autocomplete="off" />
+
+    @if (Model.AvailableRoles.Count > 0)
+    {
+        <select name="role" class="va-input va-filter-select" aria-label="Filter by role">
+            <option value="">All roles</option>
+            @foreach (var role in Model.AvailableRoles)
+            {
+                <option value="@role.Name" selected="@(string.Equals(role.Name, Model.RoleFilter, StringComparison.OrdinalIgnoreCase) ? "selected" : null)">@role.Name</option>
+            }
+        </select>
+    }
+
+    <select name="status" class="va-input va-filter-select" aria-label="Filter by status">
+        <option value="">Any status</option>
+        <option value="active" selected="@(Model.StatusFilter == "active" ? "selected" : null)">Active</option>
+        <option value="locked" selected="@(Model.StatusFilter == "locked" ? "selected" : null)">Locked</option>
+    </select>
+
+    <select name="verified" class="va-input va-filter-select" aria-label="Filter by email verified">
+        <option value="">Any verified</option>
+        <option value="true" selected="@(Model.VerifiedFilter == "true" ? "selected" : null)">Verified</option>
+        <option value="false" selected="@(Model.VerifiedFilter == "false" ? "selected" : null)">Pending</option>
+    </select>
+
+    <select name="twofa" class="va-input va-filter-select" aria-label="Filter by 2FA">
+        <option value="">Any 2FA</option>
+        <option value="true" selected="@(Model.TwoFactorFilter == "true" ? "selected" : null)">2FA on</option>
+        <option value="false" selected="@(Model.TwoFactorFilter == "false" ? "selected" : null)">2FA off</option>
+    </select>
+</form>
 
 <div id="va-users-table">
     <partial name="_UsersTable" model="Model" />

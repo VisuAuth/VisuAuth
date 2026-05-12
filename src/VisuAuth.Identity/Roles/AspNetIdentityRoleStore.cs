@@ -34,17 +34,28 @@ public sealed class AspNetIdentityRoleStore<TUser, TRole>(
             .OrderBy(r => r.Name)
             .ToListAsync(cancellationToken);
 
-        return roles
-            .Select(r => new RoleSummary
+        var summaries = new List<RoleSummary>(roles.Count);
+        foreach (var role in roles)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            // GetUsersInRoleAsync materialises every user — fine for the
+            // typical handful of roles in a v0.1 demo workload. A grouped
+            // query over AspNetUserRoles would be cheaper at scale; tracked
+            // as a follow-up performance optimisation.
+            var count = role.Name is null
+                ? 0
+                : (await _userManager.GetUsersInRoleAsync(role.Name)).Count;
+
+            summaries.Add(new RoleSummary
             {
-                Id = r.Id,
-                Name = r.Name ?? string.Empty,
+                Id = role.Id,
+                Name = role.Name ?? string.Empty,
                 TenantId = null,
-                // MemberCount is wired up by the roles-catalogue PR (`feat/admin-ui-roles-catalogue`).
-                // Leaving it at 0 here keeps this PR small — no current screen needs the count.
-                MemberCount = 0,
-            })
-            .ToList();
+                MemberCount = count,
+            });
+        }
+        return summaries;
     }
 
     /// <inheritdoc />

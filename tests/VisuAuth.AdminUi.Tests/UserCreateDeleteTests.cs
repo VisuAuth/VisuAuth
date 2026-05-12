@@ -154,6 +154,57 @@ public sealed class UserCreateDeleteTests : IClassFixture<WebApplicationFactory<
     }
 
     [Fact]
+    public async Task New_user_form_renders_role_checkboxes()
+    {
+        using var client = CreateClient();
+        var response = await client.GetAsync(new Uri("/visuauth/admin/users/new", UriKind.Relative));
+        var body = await response.Content.ReadAsStringAsync();
+
+        response.IsSuccessStatusCode.Should().BeTrue();
+        body.Should().Contain("name=\"Form.SelectedRoles\"",
+            "the form must expose role checkboxes when the backend supports role management");
+        body.Should().Contain("value=\"Admin\"");
+        body.Should().Contain("value=\"Manager\"");
+        body.Should().Contain("value=\"Support\"");
+    }
+
+    [Fact]
+    public async Task Create_with_selected_roles_lands_user_in_those_roles()
+    {
+        using var client = CreateClient(allowRedirects: false);
+        var email = UniqueEmail("withroles");
+        var token = await GetTokenAsync(client, "/visuauth/admin/users/new");
+
+        // Multiple values for the same name — model binder collects them into IList<string>.
+        var pairs = new List<KeyValuePair<string, string>>
+        {
+            new("__RequestVerificationToken", token),
+            new("Form.Email", email),
+            new("Form.UserName", ""),
+            new("Form.Password", "WithRoles!Pass1"),
+            new("Form.PhoneNumber", ""),
+            new("Form.EmailConfirmed", "true"),
+            new("Form.SelectedRoles", "Manager"),
+            new("Form.SelectedRoles", "Support"),
+        };
+
+        var response = await client.PostAsync(
+            new Uri("/visuauth/admin/users/new", UriKind.Relative),
+            new FormUrlEncodedContent(pairs));
+
+        response.StatusCode.Should().Be(HttpStatusCode.Redirect,
+            "selecting roles with an explicit password still redirects to the detail page when all assignments succeed");
+
+        using var scope = _factory.Services.CreateScope();
+        var um = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var user = await um.FindByEmailAsync(email);
+        user.Should().NotBeNull();
+        (await um.IsInRoleAsync(user!, "Manager")).Should().BeTrue();
+        (await um.IsInRoleAsync(user!, "Support")).Should().BeTrue();
+        (await um.IsInRoleAsync(user!, "Admin")).Should().BeFalse("only the picked roles must be assigned");
+    }
+
+    [Fact]
     public async Task Delete_action_removes_the_user_and_redirects_to_the_list()
     {
         // Provision a throwaway user so the delete does not knock out a seeded one.

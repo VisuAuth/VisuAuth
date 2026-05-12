@@ -1,0 +1,121 @@
+@model VisuAuth.AdminUi.Pages.Admin.Roles.IndexModel
+
+@if (Model.ActionErrors.Count > 0)
+{
+    <div class="va-alert va-alert-danger" role="alert">
+        <strong>Could not complete the action.</strong>
+        <ul>
+            @foreach (var err in Model.ActionErrors)
+            {
+                <li>@err</li>
+            }
+        </ul>
+    </div>
+}
+else if (Model.ActionMessage is { Length: > 0 } msg)
+{
+    <div class="va-alert va-alert-success" role="status">@msg</div>
+}
+
+<section class="va-card va-detail-card">
+    <div class="va-detail-card-header">
+        <h2>Create role</h2>
+    </div>
+    <form method="post"
+          hx-post="/visuauth/admin/roles?handler=Create"
+          hx-target="#va-roles-catalogue"
+          hx-swap="innerHTML"
+          class="va-inline-form">
+        <label class="va-field va-inline-field">
+            <span class="va-field-label">Name</span>
+            <input type="text"
+                   name="NewRoleName"
+                   value="@Model.NewRoleName"
+                   placeholder="e.g. Editor"
+                   class="va-input"
+                   required />
+        </label>
+        <button type="submit" class="va-btn va-btn-primary">Add role</button>
+    </form>
+</section>
+
+<section class="va-card">
+    @if (Model.Roles.Count == 0)
+    {
+        <div class="va-empty">
+            <p>No roles defined yet. Use the form above to create the first one.</p>
+        </div>
+    }
+    else
+    {
+        <table class="va-table">
+            <thead>
+            <tr>
+                <th>Name</th>
+                <th>Members</th>
+                <th class="va-col-actions">Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var role in Model.Roles)
+            {
+                var inEditMode = string.Equals(Model.EditingRoleId, role.Id, StringComparison.Ordinal);
+                <tr>
+                    @if (inEditMode)
+                    {
+                        <td colspan="3">
+                            <form method="post"
+                                  hx-post="/visuauth/admin/roles?handler=Rename"
+                                  hx-target="#va-roles-catalogue"
+                                  hx-swap="innerHTML"
+                                  class="va-inline-form">
+                                <input type="hidden" name="id" value="@role.Id" />
+                                <label class="va-field va-inline-field">
+                                    <span class="va-field-label">Rename '@role.Name' to</span>
+                                    <input type="text"
+                                           name="RenamedRoleName"
+                                           value="@(Model.RenamedRoleName ?? role.Name)"
+                                           class="va-input"
+                                           required
+                                           autofocus />
+                                </label>
+                                <button type="submit" class="va-btn va-btn-primary va-btn-small">Save</button>
+                                <button type="button"
+                                        class="va-btn va-btn-ghost va-btn-small"
+                                        hx-get="/visuauth/admin/roles"
+                                        hx-target="#va-roles-catalogue"
+                                        hx-swap="innerHTML">Cancel</button>
+                            </form>
+                        </td>
+                    }
+                    else
+                    {
+                        <td><strong>@role.Name</strong></td>
+                        <td><span class="va-badge">@role.MemberCount</span></td>
+                        <td class="va-col-actions">
+                            <div class="va-row-actions">
+                                <button type="button"
+                                        class="va-btn va-btn-ghost va-btn-small"
+                                        hx-get="/visuauth/admin/roles?handler=EditRole&amp;id=@role.Id"
+                                        hx-target="#va-roles-catalogue"
+                                        hx-swap="innerHTML"
+                                        aria-label="Rename role @role.Name">Rename</button>
+                                <form method="post"
+                                      hx-post="/visuauth/admin/roles?handler=Delete"
+                                      hx-target="#va-roles-catalogue"
+                                      hx-swap="innerHTML"
+                                      hx-confirm="Delete role '@role.Name'? Users currently in this role will lose it.">
+                                    <input type="hidden" name="id" value="@role.Id" />
+                                    <button type="submit"
+                                            class="va-btn va-btn-danger va-btn-small"
+                                            aria-label="Delete role @role.Name">Delete</button>
+                                </form>
+                            </div>
+                        </td>
+                    }
+                </tr>
+            }
+            </tbody>
+        </table>
+    }
+</section>

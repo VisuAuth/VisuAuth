@@ -132,12 +132,19 @@ public sealed class UserMutationTests : IClassFixture<WebApplicationFactory<Prog
         var (userId, detailUrl) = await SetupAsync("fabio.gomes@example.com");
         using var client = CreateClient();
 
+        // Generate a unique target so the test stays green even if a previous
+        // run left a renamed user in the DB (the seeder is idempotent, but it
+        // recreates fabio.gomes on next start, leaving the orphan around).
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        var newEmail = $"fabio.{suffix}@example.com";
+        var newUserName = $"fabio.{suffix}";
+
         var token = await GetTokenAsync(client, detailUrl);
         var form = new FormUrlEncodedContent(new Dictionary<string, string>
         {
             ["__RequestVerificationToken"] = token,
-            ["Profile.Email"] = "fabio.updated@example.com",
-            ["Profile.UserName"] = "fabio.updated",
+            ["Profile.Email"] = newEmail,
+            ["Profile.UserName"] = newUserName,
             ["Profile.PhoneNumber"] = "11999999999",
         });
 
@@ -146,14 +153,14 @@ public sealed class UserMutationTests : IClassFixture<WebApplicationFactory<Prog
 
         response.IsSuccessStatusCode.Should().BeTrue();
         body.Should().Contain("Profile updated.");
-        body.Should().Contain("fabio.updated@example.com");
+        body.Should().Contain(newEmail);
         body.Should().Contain("11999999999");
 
         using var scope = _factory.Services.CreateScope();
         var um = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
         var user = await um.FindByIdAsync(userId);
-        user!.Email.Should().Be("fabio.updated@example.com");
-        user.UserName.Should().Be("fabio.updated");
+        user!.Email.Should().Be(newEmail);
+        user.UserName.Should().Be(newUserName);
         user.PhoneNumber.Should().Be("11999999999");
     }
 

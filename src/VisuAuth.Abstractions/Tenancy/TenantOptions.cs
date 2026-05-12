@@ -1,4 +1,4 @@
-namespace VisuAuth.Identity.MultiTenancy;
+namespace VisuAuth.Abstractions.Tenancy;
 
 /// <summary>
 /// Configuration knobs for multi-tenancy. Bound from <c>IOptions&lt;TenantOptions&gt;</c>
@@ -12,6 +12,16 @@ public sealed class TenantOptions
 
     /// <summary>Read the tenant id from <see cref="HeaderName"/>. On by default.</summary>
     public bool UseHeader { get; set; } = true;
+
+    /// <summary>Cookie name inspected by the resolver. Defaults to <c>va-tenant</c>.</summary>
+    public string CookieName { get; set; } = "va-tenant";
+
+    /// <summary>
+    /// Read the tenant id from <see cref="CookieName"/>. On by default — the
+    /// sidebar switcher uses this for browser flows. Header still takes
+    /// precedence when set.
+    /// </summary>
+    public bool UseCookie { get; set; } = true;
 
     /// <summary>Reserved for the subdomain resolver (lands in a follow-up PR).</summary>
     public bool UseSubdomain { get; set; }

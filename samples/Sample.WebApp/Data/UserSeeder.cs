@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
+using VisuAuth.Identity.MultiTenancy;
+
 namespace Sample.WebApp.Data;
 
 /// <summary>
@@ -19,7 +21,12 @@ public static class UserSeeder
     ];
 
     /// <summary>Tenants the sample app demonstrates isolation across.</summary>
-    public static readonly string[] Tenants = ["acme", "globex", "initech"];
+    private static readonly (string Id, string DisplayName)[] Tenants =
+    [
+        ("acme", "Acme Corporation"),
+        ("globex", "Globex Industries"),
+        ("initech", "Initech Solutions"),
+    ];
 
     private static readonly (string Email, string UserName, string TenantId)[] Users =
     [
@@ -51,6 +58,24 @@ public static class UserSeeder
         using var scope = services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         await db.Database.EnsureCreatedAsync(cancellationToken);
+
+        // Seed tenants into the metadata table before users — the user rows
+        // reference these tenant ids.
+        foreach (var (id, displayName) in Tenants)
+        {
+            var exists = await db.VisuAuthTenants.AnyAsync(t => t.Id == id, cancellationToken);
+            if (exists)
+            {
+                continue;
+            }
+            db.VisuAuthTenants.Add(new VisuAuthTenant
+            {
+                Id = id,
+                DisplayName = displayName,
+                CreatedAt = DateTimeOffset.UtcNow,
+            });
+        }
+        await db.SaveChangesAsync(cancellationToken);
 
         var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
         foreach (var roleName in Roles)

@@ -14,7 +14,7 @@ namespace VisuAuth.Identity.MultiTenancy;
 /// </summary>
 /// <typeparam name="TUser">The consumer's user type — must implement
 /// <see cref="IMultiTenantEntity"/>.</typeparam>
-public abstract class MultiTenantIdentityDbContext<TUser> : IdentityDbContext<TUser>
+public abstract class MultiTenantIdentityDbContext<TUser> : IdentityDbContext<TUser>, IVisuAuthMetadataDbContext
     where TUser : IdentityUser, IMultiTenantEntity
 {
     private readonly ITenantContext _tenantContext;
@@ -28,20 +28,36 @@ public abstract class MultiTenantIdentityDbContext<TUser> : IdentityDbContext<TU
     }
 
     /// <inheritdoc />
+    public DbSet<VisuAuthTenant> VisuAuthTenants => Set<VisuAuthTenant>();
+
+    /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
 
         base.OnModelCreating(builder);
 
-        // The filter is evaluated at query-execution time, so reading instance
-        // fields here is safe — EF Core re-checks them per query thanks to the
-        // closure capturing `this`.
+        // Query filter parameters must be field / property accesses on the
+        // DbContext — EF Core re-reads them per query. Method calls inside
+        // the filter expression do not translate to SQL.
         builder.Entity<TUser>()
             .HasQueryFilter(u =>
                 !_tenantContext.IsMultiTenancyEnabled
                 || _tenantContext.CurrentTenantId == null
                 || u.TenantId == _tenantContext.CurrentTenantId);
+
+        ConfigureVisuAuthTenant(builder);
+    }
+
+    internal static void ConfigureVisuAuthTenant(ModelBuilder builder)
+    {
+        builder.Entity<VisuAuthTenant>(entity =>
+        {
+            entity.ToTable("VisuAuthTenants");
+            entity.HasKey(t => t.Id);
+            entity.Property(t => t.Id).HasMaxLength(64).IsRequired();
+            entity.Property(t => t.DisplayName).HasMaxLength(256).IsRequired();
+        });
     }
 }
 
@@ -50,7 +66,8 @@ public abstract class MultiTenantIdentityDbContext<TUser> : IdentityDbContext<TU
 /// entity exactly the same way; roles are global today (per-tenant roles
 /// are slated for the multi-tenancy follow-up).
 /// </summary>
-public abstract class MultiTenantIdentityDbContext<TUser, TRole> : IdentityDbContext<TUser, TRole, string>
+public abstract class MultiTenantIdentityDbContext<TUser, TRole>
+    : IdentityDbContext<TUser, TRole, string>, IVisuAuthMetadataDbContext
     where TUser : IdentityUser, IMultiTenantEntity
     where TRole : IdentityRole
 {
@@ -65,6 +82,9 @@ public abstract class MultiTenantIdentityDbContext<TUser, TRole> : IdentityDbCon
     }
 
     /// <inheritdoc />
+    public DbSet<VisuAuthTenant> VisuAuthTenants => Set<VisuAuthTenant>();
+
+    /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -76,5 +96,7 @@ public abstract class MultiTenantIdentityDbContext<TUser, TRole> : IdentityDbCon
                 !_tenantContext.IsMultiTenancyEnabled
                 || _tenantContext.CurrentTenantId == null
                 || u.TenantId == _tenantContext.CurrentTenantId);
+
+        MultiTenantIdentityDbContext<TUser>.ConfigureVisuAuthTenant(builder);
     }
 }

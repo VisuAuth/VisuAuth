@@ -1,7 +1,18 @@
 @using VisuAuth.Abstractions.Tenancy
 @inject ITenantContext TenantContext
+@inject IServiceProvider Services
 @{
     var title = ViewData["Title"] as string ?? "VisuAuth Admin";
+    // Tenant catalogue is only registered when the consumer calls the generic
+    // EnableVisuAuthTenancy overload, so reach for it via the service locator
+    // rather than @inject so single-tenant deployments stay happy.
+    var tenantStore = TenantContext.IsMultiTenancyEnabled
+        ? Services.GetService(typeof(ITenantStore)) as ITenantStore
+        : null;
+    var sidebarTenants = tenantStore is null
+        ? Array.Empty<TenantSummary>()
+        : (IReadOnlyList<TenantSummary>)await tenantStore.ListAsync();
+    var currentPath = Context.Request.Path + Context.Request.QueryString;
 }<!doctype html>
 <html lang="en">
 <head>
@@ -34,22 +45,46 @@
             <a class="va-brand" href="/visuauth/admin/users">VisuAuth</a>
             @if (TenantContext.IsMultiTenancyEnabled)
             {
-                <div class="va-tenant-indicator" title="Active tenant scope">
-                    <span class="va-field-label">Tenant</span>
-                    @if (TenantContext.CurrentTenantId is { Length: > 0 } tenantId)
-                    {
-                        <code class="va-tenant-id">@tenantId</code>
-                    }
-                    else
-                    {
-                        <span class="va-muted">(global)</span>
-                    }
-                </div>
+                @* asp-page + asp-page-handler engage the form tag helper so the
+                   antiforgery token is auto-injected. The explicit
+                   @Html.AntiForgeryToken() is belt-and-suspenders for any case
+                   where the helper does not run (rare, but cheap insurance —
+                   the sidebar renders on every admin page, so missing tokens
+                   here would brick the switcher for browser users). *@
+                <form method="post"
+                      asp-page="/Admin/Tenants/Index"
+                      asp-page-handler="Switch"
+                      class="va-tenant-indicator">
+                    @Html.AntiForgeryToken()
+                    <span class="va-field-label">Tenant scope</span>
+                    <input type="hidden" name="returnUrl" value="@currentPath" />
+                    <select name="tenantId"
+                            class="va-input va-tenant-switcher"
+                            onchange="this.form.submit();">
+                        <option value="" selected="@(string.IsNullOrEmpty(TenantContext.CurrentTenantId) ? "selected" : null)">(global)</option>
+                        @foreach (var tenant in sidebarTenants)
+                        {
+                            <option value="@tenant.Id" selected="@(string.Equals(tenant.Id, TenantContext.CurrentTenantId, StringComparison.Ordinal) ? "selected" : null)">
+                                @tenant.DisplayName
+                            </option>
+                        }
+                    </select>
+                    <noscript>
+                        <button type="submit" class="va-btn va-btn-small va-btn-ghost">Apply</button>
+                    </noscript>
+                </form>
             }
             <nav class="va-nav">
                 <a href="/visuauth/admin/users" class="@NavClass("/visuauth/admin/users")">Users</a>
                 <a href="/visuauth/admin/roles" class="@NavClass("/visuauth/admin/roles")">Roles</a>
-                <a href="#" aria-disabled="true" class="va-muted">Tenants (soon)</a>
+                @if (TenantContext.IsMultiTenancyEnabled)
+                {
+                    <a href="/visuauth/admin/tenants" class="@NavClass("/visuauth/admin/tenants")">Tenants</a>
+                }
+                else
+                {
+                    <a href="#" aria-disabled="true" class="va-muted">Tenants (soon)</a>
+                }
             </nav>
         </aside>
         <main class="va-main">

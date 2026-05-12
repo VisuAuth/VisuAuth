@@ -14,10 +14,22 @@ public sealed record UserResult
 
     public IReadOnlyList<string> ValidationErrors { get; init; } = [];
 
-    public static UserResult Success(string? userId = null) => new()
+    /// <summary>
+    /// Free-form payload returned by operations that need to surface extra data
+    /// (e.g. a generated temporary password from <c>ResetPasswordAsync</c>, a
+    /// password-reset URL, a fresh authenticator key). Keys are documented per
+    /// operation in the matching method on <c>IUserStore</c>.
+    /// </summary>
+    public IReadOnlyDictionary<string, string> Metadata { get; init; } =
+        new Dictionary<string, string>();
+
+    public static UserResult Success(
+        string? userId = null,
+        IReadOnlyDictionary<string, string>? metadata = null) => new()
     {
         IsSuccess = true,
         UserId = userId,
+        Metadata = metadata ?? new Dictionary<string, string>(),
     };
 
     public static UserResult Failure(string error, IReadOnlyList<string>? validationErrors = null) => new()

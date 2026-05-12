@@ -11,7 +11,7 @@ Updated as PRs land. Long-term direction lives in `CLAUDE.md` section 13 (Roadma
 - **Latest shipped on NuGet**: `VisuAuth 0.0.1-alpha` (placeholder, name reservation)
 - **Default branch**: `main` at <https://github.com/VisuAuth/visuauth>
 - **Build state**: green (`dotnet build src/VisuAuth.slnx -c Release` → 0 errors, 0 warnings)
-- **Test state**: 6 / 6 passing
+- **Test state**: 6 / 6 passing (on `main`; this branch adds more)
 
 ---
 
@@ -35,15 +35,16 @@ Updated as PRs land. Long-term direction lives in `CLAUDE.md` section 13 (Roadma
 - `VisuAuth.Abstractions`:
   - `IUserStore`, `IRoleStore`, `IAuthenticationFlow`
   - `UserBackendCapabilities` record (the runtime adaptation switch for non-Identity backends)
-  - `UserSummary`, `UserFilter`, `UserSortBy`, `CreateUserCommand`, `UpdateUserCommand`, `UserResult`, `PagedResult<T>`, `RoleSummary`
+  - `UserSummary`, `UserDetail`, `UserClaim`, `ExternalLogin`, `UserFilter`, `UserSortBy`, `CreateUserCommand`, `UpdateUserCommand`, `UserResult`, `PagedResult<T>`, `RoleSummary`
   - `ITenantContext`
   - `IMultiTenantEntity` marker
 - `VisuAuth.Identity`:
-  - `AspNetIdentityUserStore<TUser>` with `ListAsync` (paged + filtered) and `GetAsync` working end to end
+  - `AspNetIdentityUserStore<TUser>` with `ListAsync` (paged + filtered), `GetAsync`, and `GetDetailAsync` (claims, roles, external logins) working end to end
   - DI extension `AddVisuAuthIdentityAdapter<TUser>()`
 - `VisuAuth.AdminUi`:
   - Razor Pages library setup verified (pages discovered from the referenced assembly via `AddApplicationPart`)
   - `/visuauth/admin/users` page with htmx-powered live search and pagination
+  - `/visuauth/admin/users/{id}` read-only detail page (profile, security, roles, claims, external logins)
   - Default CSS theme with custom property hooks for branding
 - `VisuAuth.EndUserUi`:
   - Stub package wired into DI; concrete pages still to come
@@ -59,44 +60,34 @@ Updated as PRs land. Long-term direction lives in `CLAUDE.md` section 13 (Roadma
 
 ## In flight
 
-### `feat/admin-ui-user-detail`
+### `feat/admin-ui-user-mutations`
 
-Read-only detail page at `/visuauth/admin/users/{id}` showing profile, security
-state (lockout, 2FA, failed attempts), roles, claims, and external logins.
-Mutations are deferred to the next PR.
+Wire the admin mutation actions into the user detail page so operators can
+unblock real users from the UI: change email / username / phone, lock /
+unlock, reset password (temporary password handed back to the admin), reset
+2FA, and revoke active sessions. Each action POSTs to a dedicated handler
+and refreshes the page via htmx.
 
-- `IUserStore.GetDetailAsync` added to `VisuAuth.Abstractions` with new
-  `UserDetail`, `UserClaim`, and `ExternalLogin` records
-- `AspNetIdentityUserStore<TUser>.GetDetailAsync` implemented via `UserManager`
-  (`FindByIdAsync`, `GetRolesAsync`, `GetClaimsAsync`, `GetLoginsAsync`)
-- `Pages/Admin/Users/Detail.cshtml(.cs)` with capability-aware sections
-  (the Roles / Claims / External logins panels render only when the backend
-  declares the matching capability)
-- `_UsersTable.cshtml` links each email cell to the detail page
-- CSS: definition-list layout, chip list for roles, status badges, back link
-- Three new smoke tests covering full render, 404 on unknown id, and the
-  row → detail link from the list page
+- `AspNetIdentityUserStore<TUser>` implementations for `UpdateAsync`,
+  `SetEnabledAsync`, `ResetPasswordAsync`, `ResetTwoFactorAsync`,
+  `RevokeSessionsAsync` (currently `NotImplementedException`)
+- `UserResult.Metadata` added so password reset can return the generated
+  temporary password
+- `Detail.cshtml` split into `_DetailContent`, `_ProfileSection`,
+  `_SecuritySection` partials with htmx-swappable targets
+- Profile section toggles between view and edit modes
+- `hx-confirm` on destructive actions
+- Tests covering happy path for each action plus a validation failure case
 
 ---
 
 ## Next up (ordered)
 
-### 1. `feat/admin-ui-user-mutations`
-
-Lockout / unlock, reset password (generate a one-time link or temporary password), force logout, reset 2FA, change email, change username. Each action posts to a small dedicated handler; the page refreshes via htmx after success.
-
-**Touches**:
-
-- `AspNetIdentityUserStore<TUser>` implementations of the methods currently throwing `NotImplementedException`
-- `UserBackendCapabilities` flags flipped to `true` where applicable
-- Per-action partial views and confirmation modals
-- Tests covering happy path and validation failures
-
-### 2. `feat/admin-ui-create-edit-user`
+### 1. `feat/admin-ui-create-edit-user`
 
 Forms for creating and editing users. Tenant-aware (when multi-tenancy is enabled, an inactive tenant selector appears for super-admins).
 
-### 3. `feat/multitenant-tenantid-column`
+### 2. `feat/multitenant-tenantid-column`
 
 The full multi-tenancy primitive set:
 
@@ -109,27 +100,27 @@ The full multi-tenancy primitive set:
 - Per-tenant password policy and lockout config
 - Tests with multiple tenants and verified isolation
 
-### 4. `feat/end-user-login-page`
+### 3. `feat/end-user-login-page`
 
 The first end-user UI page: `/visuauth/login` with email + password form, error feedback via htmx, redirect on success. Uses ASP.NET Identity's `SignInManager`.
 
-### 5. `feat/end-user-register-and-reset`
+### 4. `feat/end-user-register-and-reset`
 
 Registration, forgot password, reset password, confirm email, logout. Each is its own page; they share a layout.
 
-### 6. `feat/mobile-rest-api-and-jwt`
+### 5. `feat/mobile-rest-api-and-jwt`
 
 `POST /visuauth/api/auth/login`, `POST /visuauth/api/auth/register`, `POST /visuauth/api/auth/refresh`, JWT issuance with HS256. WebView callback flow added on top.
 
-### 7. `feat/theming-programmatic-config`
+### 6. `feat/theming-programmatic-config`
 
 `services.AddVisuAuth().Configure<VisuAuthTheme>(...)` generates CSS variables at runtime, overriding the defaults from `wwwroot/visuauth.css`. View override (layer 3) and per-tenant theme (layer 4) deferred to v0.2.
 
-### 8. `feat/i18n-pt-br-and-en`
+### 7. `feat/i18n-pt-br-and-en`
 
 `IStringLocalizer` wired up. All hardcoded English strings in views moved to resource files. pt-BR translation added.
 
-### 9. `feat/embedded-htmx-asset`
+### 8. `feat/embedded-htmx-asset`
 
 Replace the htmx CDN reference with an embedded static asset at `wwwroot/htmx.min.js`. Required for offline / air-gapped deployments.
 

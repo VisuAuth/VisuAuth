@@ -344,3 +344,187 @@ body {
         margin-top: 0.5rem;
     }
 }
+
+.va-detail-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.va-detail-card-header h2 {
+    margin: 0;
+    font-size: 1.05rem;
+    color: var(--visuauth-fg);
+}
+
+.va-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.5rem 0.9rem;
+    border: 1px solid var(--visuauth-border);
+    background: var(--visuauth-bg);
+    color: var(--visuauth-fg);
+    border-radius: var(--visuauth-radius);
+    font-size: 0.9rem;
+    font-family: inherit;
+    cursor: pointer;
+    text-decoration: none;
+    line-height: 1.2;
+}
+
+.va-btn:hover {
+    background: var(--visuauth-surface);
+}
+
+.va-btn:focus-visible {
+    outline: 2px solid var(--visuauth-primary);
+    outline-offset: 1px;
+}
+
+.va-btn-primary {
+    background: var(--visuauth-primary);
+    color: var(--visuauth-primary-fg);
+    border-color: var(--visuauth-primary);
+}
+
+.va-btn-primary:hover {
+    filter: brightness(0.95);
+    background: var(--visuauth-primary);
+}
+
+.va-btn-warning {
+    background: #fef3c7;
+    color: #92400e;
+    border-color: #fde68a;
+}
+
+.va-btn-warning:hover {
+    background: #fde68a;
+}
+
+.va-btn-ghost {
+    background: transparent;
+}
+
+.va-btn-small {
+    padding: 0.3rem 0.65rem;
+    font-size: 0.8rem;
+}
+
+.va-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1.25rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--visuauth-border);
+}
+
+.va-actions form {
+    margin: 0;
+}
+
+.va-form-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.9rem;
+    margin-bottom: 1rem;
+}
+
+@media (min-width: 720px) {
+    .va-form-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.va-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.va-field-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--visuauth-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.va-input {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--visuauth-border);
+    border-radius: var(--visuauth-radius);
+    font-size: 0.95rem;
+    font-family: inherit;
+    background: var(--visuauth-bg);
+    color: var(--visuauth-fg);
+}
+
+.va-input:focus {
+    outline: 2px solid var(--visuauth-primary);
+    outline-offset: -1px;
+    border-color: var(--visuauth-primary);
+}
+
+.va-form-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.va-alert {
+    padding: 0.85rem 1rem;
+    border-radius: var(--visuauth-radius);
+    border: 1px solid var(--visuauth-border);
+    background: var(--visuauth-surface);
+    margin-bottom: 1.25rem;
+    font-size: 0.9rem;
+}
+
+.va-alert p {
+    margin: 0 0 0.5rem;
+}
+
+.va-alert p:last-child {
+    margin-bottom: 0;
+}
+
+.va-alert ul {
+    margin: 0.25rem 0 0;
+    padding-left: 1.25rem;
+}
+
+.va-alert-success {
+    background: #ecfdf5;
+    border-color: #bbf7d0;
+    color: #065f46;
+}
+
+.va-alert-danger {
+    background: #fef2f2;
+    border-color: #fecaca;
+    color: #991b1b;
+}
+
+.va-alert-info {
+    background: #eef2ff;
+    border-color: #c7d2fe;
+    color: #3730a3;
+}
+
+.va-temp-password {
+    display: inline-block;
+    margin-top: 0.25rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 1.05rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    background: var(--visuauth-bg);
+    border: 1px solid var(--visuauth-border);
+    border-radius: var(--visuauth-radius);
+    user-select: all;
+}

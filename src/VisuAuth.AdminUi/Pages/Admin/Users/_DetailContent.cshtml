@@ -1,0 +1,158 @@
+@model VisuAuth.AdminUi.Pages.Admin.Users.DetailModel
+@{
+    var detail = Model.Detail;
+    var capabilities = Model.Capabilities;
+}
+
+<div class="va-page-header">
+    <div>
+        <a class="va-back" href="/visuauth/admin/users">‹ Back to users</a>
+        <h1>@detail.Email</h1>
+        <div class="va-muted va-detail-subtitle">
+            @(detail.UserName ?? "—")
+            <span class="va-detail-id">@detail.Id</span>
+        </div>
+    </div>
+    <div class="va-detail-status">
+        @if (detail.IsEnabled)
+        {
+            <span class="va-badge va-success">Active</span>
+        }
+        else
+        {
+            <span class="va-badge va-danger">Locked</span>
+        }
+        @if (detail.EmailConfirmed)
+        {
+            <span class="va-badge va-success">Email verified</span>
+        }
+        else
+        {
+            <span class="va-badge">Email pending</span>
+        }
+        @if (detail.TwoFactorEnabled)
+        {
+            <span class="va-badge va-success">2FA on</span>
+        }
+        else
+        {
+            <span class="va-badge">2FA off</span>
+        }
+    </div>
+</div>
+
+@if (Model.ActionErrors.Count > 0)
+{
+    <div class="va-alert va-alert-danger" role="alert">
+        <strong>Action failed.</strong>
+        <ul>
+            @foreach (var err in Model.ActionErrors)
+            {
+                <li>@err</li>
+            }
+        </ul>
+    </div>
+}
+else if (Model.ActionMessage is { Length: > 0 } message)
+{
+    <div class="va-alert va-alert-success" role="status">@message</div>
+}
+
+@if (Model.LastTemporaryPassword is { Length: > 0 } temp)
+{
+    <div class="va-alert va-alert-info" role="status">
+        <p>
+            <strong>Temporary password.</strong> Hand it to the user — VisuAuth
+            will not show it again. They will be signed out of every device until
+            they use it.
+        </p>
+        <code class="va-temp-password">@temp</code>
+    </div>
+}
+
+<partial name="_ProfileSection" model="Model" />
+<partial name="_SecuritySection" model="Model" />
+
+@if (capabilities.SupportsRoleManagement)
+{
+    <section class="va-card va-detail-card">
+        <h2>Roles <span class="va-muted va-count">(@detail.Roles.Count)</span></h2>
+        @if (detail.Roles.Count == 0)
+        {
+            <p class="va-empty-inline">No roles assigned.</p>
+        }
+        else
+        {
+            <ul class="va-chip-list">
+                @foreach (var role in detail.Roles)
+                {
+                    <li class="va-chip">@role</li>
+                }
+            </ul>
+        }
+    </section>
+}
+
+@if (capabilities.SupportsCustomClaims)
+{
+    <section class="va-card va-detail-card">
+        <h2>Claims <span class="va-muted va-count">(@detail.Claims.Count)</span></h2>
+        @if (detail.Claims.Count == 0)
+        {
+            <p class="va-empty-inline">No custom claims.</p>
+        }
+        else
+        {
+            <table class="va-table">
+                <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Value</th>
+                    <th>Issuer</th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach (var claim in detail.Claims)
+                {
+                    <tr>
+                        <td><code>@claim.Type</code></td>
+                        <td>@claim.Value</td>
+                        <td class="va-muted">@(claim.Issuer ?? "—")</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        }
+    </section>
+}
+
+@if (capabilities.SupportsExternalProviders)
+{
+    <section class="va-card va-detail-card">
+        <h2>External logins <span class="va-muted va-count">(@detail.ExternalLogins.Count)</span></h2>
+        @if (detail.ExternalLogins.Count == 0)
+        {
+            <p class="va-empty-inline">No external providers linked.</p>
+        }
+        else
+        {
+            <table class="va-table">
+                <thead>
+                <tr>
+                    <th>Provider</th>
+                    <th>Provider key</th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach (var login in detail.ExternalLogins)
+                {
+                    <tr>
+                        <td>@(login.DisplayName ?? login.Provider)</td>
+                        <td><code>@login.ProviderKey</code></td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        }
+    </section>
+}

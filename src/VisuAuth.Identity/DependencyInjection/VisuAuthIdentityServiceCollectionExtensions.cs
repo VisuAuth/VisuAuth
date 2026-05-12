@@ -3,7 +3,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
 using VisuAuth.Abstractions.Roles;
+using VisuAuth.Abstractions.Tenancy;
 using VisuAuth.Abstractions.Users;
+using VisuAuth.Identity.MultiTenancy;
 using VisuAuth.Identity.Roles;
 using VisuAuth.Identity.Users;
 
@@ -29,6 +31,9 @@ public static class VisuAuthIdentityServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
 
         services.TryAddSingleton(TimeProvider.System);
+        // Default tenant context — `EnableVisuAuthTenancy` replaces this with
+        // the HTTP-aware implementation when the consumer opts into multi-tenancy.
+        services.TryAddScoped<ITenantContext, NoOpTenantContext>();
         services.AddScoped<IUserStore, AspNetIdentityUserStore<TUser>>();
         services.AddScoped<IRoleStore, AspNetIdentityRoleStore<TUser, TRole>>();
 

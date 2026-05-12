@@ -1,3 +1,5 @@
+@using VisuAuth.Abstractions.Tenancy
+@inject ITenantContext TenantContext
 @{
     var title = ViewData["Title"] as string ?? "VisuAuth Admin";
 }<!doctype html>
@@ -30,6 +32,20 @@
         }
         <aside class="va-sidebar">
             <a class="va-brand" href="/visuauth/admin/users">VisuAuth</a>
+            @if (TenantContext.IsMultiTenancyEnabled)
+            {
+                <div class="va-tenant-indicator" title="Active tenant scope">
+                    <span class="va-field-label">Tenant</span>
+                    @if (TenantContext.CurrentTenantId is { Length: > 0 } tenantId)
+                    {
+                        <code class="va-tenant-id">@tenantId</code>
+                    }
+                    else
+                    {
+                        <span class="va-muted">(global)</span>
+                    }
+                </div>
+            }
             <nav class="va-nav">
                 <a href="/visuauth/admin/users" class="@NavClass("/visuauth/admin/users")">Users</a>
                 <a href="/visuauth/admin/roles" class="@NavClass("/visuauth/admin/roles")">Roles</a>

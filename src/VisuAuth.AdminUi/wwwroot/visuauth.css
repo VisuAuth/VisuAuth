@@ -243,13 +243,29 @@ body {
     align-items: center;
 }
 
-.va-detail-id {
+.va-detail-id,
+.va-tenant-id {
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     font-size: 0.8rem;
     background: var(--visuauth-surface);
     padding: 0.1rem 0.4rem;
     border-radius: var(--visuauth-radius);
     border: 1px solid var(--visuauth-border);
+}
+
+.va-tenant-indicator {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    margin: 0 0 1.25rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--visuauth-bg);
+    border: 1px dashed var(--visuauth-border);
+    border-radius: var(--visuauth-radius);
+}
+
+.va-tenant-indicator .va-field-label {
+    font-size: 0.7rem;
 }
 
 .va-detail-status {

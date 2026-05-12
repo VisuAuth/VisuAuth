@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using VisuAuth.Abstractions.Capabilities;
 using VisuAuth.Abstractions.Common;
 using VisuAuth.Abstractions.Users;
+using VisuAuth.Identity.MultiTenancy;
 
 namespace VisuAuth.Identity.Users;
 
@@ -87,9 +88,10 @@ public sealed class AspNetIdentityUserStore<TUser>(
             LockoutEnabled = user.LockoutEnabled,
             LockoutEnd = user.LockoutEnd,
             AccessFailedCount = user.AccessFailedCount,
-            // TenantId / CreatedAt / LastSignInAt live on custom TUser fields —
-            // adapter specializations can override this mapping later.
-            TenantId = null,
+            // TenantId is projected when the consumer's TUser opts into
+            // multi-tenancy. CreatedAt / LastSignInAt live on custom TUser
+            // fields — specific adapters can override.
+            TenantId = (user as IMultiTenantEntity)?.TenantId,
             CreatedAt = default,
             LastSignInAt = null,
             Roles = roles.OrderBy(r => r, StringComparer.OrdinalIgnoreCase).ToList(),
@@ -449,9 +451,10 @@ public sealed class AspNetIdentityUserStore<TUser>(
             EmailConfirmed = user.EmailConfirmed,
             TwoFactorEnabled = user.TwoFactorEnabled,
             LockoutEnd = user.LockoutEnd,
-            // TenantId / CreatedAt / LastSignInAt depend on the consumer's custom
-            // TUser — specific adapters can override this mapping.
-            TenantId = null,
+            // TenantId is projected when the consumer's TUser opts into
+            // multi-tenancy via IMultiTenantEntity. CreatedAt / LastSignInAt
+            // live on custom TUser fields — specific adapters can override.
+            TenantId = (user as IMultiTenantEntity)?.TenantId,
             CreatedAt = default,
             LastSignInAt = null,
         };

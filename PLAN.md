@@ -11,7 +11,7 @@ Updated as PRs land. Long-term direction lives in `CLAUDE.md` section 13 (Roadma
 - **Latest shipped on NuGet**: `VisuAuth 0.0.1-alpha` (placeholder, name reservation)
 - **Default branch**: `main` at <https://github.com/VisuAuth/visuauth>
 - **Build state**: green (`dotnet build src/VisuAuth.slnx -c Release` → 0 errors, 0 warnings)
-- **Test state**: 24 / 24 passing (on `main`; this branch adds more)
+- **Test state**: 34 / 34 passing (on `main`; this branch adds more)
 
 ---
 
@@ -47,8 +47,10 @@ Updated as PRs land. Long-term direction lives in `CLAUDE.md` section 13 (Roadma
   - Razor Pages library setup verified (pages discovered from the referenced assembly via `AddApplicationPart`)
   - `/visuauth/admin/users` page with htmx-powered live search and pagination
   - `/visuauth/admin/users/{id}` detail page with inline profile edit, lock / unlock, reset password (one-time temporary password), reset 2FA, revoke sessions, delete, role assign / remove
-  - `/visuauth/admin/users/new` create-user form (autogenerates a temporary password when blank)
+  - `/visuauth/admin/users/new` create-user form (autogenerates a temporary password when blank, optional role checkboxes)
+  - `/visuauth/admin/roles` catalogue with member counts, inline create / rename / delete
   - One-time secret display with click-to-copy widget (vanilla JS, no framework, animated confirmation)
+  - Sidebar active state computed from current route; Roles entry promoted from `(soon)` to a real link
   - Default CSS theme with custom property hooks for branding
 - `VisuAuth.EndUserUi`:
   - Stub package wired into DI; concrete pages still to come
@@ -64,36 +66,51 @@ Updated as PRs land. Long-term direction lives in `CLAUDE.md` section 13 (Roadma
 
 ## In flight
 
-### `feat/admin-ui-roles-catalogue`
+### `feat/multitenant-tenantid-column`
 
-Add the role catalogue page and let admins assign roles at the moment
-they create a user.
+Stand up the multi-tenancy primitives so users (and any future tenant-scoped
+entity) are isolated per tenant when the consumer opts in. Single-tenant
+remains the default — without `EnableVisuAuthTenancy()` nothing changes.
 
-- `/visuauth/admin/roles` page listing every role in the backend with
-  member counts and inline create / delete actions
-- `RoleSummary.MemberCount` populated by `AspNetIdentityRoleStore.ListAsync`
-- Role checkboxes on the create-user form (`/visuauth/admin/users/new`);
-  newly created users land in the picked roles via `IRoleStore.AssignRoleAsync`
-- Sidebar "Roles" entry promoted from `(soon)` to a real link
-- Sample app home links the new URL
-- Tests for the catalogue (render, create, delete, validation) and for
-  the create-with-roles flow on the user form
+- `MultiTenantIdentityUser` base class (consumers extend instead of plain
+  `IdentityUser` if they want a `TenantId` column)
+- `MultiTenantIdentityDbContext<TUser>` base class with a global EF Core
+  query filter on `IMultiTenantEntity` that ties results to the current
+  tenant
+- `TenantSaveChangesInterceptor` auto-populates `TenantId` on insert
+- `HttpContextTenantContext` concrete `ITenantContext` reading from
+  `HttpContext.Items` (populated by the resolver middleware)
+- `TenantResolverMiddleware` reading the `X-Tenant-Id` header
+- `EnableVisuAuthTenancy()` DI extension + `UseVisuAuthTenancy()` middleware
+  extension
+- `AspNetIdentityUserStore` projects `TenantId` from `IMultiTenantEntity`
+  into `UserSummary` / `UserDetail`
+- Admin UI: "Tenant" column on the users list (only when multi-tenancy is
+  on), tenant badge in the sidebar
+- Sample app opts in, seeds users across three tenants (`acme`, `globex`,
+  `initech`), and lets the home page link admin views scoped per tenant
+- Tests for cross-tenant isolation, interceptor auto-population, middleware
+  resolution
 
 **Out of scope** (deferred):
 
-- Inline rename of a role — needs an in-place view↔edit toggle; will
-  ship in a small follow-up PR if the owner wants it
-- Optimised member-count query — current implementation is N+1 (one
-  `GetUsersInRoleAsync` per role); fine for v0.1 demo workloads, can be
-  swapped for a single grouped query later
+- Subdomain and JWT-claim tenant resolvers (header is enough until end-user
+  login lands)
+- Per-tenant password policy and lockout config — needs custom
+  `IPasswordValidator<TUser>` plumbing and its own PR
+- `/visuauth/admin/tenants` catalogue page — deferred to
+  `feat/admin-ui-tenants-catalogue`
 
 ---
 
 ## Next up (ordered)
 
-### 1. `feat/multitenant-tenantid-column`
+### 1. `feat/admin-ui-tenants-catalogue`
 
-The full multi-tenancy primitive set:
+`/visuauth/admin/tenants` page listing the tenants the host configured,
+plus a tenant switcher in the sidebar so admins can scope every other
+admin view without crafting headers by hand. Per-tenant settings
+(branding, password policy) land in a follow-up.
 
 - `IMultiTenantEntity` already exists; add the EF Core global query filter helper
 - `SaveChanges` interceptor populating `TenantId` on insert

@@ -5,15 +5,38 @@ using Sample.WebApp.Data;
 
 using VisuAuth;
 using VisuAuth.Abstractions.Users;
+using VisuAuth.Identity.MultiTenancy;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // SQLite database file lives next to the binaries — zero setup for the sample.
 var dbPath = Path.Combine(builder.Environment.ContentRootPath, "visuauth-sample.db");
 
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite($"Data Source={dbPath}"));
+// Drop-in: one call wires the Identity adapter, the admin UI, and the
+// end-user UI (the last one is stub-only until the next PR).
+builder.Services.AddVisuAuth<ApplicationUser>();
 
+// Opt into multi-tenancy. Without this the sample is single-tenant — every
+// other VisuAuth feature works the same.
+builder.Services.EnableVisuAuthTenancy(options =>
+{
+    options.HeaderName = "X-Tenant-Id";
+});
+
+builder.Services.AddDbContext<AppDbContext>((sp, options) =>
+{
+    options.UseSqlite($"Data Source={dbPath}");
+    // Wires the TenantSaveChangesInterceptor so new users get their TenantId
+    // stamped automatically. No-op in single-tenant deployments.
+    options.AddVisuAuthTenancy(sp);
+});
+
+// User unique-email constraint is relaxed here because the sample seeds the
+// same emails across different tenants (alice.silva@... in 'acme' for example
+// would conflict with another 'acme' alice on insert — different tenants is
+// still fine because TenantId is part of the constraint, but Identity itself
+// does not know that yet without a migration). Sample seeder uses unique emails
+// per user so this is safe.
 builder.Services
     .AddIdentity<ApplicationUser, IdentityRole>(options =>
     {
@@ -28,16 +51,13 @@ builder.Services
     .AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders();
 
-// Drop-in: one call wires the Identity adapter, the admin UI, and the
-// end-user UI (the last one is stub-only until the next PR).
-builder.Services.AddVisuAuth<ApplicationUser>();
-
 var app = builder.Build();
 
 await UserSeeder.SeedAsync(app.Services);
 
 app.UseStaticFiles();
 app.UseRouting();
+app.UseVisuAuthTenancy();
 
 // Manual-test launcher: every URL VisuAuth currently exposes is linked here so
 // the owner can click through and verify a PR end to end. Parameterised routes
@@ -90,6 +110,15 @@ app.MapGet("/", async (IUserStore userStore, CancellationToken cancellationToken
             {{detailLine}}
             <li><a href="/visuauth/admin/roles"><code>/visuauth/admin/roles</code></a> &mdash; roles catalogue (member counts, inline create / delete)</li>
           </ul>
+
+          <h2>Multi-tenancy</h2>
+          <p>
+            The sample seeds users across three tenants: <code>acme</code>,
+            <code>globex</code>, <code>initech</code>. To scope an admin view
+            to a single tenant, send the <code>X-Tenant-Id</code> header. A
+            request with no header sees every tenant's users.
+          </p>
+          <pre style="background:#f1f5f9;padding:0.75rem;border-radius:0.5rem;overflow:auto;">curl -H "X-Tenant-Id: acme" http://localhost:5239/visuauth/admin/users</pre>
 
           <h2>End-user UI</h2>
           <ul>

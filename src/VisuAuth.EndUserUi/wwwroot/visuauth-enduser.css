@@ -1,0 +1,75 @@
+/*
+ * VisuAuth end-user pages — layout-only additions on top of the admin
+ * theme (which already defines colours, inputs, buttons, alerts).
+ */
+
+.va-enduser-body {
+    background: var(--visuauth-surface);
+    min-height: 100vh;
+    margin: 0;
+}
+
+.va-enduser-shell {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+}
+
+.va-enduser-card {
+    width: 100%;
+    max-width: 26rem;
+    background: var(--visuauth-bg);
+    border: 1px solid var(--visuauth-border);
+    border-radius: var(--visuauth-radius);
+    padding: 2rem;
+    box-shadow: 0 12px 30px -18px rgba(15, 23, 42, 0.25);
+}
+
+.va-enduser-brand {
+    display: block;
+    margin: 0 0 1.5rem;
+    text-align: center;
+    font-size: 1.4rem;
+}
+
+.va-enduser-heading {
+    margin: 0 0 0.25rem;
+    font-size: 1.5rem;
+}
+
+.va-enduser-subtitle {
+    margin: 0 0 1.5rem;
+    color: var(--visuauth-muted);
+    font-size: 0.95rem;
+}
+
+.va-enduser-form .va-field {
+    margin-bottom: 1rem;
+}
+
+.va-enduser-form .va-checkbox {
+    margin: 0.25rem 0 1.5rem;
+}
+
+.va-enduser-form .va-btn-primary {
+    width: 100%;
+    justify-content: center;
+}
+
+.va-enduser-footer {
+    margin-top: 1.25rem;
+    text-align: center;
+    font-size: 0.9rem;
+    color: var(--visuauth-muted);
+}
+
+.va-enduser-footer a {
+    color: var(--visuauth-primary);
+    text-decoration: none;
+}
+
+.va-enduser-footer a:hover {
+    text-decoration: underline;
+}

@@ -11,7 +11,7 @@ Updated as PRs land. Long-term direction lives in `CLAUDE.md` section 13 (Roadma
 - **Latest shipped on NuGet**: `VisuAuth 0.0.1-alpha` (placeholder, name reservation)
 - **Default branch**: `main` at <https://github.com/VisuAuth/visuauth>
 - **Build state**: green (`dotnet build src/VisuAuth.slnx -c Release` → 0 errors, 0 warnings)
-- **Test state**: 40 / 40 passing (on `main`; this branch adds more)
+- **Test state**: 55 / 55 passing (on `main`; this branch adds more)
 
 ---
 
@@ -33,24 +33,28 @@ Updated as PRs land. Long-term direction lives in `CLAUDE.md` section 13 (Roadma
 ### Public surface
 
 - `VisuAuth.Abstractions`:
-  - `IUserStore`, `IRoleStore`, `IAuthenticationFlow`
+  - `IUserStore`, `IRoleStore`, `ITenantStore`, `IAuthenticationFlow`
   - `UserBackendCapabilities` record (the runtime adaptation switch for non-Identity backends)
-  - `UserSummary`, `UserDetail`, `UserClaim`, `ExternalLogin`, `UserFilter`, `UserSortBy`, `CreateUserCommand`, `UpdateUserCommand`, `UserResult` (with `Metadata`), `PagedResult<T>`, `RoleSummary`
+  - `UserSummary`, `UserDetail`, `UserClaim`, `ExternalLogin`, `UserFilter` (with `Role`, `EmailConfirmed`, `TwoFactorEnabled`), `UserSortBy`, `CreateUserCommand`, `UpdateUserCommand`, `UserResult` (with `Metadata`), `PagedResult<T>`, `RoleSummary`, `TenantSummary`, `TenantOptions`
   - `ITenantContext`
-  - `IMultiTenantEntity` marker
+  - `IMultiTenantEntity` marker (in `VisuAuth.Identity`)
 - `VisuAuth.Identity`:
-  - `AspNetIdentityUserStore<TUser>` with `ListAsync`, `GetAsync`, `GetDetailAsync`, `CreateAsync`, `UpdateAsync`, `DeleteAsync`, `SetEnabledAsync` (lock / unlock), `ResetPasswordAsync` (generates a policy-compliant temporary password), `ResetTwoFactorAsync`, `RevokeSessionsAsync`
+  - `AspNetIdentityUserStore<TUser>` with `ListAsync` (search + role / status / verified / 2FA filters + pagination), `GetAsync`, `GetDetailAsync`, `CreateAsync`, `UpdateAsync`, `DeleteAsync`, `SetEnabledAsync` (lock / unlock), `ResetPasswordAsync` (generates a policy-compliant temporary password), `ResetTwoFactorAsync`, `RevokeSessionsAsync`
   - `AspNetIdentityRoleStore<TUser, TRole>` with the full `IRoleStore` surface (list / get / create / rename / delete / getRolesForUser / assign / remove)
+  - `AspNetIdentityTenantStore<TUser>` with the full `ITenantStore` surface (list / get / create / rename / delete); member counts via `IgnoreQueryFilters()` so the catalogue sees every tenant regardless of scope
+  - `MultiTenantIdentityUser` base, `MultiTenantIdentityDbContext<TUser>` base with global query filter, `TenantSaveChangesInterceptor`, header + cookie tenant resolver middleware
   - `TemporaryPasswordGenerator` (CSPRNG, policy-compliant, avoids visually ambiguous characters)
-  - DI extensions `AddVisuAuthIdentityAdapter<TUser>()` and `AddVisuAuthIdentityAdapter<TUser, TRole>()`
+  - DI extensions `AddVisuAuthIdentityAdapter<TUser>()`, `AddVisuAuthIdentityAdapter<TUser, TRole>()`, `EnableVisuAuthTenancy(opts)`, `EnableVisuAuthTenancy<TDbContext, TUser>(opts)`
 - `VisuAuth.AdminUi`:
   - Razor Pages library setup verified (pages discovered from the referenced assembly via `AddApplicationPart`)
-  - `/visuauth/admin/users` page with htmx-powered live search and pagination
+  - `/visuauth/admin/users` page with htmx-powered live search, pagination, and role / status / verified / 2FA filters
   - `/visuauth/admin/users/{id}` detail page with inline profile edit, lock / unlock, reset password (one-time temporary password), reset 2FA, revoke sessions, delete, role assign / remove
   - `/visuauth/admin/users/new` create-user form (autogenerates a temporary password when blank, optional role checkboxes)
   - `/visuauth/admin/roles` catalogue with member counts, inline create / rename / delete
+  - `/visuauth/admin/tenants` catalogue with member counts, inline create / rename / delete
+  - Sidebar tenant switcher (cookie-backed) that scopes every admin view when multi-tenancy is on
   - One-time secret display with click-to-copy widget (vanilla JS, no framework, animated confirmation)
-  - Sidebar active state computed from current route; Roles entry promoted from `(soon)` to a real link
+  - Sidebar active state computed from current route; every nav entry now a real link when its backing capability is on
   - Default CSS theme with custom property hooks for branding
 - `VisuAuth.EndUserUi`:
   - Stub package wired into DI; concrete pages still to come
@@ -60,88 +64,66 @@ Updated as PRs land. Long-term direction lives in `CLAUDE.md` section 13 (Roadma
   - ASP.NET Core Identity + EF Core SQLite + 12 seeded users
   - Drop-in usage proven (`AddVisuAuth<ApplicationUser>` + `MapVisuAuth`)
 - Tests:
-  - `tests/VisuAuth.AdminUi.Tests` with `WebApplicationFactory` smoke tests covering list rendering, search, htmx partials, user detail rendering, 404, row → detail link, and every mutation action (lock / unlock / reset password / reset 2FA / revoke sessions / profile update + validation failure)
+  - `tests/VisuAuth.AdminUi.Tests` with `WebApplicationFactory` smoke tests covering list rendering, search, htmx partials, user detail rendering, 404, row → detail link, every mutation action, create / delete, role assign / remove, role catalogue, tenants catalogue, multi-tenancy isolation, filter combinations, and the sidebar tenant switcher (cookie round-trip + open-redirect guard)
 
 ---
 
 ## In flight
 
-### `feat/multitenant-tenantid-column`
+### `feat/end-user-login-page`
 
-Stand up the multi-tenancy primitives so users (and any future tenant-scoped
-entity) are isolated per tenant when the consumer opts in. Single-tenant
-remains the default — without `EnableVisuAuthTenancy()` nothing changes.
+First end-user UI page: a public `/visuauth/login` form. Authenticates via
+ASP.NET Identity's `SignInManager`, surfaces invalid-credentials / lockout
+errors inline, and respects a sanitised `returnUrl`. End-user pages get a
+dedicated clean layout (no admin sidebar).
 
-- `MultiTenantIdentityUser` base class (consumers extend instead of plain
-  `IdentityUser` if they want a `TenantId` column)
-- `MultiTenantIdentityDbContext<TUser>` base class with a global EF Core
-  query filter on `IMultiTenantEntity` that ties results to the current
-  tenant
-- `TenantSaveChangesInterceptor` auto-populates `TenantId` on insert
-- `HttpContextTenantContext` concrete `ITenantContext` reading from
-  `HttpContext.Items` (populated by the resolver middleware)
-- `TenantResolverMiddleware` reading the `X-Tenant-Id` header
-- `EnableVisuAuthTenancy()` DI extension + `UseVisuAuthTenancy()` middleware
-  extension
-- `AspNetIdentityUserStore` projects `TenantId` from `IMultiTenantEntity`
-  into `UserSummary` / `UserDetail`
-- Admin UI: "Tenant" column on the users list (only when multi-tenancy is
-  on), tenant badge in the sidebar
-- Sample app opts in, seeds users across three tenants (`acme`, `globex`,
-  `initech`), and lets the home page link admin views scoped per tenant
-- Tests for cross-tenant isolation, interceptor auto-population, middleware
-  resolution
+- Promote `VisuAuth.EndUserUi` from stub to a real Razor Pages library
+  (mirroring `VisuAuth.AdminUi` setup with `AddApplicationPart`)
+- `/visuauth/login` page with email + password + remember-me + return-url
+- Capability-aware: only renders when `UserBackendCapabilities.SupportsLocalLogin`;
+  otherwise shows a "this backend does not support local sign-in" message
+  (paves the way for the Entra adapter)
+- `/visuauth/logout` POST endpoint
+- End-user layout `Pages/Shared/_Layout.cshtml` — centered card, brand,
+  no nav
+- Sample app wires `app.UseAuthentication()` / `UseAuthorization()` and
+  links to the new URLs from the home page
+- Tests for: successful sign-in (cookie set, redirect to return-url),
+  wrong password (error rendered, no cookie), open-redirect guard,
+  unsupported-backend message
 
 **Out of scope** (deferred):
 
-- Subdomain and JWT-claim tenant resolvers (header is enough until end-user
-  login lands)
-- Per-tenant password policy and lockout config — needs custom
-  `IPasswordValidator<TUser>` plumbing and its own PR
-- `/visuauth/admin/tenants` catalogue page — deferred to
-  `feat/admin-ui-tenants-catalogue`
+- Registration, forgot-password, reset-password, confirm-email — land
+  together in `feat/end-user-register-and-reset`
+- Two-factor challenge page — needs TOTP plumbing, ships with the
+  external providers / 2FA PR
+- External login buttons (Google, Microsoft, Apple)
 
 ---
 
 ## Next up (ordered)
 
-### 1. `feat/admin-ui-tenants-catalogue`
+### 1. `feat/end-user-register-and-reset`
 
-`/visuauth/admin/tenants` page listing the tenants the host configured,
-plus a tenant switcher in the sidebar so admins can scope every other
-admin view without crafting headers by hand. Per-tenant settings
-(branding, password policy) land in a follow-up.
+### 2. `feat/end-user-register-and-reset`
 
-- `IMultiTenantEntity` already exists; add the EF Core global query filter helper
-- `SaveChanges` interceptor populating `TenantId` on insert
-- `ITenantContext` implementation
-- Tenant resolver middleware (subdomain, header, claim — configurable)
-- `EnableMultiTenant()` DI extension that flips the switch
-- Update `AspNetIdentityUserStore<TUser>` to respect the current tenant
-- Per-tenant password policy and lockout config
-- Tests with multiple tenants and verified isolation
+Registration, forgot password, reset password, confirm email. Each is its
+own page; they share the end-user layout introduced with the login PR.
 
-### 2. `feat/end-user-login-page`
-
-The first end-user UI page: `/visuauth/login` with email + password form, error feedback via htmx, redirect on success. Uses ASP.NET Identity's `SignInManager`.
-
-### 3. `feat/end-user-register-and-reset`
-
-Registration, forgot password, reset password, confirm email, logout. Each is its own page; they share a layout.
-
-### 4. `feat/mobile-rest-api-and-jwt`
+### 3. `feat/mobile-rest-api-and-jwt`
 
 `POST /visuauth/api/auth/login`, `POST /visuauth/api/auth/register`, `POST /visuauth/api/auth/refresh`, JWT issuance with HS256. WebView callback flow added on top.
 
-### 5. `feat/theming-programmatic-config`
+### 4. `feat/theming-programmatic-config`
 
 `services.AddVisuAuth().Configure<VisuAuthTheme>(...)` generates CSS variables at runtime, overriding the defaults from `wwwroot/visuauth.css`. View override (layer 3) and per-tenant theme (layer 4) deferred to v0.2.
 
-### 6. `feat/i18n-pt-br-and-en`
+### 5. `feat/i18n-pt-br-and-en`
 
 `IStringLocalizer` wired up. All hardcoded English strings in views moved to resource files. pt-BR translation added.
 
-### 7. `feat/embedded-htmx-asset`
+### 6. `feat/embedded-htmx-asset`
 
 Replace the htmx CDN reference with an embedded static asset at `wwwroot/htmx.min.js`. Required for offline / air-gapped deployments.
 

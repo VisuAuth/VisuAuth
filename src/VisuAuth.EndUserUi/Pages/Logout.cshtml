@@ -1,0 +1,18 @@
+@page "/visuauth/logout"
+@model VisuAuth.EndUserUi.Pages.LogoutModel
+@{
+    ViewData["Title"] = "Sign out — VisuAuth";
+}
+
+<h1 class="va-enduser-heading">Sign out</h1>
+<p class="va-enduser-subtitle">Click the button below to end your session on this device.</p>
+
+<form method="post" asp-page="/Logout" class="va-enduser-form">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
+    <button type="submit" class="va-btn va-btn-primary">Sign out</button>
+</form>
+
+<div class="va-enduser-footer">
+    <a href="/">Back to the app</a>
+</div>

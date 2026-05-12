@@ -17,25 +17,37 @@ namespace VisuAuth;
 public static class VisuAuthBuilderExtensions
 {
     /// <summary>
-    /// Registers the full VisuAuth stack backed by the supplied Identity user type.
+    /// Registers the full VisuAuth stack backed by the supplied Identity user
+    /// and role types.
     /// </summary>
     /// <typeparam name="TUser">The Identity user type used by the consumer (e.g. <c>ApplicationUser</c>).</typeparam>
-    public static IServiceCollection AddVisuAuth<TUser>(this IServiceCollection services)
+    /// <typeparam name="TRole">The Identity role type used by the consumer (defaults to <see cref="IdentityRole"/>).</typeparam>
+    public static IServiceCollection AddVisuAuth<TUser, TRole>(this IServiceCollection services)
         where TUser : IdentityUser
+        where TRole : IdentityRole, new()
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        services.AddVisuAuthIdentityAdapter<TUser>();
+        services.AddVisuAuthIdentityAdapter<TUser, TRole>();
         services.AddVisuAuthAdminUi();
         services.AddVisuAuthEndUserUi();
         return services;
     }
 
     /// <summary>
-    /// Registers the full VisuAuth stack using the default <see cref="IdentityUser"/>.
+    /// Registers the full VisuAuth stack backed by the supplied Identity user
+    /// type and the default <see cref="IdentityRole"/>.
+    /// </summary>
+    public static IServiceCollection AddVisuAuth<TUser>(this IServiceCollection services)
+        where TUser : IdentityUser
+        => services.AddVisuAuth<TUser, IdentityRole>();
+
+    /// <summary>
+    /// Registers the full VisuAuth stack using the default <see cref="IdentityUser"/>
+    /// and <see cref="IdentityRole"/>.
     /// </summary>
     public static IServiceCollection AddVisuAuth(this IServiceCollection services)
-        => services.AddVisuAuth<IdentityUser>();
+        => services.AddVisuAuth<IdentityUser, IdentityRole>();
 
     /// <summary>
     /// Maps both the admin dashboard (default prefix <c>/visuauth/admin</c>)

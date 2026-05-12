@@ -1,0 +1,76 @@
+@model VisuAuth.AdminUi.Pages.Admin.Users.DetailModel
+@{
+    var detail = Model.Detail;
+    var detailUrl = $"/visuauth/admin/users/{detail.Id}";
+    var assignedRoles = new HashSet<string>(detail.Roles, StringComparer.OrdinalIgnoreCase);
+    var unassigned = Model.AvailableRoles
+        .Where(r => !assignedRoles.Contains(r.Name))
+        .ToList();
+}
+
+<section class="va-card va-detail-card" id="va-user-roles">
+    <div class="va-detail-card-header">
+        <h2>Roles <span class="va-muted va-count">(@detail.Roles.Count)</span></h2>
+    </div>
+
+    @if (detail.Roles.Count == 0)
+    {
+        <p class="va-empty-inline">No roles assigned.</p>
+    }
+    else
+    {
+        <ul class="va-chip-list">
+            @foreach (var role in detail.Roles)
+            {
+                <li class="va-chip va-chip-removable">
+                    <span>@role</span>
+                    <form method="post"
+                          hx-post="@(detailUrl)?handler=RemoveRole"
+                          hx-target="#va-user-detail-content"
+                          hx-swap="innerHTML"
+                          hx-confirm="Remove role '@role' from this user?">
+                        <input type="hidden" name="roleName" value="@role" />
+                        <button type="submit"
+                                class="va-chip-remove"
+                                aria-label="Remove role @role"
+                                title="Remove role">×</button>
+                    </form>
+                </li>
+            }
+        </ul>
+    }
+
+    @if (unassigned.Count > 0)
+    {
+        <form method="post"
+              hx-post="@(detailUrl)?handler=AssignRole"
+              hx-target="#va-user-detail-content"
+              hx-swap="innerHTML"
+              class="va-inline-form">
+            <label class="va-field va-inline-field">
+                <span class="va-field-label">Assign role</span>
+                <select name="roleName" required class="va-input">
+                    @foreach (var role in unassigned)
+                    {
+                        <option value="@role.Name">@role.Name</option>
+                    }
+                </select>
+            </label>
+            <button type="submit" class="va-btn va-btn-primary">Add</button>
+        </form>
+    }
+    else if (Model.AvailableRoles.Count == 0)
+    {
+        <p class="va-muted va-empty-inline">
+            No roles exist in the backend yet. Roles can be created via the
+            roles catalogue (coming in a follow-up PR) or seeded directly with
+            <code>RoleManager</code>.
+        </p>
+    }
+    else
+    {
+        <p class="va-muted va-empty-inline">
+            This user already has every available role.
+        </p>
+    }
+</section>

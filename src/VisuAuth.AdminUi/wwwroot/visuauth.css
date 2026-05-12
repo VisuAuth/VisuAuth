@@ -316,12 +316,57 @@ body {
 }
 
 .va-chip {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
     padding: 0.25rem 0.6rem;
     background: var(--visuauth-surface);
     border: 1px solid var(--visuauth-border);
     border-radius: 9999px;
     font-size: 0.85rem;
+}
+
+.va-chip-removable {
+    padding-right: 0.25rem;
+}
+
+.va-chip-removable form {
+    margin: 0;
+    display: inline-flex;
+}
+
+.va-chip-remove {
+    appearance: none;
+    border: none;
+    background: transparent;
+    color: var(--visuauth-muted);
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    padding: 0 0.4rem;
+    border-radius: 9999px;
+    transition: background 120ms ease, color 120ms ease;
+}
+
+.va-chip-remove:hover,
+.va-chip-remove:focus-visible {
+    background: var(--visuauth-danger);
+    color: #ffffff;
+    outline: none;
+}
+
+.va-inline-form {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    flex-wrap: wrap;
+}
+
+.va-inline-form .va-inline-field {
+    flex: 1 1 14rem;
+    min-width: 12rem;
+    margin: 0;
 }
 
 .va-empty-inline {

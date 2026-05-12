@@ -26,10 +26,20 @@ public interface IUserStore
 
     Task<PagedResult<UserSummary>> ListAsync(UserFilter filter, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Creates a new user. When <see cref="CreateUserCommand.Password"/> is left
+    /// blank, the adapter generates a policy-compliant temporary password and
+    /// returns it under <see cref="UserResult.Metadata"/> key <c>"temporaryPassword"</c>.
+    /// </summary>
     Task<UserResult> CreateAsync(CreateUserCommand command, CancellationToken cancellationToken = default);
 
     Task<UserResult> UpdateAsync(string id, UpdateUserCommand command, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Deletes the user permanently. Implementations are free to soft-delete,
+    /// but the ASP.NET Identity adapter performs a hard delete via
+    /// <c>UserManager.DeleteAsync</c>.
+    /// </summary>
     Task<UserResult> DeleteAsync(string id, CancellationToken cancellationToken = default);
 
     /// <summary>

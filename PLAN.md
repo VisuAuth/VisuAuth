@@ -11,7 +11,7 @@ Updated as PRs land. Long-term direction lives in `CLAUDE.md` section 13 (Roadma
 - **Latest shipped on NuGet**: `VisuAuth 0.0.1-alpha` (placeholder, name reservation)
 - **Default branch**: `main` at <https://github.com/VisuAuth/visuauth>
 - **Build state**: green (`dotnet build src/VisuAuth.slnx -c Release` → 0 errors, 0 warnings)
-- **Test state**: 6 / 6 passing (on `main`; this branch adds more)
+- **Test state**: 13 / 13 passing (on `main`; this branch adds more)
 
 ---
 
@@ -35,16 +35,17 @@ Updated as PRs land. Long-term direction lives in `CLAUDE.md` section 13 (Roadma
 - `VisuAuth.Abstractions`:
   - `IUserStore`, `IRoleStore`, `IAuthenticationFlow`
   - `UserBackendCapabilities` record (the runtime adaptation switch for non-Identity backends)
-  - `UserSummary`, `UserDetail`, `UserClaim`, `ExternalLogin`, `UserFilter`, `UserSortBy`, `CreateUserCommand`, `UpdateUserCommand`, `UserResult`, `PagedResult<T>`, `RoleSummary`
+  - `UserSummary`, `UserDetail`, `UserClaim`, `ExternalLogin`, `UserFilter`, `UserSortBy`, `CreateUserCommand`, `UpdateUserCommand`, `UserResult` (with `Metadata`), `PagedResult<T>`, `RoleSummary`
   - `ITenantContext`
   - `IMultiTenantEntity` marker
 - `VisuAuth.Identity`:
-  - `AspNetIdentityUserStore<TUser>` with `ListAsync` (paged + filtered), `GetAsync`, and `GetDetailAsync` (claims, roles, external logins) working end to end
+  - `AspNetIdentityUserStore<TUser>` with `ListAsync`, `GetAsync`, `GetDetailAsync`, `UpdateAsync`, `SetEnabledAsync` (lock / unlock), `ResetPasswordAsync` (generates a policy-compliant temporary password), `ResetTwoFactorAsync`, `RevokeSessionsAsync`
+  - `TemporaryPasswordGenerator` (CSPRNG, policy-compliant, avoids visually ambiguous characters)
   - DI extension `AddVisuAuthIdentityAdapter<TUser>()`
 - `VisuAuth.AdminUi`:
   - Razor Pages library setup verified (pages discovered from the referenced assembly via `AddApplicationPart`)
   - `/visuauth/admin/users` page with htmx-powered live search and pagination
-  - `/visuauth/admin/users/{id}` read-only detail page (profile, security, roles, claims, external logins)
+  - `/visuauth/admin/users/{id}` detail page with inline profile edit, lock / unlock, reset password (one-time temporary password), reset 2FA, revoke sessions
   - Default CSS theme with custom property hooks for branding
 - `VisuAuth.EndUserUi`:
   - Stub package wired into DI; concrete pages still to come
@@ -54,38 +55,48 @@ Updated as PRs land. Long-term direction lives in `CLAUDE.md` section 13 (Roadma
   - ASP.NET Core Identity + EF Core SQLite + 12 seeded users
   - Drop-in usage proven (`AddVisuAuth<ApplicationUser>` + `MapVisuAuth`)
 - Tests:
-  - `tests/VisuAuth.AdminUi.Tests` with `WebApplicationFactory` smoke tests covering full-page render, search filtering, and htmx partial response
+  - `tests/VisuAuth.AdminUi.Tests` with `WebApplicationFactory` smoke tests covering list rendering, search, htmx partials, user detail rendering, 404, row → detail link, and every mutation action (lock / unlock / reset password / reset 2FA / revoke sessions / profile update + validation failure)
 
 ---
 
 ## In flight
 
-### `feat/admin-ui-user-mutations`
+### `feat/admin-ui-create-edit-user`
 
-Wire the admin mutation actions into the user detail page so operators can
-unblock real users from the UI: change email / username / phone, lock /
-unlock, reset password (temporary password handed back to the admin), reset
-2FA, and revoke active sessions. Each action POSTs to a dedicated handler
-and refreshes the page via htmx.
+Round out the user lifecycle in the admin UI: a dedicated **Create user**
+form at `/visuauth/admin/users/new` and a **Delete** action on the existing
+detail page. Inline profile editing already shipped in the previous PR;
+this PR fills the create / delete sides of the CRUD.
 
-- `AspNetIdentityUserStore<TUser>` implementations for `UpdateAsync`,
-  `SetEnabledAsync`, `ResetPasswordAsync`, `ResetTwoFactorAsync`,
-  `RevokeSessionsAsync` (currently `NotImplementedException`)
-- `UserResult.Metadata` added so password reset can return the generated
-  temporary password
-- `Detail.cshtml` split into `_DetailContent`, `_ProfileSection`,
-  `_SecuritySection` partials with htmx-swappable targets
-- Profile section toggles between view and edit modes
-- `hx-confirm` on destructive actions
-- Tests covering happy path for each action plus a validation failure case
+- `AspNetIdentityUserStore<TUser>` implementations for `CreateAsync` and
+  `DeleteAsync` (currently `NotImplementedException`)
+- `/visuauth/admin/users/new` page with email + username + password
+  (optional, autogenerates a temporary one when blank) + phone +
+  EmailConfirmed flag
+- "New user" button on the users list page
+- "Delete user" action on the detail page with `hx-confirm`
+- Sample app home page lists the new URL
+- Tests for happy path create, validation failure on duplicate email,
+  redirect to detail after create, and delete
+
+**Out of scope** (deferred to follow-up PRs):
+
+- Role assignment in the create form / on the detail page — needs an
+  `IRoleStore` adapter implementation, which lands in
+  `feat/admin-ui-role-management`
+- Tenant selector — multi-tenancy primitives ship in
+  `feat/multitenant-tenantid-column`; the form will gain the selector
+  there
 
 ---
 
 ## Next up (ordered)
 
-### 1. `feat/admin-ui-create-edit-user`
+### 1. `feat/admin-ui-role-management`
 
-Forms for creating and editing users. Tenant-aware (when multi-tenancy is enabled, an inactive tenant selector appears for super-admins).
+Implement `AspNetIdentityRoleStore<TUser, TRole>` and surface role
+assignment / removal on the user detail page and the create form. Adds
+a `/visuauth/admin/roles` page for managing the role catalogue.
 
 ### 2. `feat/multitenant-tenantid-column`
 

@@ -159,8 +159,55 @@ public sealed class AspNetIdentityUserStore<TUser>(
     }
 
     /// <inheritdoc />
-    public Task<UserResult> CreateAsync(CreateUserCommand command, CancellationToken cancellationToken = default)
-        => throw new NotImplementedException("CreateAsync ships in a follow-up PR.");
+    public async Task<UserResult> CreateAsync(CreateUserCommand command, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+
+        if (string.IsNullOrWhiteSpace(command.Email))
+        {
+            return UserResult.Failure("Email is required.");
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        // Activate a fresh TUser via its parameterless constructor — every
+        // IdentityUser subclass exposes one, and using `new TUser()` would
+        // require a generic constraint we have not declared.
+        var user = Activator.CreateInstance<TUser>();
+        user.Email = command.Email.Trim();
+        user.UserName = string.IsNullOrWhiteSpace(command.UserName)
+            ? command.Email.Trim()
+            : command.UserName.Trim();
+        user.PhoneNumber = string.IsNullOrWhiteSpace(command.PhoneNumber)
+            ? null
+            : command.PhoneNumber.Trim();
+        user.EmailConfirmed = command.EmailConfirmed;
+
+        // When no password is provided we generate a policy-compliant temporary
+        // one and surface it back to the admin via Metadata, mirroring the
+        // ResetPasswordAsync flow.
+        var providedPassword = string.IsNullOrEmpty(command.Password) ? null : command.Password;
+        var temporary = providedPassword is null
+            ? TemporaryPasswordGenerator.Generate(_userManager.Options.Password)
+            : null;
+        var passwordToUse = providedPassword ?? temporary!;
+
+        var result = await _userManager.CreateAsync(user, passwordToUse);
+        if (!result.Succeeded)
+        {
+            return ToFailure(result, "Failed to create user.");
+        }
+
+        if (temporary is not null)
+        {
+            return UserResult.Success(user.Id, new Dictionary<string, string>
+            {
+                ["temporaryPassword"] = temporary,
+            });
+        }
+
+        return UserResult.Success(user.Id);
+    }
 
     /// <inheritdoc />
     public async Task<UserResult> UpdateAsync(string id, UpdateUserCommand command, CancellationToken cancellationToken = default)
@@ -202,8 +249,23 @@ public sealed class AspNetIdentityUserStore<TUser>(
     }
 
     /// <inheritdoc />
-    public Task<UserResult> DeleteAsync(string id, CancellationToken cancellationToken = default)
-        => throw new NotImplementedException("DeleteAsync ships in a follow-up PR.");
+    public async Task<UserResult> DeleteAsync(string id, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(id);
+
+        var user = await _userManager.FindByIdAsync(id);
+        if (user is null)
+        {
+            return UserResult.Failure($"User '{id}' was not found.");
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var result = await _userManager.DeleteAsync(user);
+        return result.Succeeded
+            ? UserResult.Success(user.Id)
+            : ToFailure(result, "Failed to delete user.");
+    }
 
     /// <inheritdoc />
     public async Task<UserResult> SetEnabledAsync(string id, bool enabled, CancellationToken cancellationToken = default)

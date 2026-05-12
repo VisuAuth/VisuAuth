@@ -66,7 +66,7 @@ else if (Model.ActionMessage is { Length: > 0 } message)
             will not show it again. They will be signed out of every device until
             they use it.
         </p>
-        <code class="va-temp-password">@temp</code>
+        <partial name="_CopyableSecret" model="@temp" />
     </div>
 }
 
@@ -156,3 +156,28 @@ else if (Model.ActionMessage is { Length: > 0 } message)
         }
     </section>
 }
+
+<section class="va-card va-detail-card va-danger-zone">
+    <div class="va-detail-card-header">
+        <h2>Danger zone</h2>
+    </div>
+    <p class="va-muted">
+        Deleting a user removes them and all their claims, roles, and external
+        login links. This cannot be undone.
+    </p>
+    <div class="va-actions">
+        @* asp-page-handler="Delete" lets the form tag helper generate the
+           action URL with the current id route value and ensures the
+           antiforgery token is injected. The explicit @Html.AntiForgeryToken()
+           is belt-and-suspenders for environments where the tag helper does
+           not auto-engage (rare, but cheap insurance). *@
+        <form method="post" asp-page-handler="Delete">
+            @Html.AntiForgeryToken()
+            <button type="submit"
+                    class="va-btn va-btn-danger"
+                    onclick="return confirm('Permanently delete this user? This cannot be undone.');">
+                Delete user
+            </button>
+        </form>
+    </div>
+</section>

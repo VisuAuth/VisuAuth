@@ -1,0 +1,111 @@
+@page "/visuauth/admin/users/new"
+@model VisuAuth.AdminUi.Pages.Admin.Users.NewModel
+@{
+    ViewData["Title"] = "New user — VisuAuth Admin";
+}
+
+<div class="va-page-header">
+    <div>
+        <a class="va-back" href="/visuauth/admin/users">‹ Back to users</a>
+        <h1>New user</h1>
+        <div class="va-muted va-detail-subtitle">
+            Provision a fresh account in this backend.
+        </div>
+    </div>
+</div>
+
+@if (Model.Errors.Count > 0)
+{
+    <div class="va-alert va-alert-danger" role="alert">
+        <strong>Could not create the user.</strong>
+        <ul>
+            @foreach (var err in Model.Errors)
+            {
+                <li>@err</li>
+            }
+        </ul>
+    </div>
+}
+
+@if (Model.CreatedUserId is { Length: > 0 } createdId)
+{
+    <div class="va-alert va-alert-success" role="status">
+        <p>
+            User created.
+            <a href="/visuauth/admin/users/@createdId">Open detail page ›</a>
+        </p>
+    </div>
+
+    if (Model.GeneratedPassword is { Length: > 0 } temp)
+    {
+        <div class="va-alert va-alert-info" role="status">
+            <p>
+                <strong>Temporary password.</strong> Hand it to the user — VisuAuth
+                will not show it again.
+            </p>
+            <partial name="_CopyableSecret" model="@temp" />
+        </div>
+    }
+}
+
+<section class="va-card va-detail-card">
+    <div class="va-detail-card-header">
+        <h2>Profile</h2>
+    </div>
+
+    <form method="post" autocomplete="off">
+        <div class="va-form-grid">
+            <label class="va-field">
+                <span class="va-field-label">Email <span class="va-required">*</span></span>
+                <input type="email"
+                       name="Form.Email"
+                       value="@Model.Form.Email"
+                       required
+                       class="va-input" />
+            </label>
+
+            <label class="va-field">
+                <span class="va-field-label">Username</span>
+                <input type="text"
+                       name="Form.UserName"
+                       value="@Model.Form.UserName"
+                       placeholder="Defaults to the email when blank"
+                       class="va-input" />
+            </label>
+
+            <label class="va-field">
+                <span class="va-field-label">Password</span>
+                <input type="text"
+                       name="Form.Password"
+                       value=""
+                       placeholder="Leave blank to autogenerate a temporary one"
+                       class="va-input"
+                       autocomplete="new-password" />
+            </label>
+
+            <label class="va-field">
+                <span class="va-field-label">Phone</span>
+                <input type="tel"
+                       name="Form.PhoneNumber"
+                       value="@Model.Form.PhoneNumber"
+                       class="va-input" />
+            </label>
+        </div>
+
+        <label class="va-checkbox">
+            @{
+                var emailConfirmedChecked = Model.Form.EmailConfirmed ? "checked" : null;
+            }
+            <input type="checkbox"
+                   name="Form.EmailConfirmed"
+                   value="true"
+                   checked="@emailConfirmedChecked" />
+            <span>Email already verified (skip the confirmation flow)</span>
+        </label>
+
+        <div class="va-form-actions">
+            <button type="submit" class="va-btn va-btn-primary">Create user</button>
+            <a class="va-btn va-btn-ghost" href="/visuauth/admin/users">Cancel</a>
+        </div>
+    </form>
+</section>

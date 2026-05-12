@@ -6,7 +6,10 @@
 
 <div class="va-page-header">
     <h1>Users <span class="va-muted" style="font-weight:400;font-size:1rem;">(@Model.Result.Total)</span></h1>
-    <span class="va-muted htmx-indicator" id="va-search-indicator">searching…</span>
+    <div class="va-detail-status">
+        <span class="va-muted htmx-indicator" id="va-search-indicator">searching…</span>
+        <a class="va-btn va-btn-primary va-btn-small" href="/visuauth/admin/users/new">New user</a>
+    </div>
 </div>
 
 <input type="search"

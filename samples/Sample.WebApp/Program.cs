@@ -34,6 +34,20 @@ builder.Services.AddVisuAuthJwt<ApplicationUser>(options =>
     options.LifetimeMinutes = 60;
 });
 
+// WebView callback flow: a native app opens an in-app browser at
+// /visuauth/login?returnUrl=visuauth-sample://auth/callback and receives
+// the JWT in the URL fragment after a successful sign-in.
+//
+// `ShowPreviewPage = true` keeps the desktop developer in the loop —
+// instead of a silent redirect to a scheme the OS does not register, the
+// page renders a confirmation panel with the callback URL and a Continue
+// button. Production deployments should leave this false.
+builder.Services.Configure<VisuAuth.Abstractions.Authentication.WebViewCallbackOptions>(options =>
+{
+    options.AllowedSchemes.Add("visuauth-sample");
+    options.ShowPreviewPage = true;
+});
+
 // Opt into multi-tenancy. Without this the sample is single-tenant — every
 // other VisuAuth feature works the same. The generic overload also wires the
 // tenant catalogue store at /visuauth/admin/tenants.

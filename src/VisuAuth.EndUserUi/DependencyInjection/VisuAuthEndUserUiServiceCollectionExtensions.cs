@@ -31,9 +31,10 @@ public static class VisuAuthEndUserUiServiceCollectionExtensions
             .AddRazorPages()
             .AddApplicationPart(AssemblyMarker.Assembly);
 
-        // Default options instance so consumers that never call Configure
-        // still resolve a non-null `IOptions<EndUserUiOptions>`.
+        // Default options instances so consumers that never call Configure
+        // still resolve non-null `IOptions<...>` for the LoginModel chain.
         services.AddOptions<EndUserUiOptions>();
+        services.AddOptions<WebViewCallbackOptions>();
 
         return services;
     }

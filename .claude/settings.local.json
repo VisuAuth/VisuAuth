@@ -24,7 +24,16 @@
       "Bash(python /c/Users/Dev/AppData/Local/Temp/strip_using_blanks.py /c/repos/thiagoluga/VisuAuth)",
       "Bash(\"/c/Program Files/dotnet/dotnet.exe\" test /c/repos/thiagoluga/VisuAuth/tests/VisuAuth.UnitTests/VisuAuth.UnitTests.csproj --configuration Release --no-build --verbosity minimal)",
       "Bash(\"/c/Program Files/dotnet/dotnet.exe\" test /c/repos/thiagoluga/VisuAuth/tests/VisuAuth.IntegrationTests/VisuAuth.IntegrationTests.csproj --configuration Release --no-build --verbosity minimal)",
-      "Bash(git fetch *)"
+      "Bash(git fetch *)",
+      "mcp__Claude_in_Chrome__list_connected_browsers",
+      "mcp__Claude_in_Chrome__select_browser",
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "mcp__Claude_in_Chrome__navigate",
+      "mcp__Claude_in_Chrome__browser_batch",
+      "mcp__Claude_in_Chrome__switch_browser",
+      "mcp__Claude_in_Chrome__tabs_create_mcp",
+      "Bash(netstat -ano)",
+      "Bash(findstr :5239)"
     ]
   }
 }

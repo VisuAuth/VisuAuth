@@ -1,13 +1,29 @@
 name: Release
 
+#
+# Two release channels:
+#
+#   1. Pre-release on every push to `main`
+#        - Version: <VersionPrefix>-alpha.<github.run_number>
+#        - Audience: developers tracking the bleeding edge (must opt into
+#          pre-release on NuGet)
+#
+#   2. Stable on a `vX.Y.Z` tag push
+#        - Version: X.Y.Z (no suffix)
+#        - Audience: default `dotnet add package VisuAuth`
+#
+# Both flows pack from the same solution and push to nuget.org using the
+# `NUGET_API_KEY` repository secret. `--skip-duplicate` makes the job
+# idempotent in case of replays / manual re-runs.
+#
 on:
   push:
-    tags:
-      - 'v*'
+    branches: [main]
+    tags: ['v*']
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 env:
   DOTNET_NOLOGO: true
@@ -29,6 +45,23 @@ jobs:
         with:
           global-json-file: global.json
 
+      - name: Decide release channel
+        id: channel
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            # Strip the leading 'v' so `v0.2.0` becomes `0.2.0`.
+            VERSION="${GITHUB_REF_NAME#v}"
+            echo "kind=stable" >> "$GITHUB_OUTPUT"
+            echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+            echo "Publishing stable $VERSION"
+          else
+            # Pre-release tied to the run number — monotonic across the
+            # repo lifetime so `0.1.0-alpha.42` < `0.1.0-alpha.43`.
+            echo "kind=prerelease" >> "$GITHUB_OUTPUT"
+            echo "suffix=alpha.${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+            echo "Publishing pre-release with suffix alpha.${{ github.run_number }}"
+          fi
+
       - name: Restore
         run: dotnet restore src/VisuAuth.slnx
 
@@ -38,8 +71,35 @@ jobs:
       - name: Test
         run: dotnet test src/VisuAuth.slnx --configuration Release --no-build --verbosity minimal
 
-      - name: Pack
-        run: dotnet pack src/VisuAuth.slnx --configuration Release --no-build --output ./artifacts
+      - name: Pack (stable)
+        if: steps.channel.outputs.kind == 'stable'
+        run: |
+          dotnet pack src/VisuAuth.slnx \
+            --configuration Release \
+            --no-build \
+            --output ./artifacts \
+            -p:Version=${{ steps.channel.outputs.version }} \
+            -p:VersionSuffix=
+
+      - name: Pack (pre-release)
+        if: steps.channel.outputs.kind == 'prerelease'
+        run: |
+          dotnet pack src/VisuAuth.slnx \
+            --configuration Release \
+            --no-build \
+            --output ./artifacts \
+            -p:VersionSuffix=${{ steps.channel.outputs.suffix }}
 
       - name: Push to NuGet
-        run: dotnet nuget push ./artifacts/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+        run: |
+          dotnet nuget push ./artifacts/*.nupkg \
+            --api-key ${{ secrets.NUGET_API_KEY }} \
+            --source https://api.nuget.org/v3/index.json \
+            --skip-duplicate
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-packages-${{ steps.channel.outputs.kind }}
+          path: ./artifacts/*.nupkg
+          retention-days: 14

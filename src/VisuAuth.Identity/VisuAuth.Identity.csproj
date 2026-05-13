@@ -8,7 +8,6 @@
 
   <PropertyGroup Label="NuGet">
     <PackageId>VisuAuth.Identity</PackageId>
-    <Version>0.1.0-alpha.1</Version>
     <Title>VisuAuth ASP.NET Core Identity Adapter</Title>
     <Description>ASP.NET Core Identity adapter for VisuAuth: implements IUserStore, IRoleStore, and IAuthenticationFlow on top of UserManager and SignInManager. Also provides multi-tenancy primitives (TenantId column, global query filter, middleware resolver).</Description>
     <PackageTags>visuauth;aspnetcore;identity;adapter;multitenant</PackageTags>

@@ -120,6 +120,93 @@ visuauth/
 
 > Real getting-started docs will land alongside v0.1. Until then, this README is the source of truth.
 
+## Building & packaging
+
+The repo packs five NuGet artefacts in one go:
+`VisuAuth`, `VisuAuth.Abstractions`, `VisuAuth.Identity`, `VisuAuth.AdminUi`, `VisuAuth.EndUserUi`.
+Every package shares the same version, sourced from a single
+`<VersionPrefix>` in [`Directory.Build.props`](Directory.Build.props).
+
+### Local build
+
+```bash
+# Restore, build, test, all at once.
+dotnet build src/VisuAuth.slnx --configuration Release
+dotnet test  src/VisuAuth.slnx --configuration Release
+```
+
+### Local pack (smoke-test a new package without publishing)
+
+```bash
+# Pre-release with a local marker — never collides with anything on NuGet.org.
+dotnet pack src/VisuAuth.slnx \
+  --configuration Release \
+  --output ./artifacts
+
+# → ./artifacts/VisuAuth.0.1.0-alpha.local.nupkg (and the four sibling packages)
+```
+
+Override the suffix to mimic a CI build locally:
+
+```bash
+dotnet pack src/VisuAuth.slnx -c Release -o ./artifacts \
+  -p:VersionSuffix=alpha.999
+# → VisuAuth.0.1.0-alpha.999.nupkg
+```
+
+Override the full version to mimic a stable release:
+
+```bash
+dotnet pack src/VisuAuth.slnx -c Release -o ./artifacts \
+  -p:Version=0.2.0 -p:VersionSuffix=
+# → VisuAuth.0.2.0.nupkg
+```
+
+### Publish channels
+
+Two release channels run off the same GitHub Actions workflow
+([`.github/workflows/release.yml`](.github/workflows/release.yml)):
+
+| Trigger | Version | NuGet visibility | How to consume |
+|---|---|---|---|
+| Push to `main` (every merge) | `0.1.0-alpha.<run_number>` | Pre-release (hidden by default) | `dotnet add package VisuAuth --prerelease` |
+| Git tag matching `v*` (e.g. `v0.1.0`) | `0.1.0` (stable) | Stable, shows as "Latest" | `dotnet add package VisuAuth` |
+| Manual `workflow_dispatch` | Same as push-to-main | Pre-release | — |
+
+The version comes from `Directory.Build.props`'s `<VersionPrefix>` plus a
+suffix computed by the workflow:
+
+- On `main`: `-p:VersionSuffix=alpha.${{ github.run_number }}` — monotonic
+  across the repo lifetime, so `0.1.0-alpha.42` < `0.1.0-alpha.43`.
+- On tag: the tag name (minus the leading `v`) becomes the full version
+  via `-p:Version=...`.
+
+Both flows run `restore → build → test → pack → push`. The push step uses
+`dotnet nuget push --skip-duplicate`, so a re-run never fails on a package
+that already exists.
+
+### Cutting a stable release
+
+1. Bump `<VersionPrefix>` in `Directory.Build.props` if needed
+   (e.g. starting work on `0.2.x`).
+2. Land the release commit on `main`.
+3. Tag and push:
+   ```bash
+   git tag v0.2.0
+   git push origin v0.2.0
+   ```
+4. The Release workflow detects `refs/tags/v0.2.0`, builds
+   `VisuAuth.0.2.0.nupkg` (no suffix), and publishes to nuget.org.
+
+### Repository secrets
+
+| Secret | Used by | How to set |
+|---|---|---|
+| `NUGET_API_KEY` | Release workflow (`dotnet nuget push`) | Generate a key on [nuget.org/account/apikeys](https://www.nuget.org/account/apikeys) with scope **Push new packages and package versions** for `VisuAuth*`, then add it under **Settings → Secrets and variables → Actions** as a repository secret. |
+
+No other secrets are required — source-link metadata and license expression
+are embedded at build time from [`Directory.Build.props`](Directory.Build.props).
+
 ## Contributing
 
 Issues, discussions, and PRs welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).

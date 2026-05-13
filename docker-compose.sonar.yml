@@ -1,0 +1,55 @@
+# Local-only SonarQube Community for pre-PR static analysis.
+#
+# Start:  docker compose -f docker-compose.sonar.yml up -d
+# Stop:   docker compose -f docker-compose.sonar.yml down
+# Reset:  docker compose -f docker-compose.sonar.yml down -v
+# Open:   http://localhost:9000   (default credentials: admin / admin)
+#
+# After first boot, change the admin password and generate a user token
+# (My Account -> Security). Then run scripts/sonar-local.ps1.
+#
+# Requires Docker Desktop with at least ~4 GB allocated to the VM.
+# On native Linux you may need: sudo sysctl -w vm.max_map_count=262144
+
+services:
+  sonarqube:
+    image: sonarqube:community
+    container_name: visuauth-sonarqube
+    depends_on:
+      sonar-db:
+        condition: service_healthy
+    environment:
+      SONAR_JDBC_URL: jdbc:postgresql://sonar-db:5432/sonar
+      SONAR_JDBC_USERNAME: sonar
+      SONAR_JDBC_PASSWORD: sonar
+    ports:
+      - "9000:9000"
+    volumes:
+      - sonar_data:/opt/sonarqube/data
+      - sonar_extensions:/opt/sonarqube/extensions
+      - sonar_logs:/opt/sonarqube/logs
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+
+  sonar-db:
+    image: postgres:16-alpine
+    container_name: visuauth-sonar-db
+    environment:
+      POSTGRES_USER: sonar
+      POSTGRES_PASSWORD: sonar
+      POSTGRES_DB: sonar
+    volumes:
+      - sonar_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sonar"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  sonar_data:
+  sonar_extensions:
+  sonar_logs:
+  sonar_db_data:

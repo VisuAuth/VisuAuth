@@ -366,6 +366,45 @@ Integration tests use HTTP verb + endpoint as the first part (the
 - Coverage target (post-1.0): 80% on `VisuAuth.Identity` and the public
   surface of `VisuAuth.Abstractions`.
 
+### 10.5 Local code-quality scan (SonarQube)
+
+The repository ships a Docker Compose stack with SonarQube Community + Postgres
+so issues are caught locally before a PR is opened. The same rules / quality
+gate also run on CI against SonarCloud — local is just a faster feedback loop.
+
+**One-time setup**
+
+1. Start the stack:
+
+   ```powershell
+   docker compose -f docker-compose.sonar.yml up -d
+   ```
+
+2. Wait ~1 minute, open <http://localhost:9000>, login with `admin` / `admin`,
+   and change the password.
+3. Generate a user token: *My Account → Security → Generate*.
+4. Persist the token in the environment:
+
+   ```powershell
+   setx SONAR_TOKEN "<the-token>"
+   ```
+
+   Open a **new** terminal so the variable is visible.
+
+**Run the scan**
+
+```powershell
+scripts/sonar-local.ps1
+```
+
+The script runs `begin → build → tests with OpenCover coverage → end` against
+the local instance, then prints
+<http://localhost:9000/dashboard?id=VisuAuth>.
+
+> SonarQube Community Edition analyses **only the main branch view** — every
+> local run overwrites the previous one. That is intentional: the local
+> instance answers "would this change pass the gate today?", nothing more.
+
 ---
 
 ## 11. Branching and commits
@@ -393,6 +432,7 @@ When working on this repository:
 - **Razor Pages live in libraries.** Pages in `VisuAuth.AdminUi` and `VisuAuth.EndUserUi` must work as referenced packages, not only as host-app pages. Always verify by running the sample app and the smoke tests.
 - **Treat the sample app as a contract.** If something works only in the sample but not when published as a NuGet, the package is broken.
 - **Always run `dotnet build src/VisuAuth.slnx -c Release` and `dotnet test src/VisuAuth.slnx -c Release` after non-trivial changes.** Both must pass before reporting "done".
+- **Run the local SonarQube scan after any non-trivial C# change.** After build / tests pass, run `scripts/sonar-local.ps1` (the Compose stack must be up — see section 10.5), open the dashboard at <http://localhost:9000/dashboard?id=VisuAuth>, and **fix the new bugs, vulnerabilities, and code smells you introduced** before reporting "done". Pre-existing issues on unrelated code are out of scope; surface them to the owner instead of silently fixing them. If the stack is not running or `SONAR_TOKEN` is unset, say so explicitly in the final summary instead of skipping silently. Pure docs / CI-config / Markdown changes are exempt.
 - **Don't add features the owner did not ask for.** Stay focused on the PR scope.
 - **Multi-tenancy applies to every user-scoped entity.** When adding a new entity, ask whether it needs `TenantId` (almost always yes).
 - **When in doubt about a UI choice, look at Hangfire's dashboard.** Same drop-in spirit, mature design.

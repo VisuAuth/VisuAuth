@@ -181,6 +181,21 @@ public async Task GetEditRole_OnExistingRole_RendersRowInEditMode() { ... }
   cookie jar survives between the GET that sets the antiforgery cookie
   and the POST that consumes it.
 
+## Local code-quality scan
+
+A Docker Compose stack with SonarQube Community ships in the repo so you can
+run the same analysis CI does (against SonarCloud) without leaving your
+machine. Steps:
+
+```powershell
+docker compose -f docker-compose.sonar.yml up -d   # one-time per session
+scripts/sonar-local.ps1                            # after non-trivial code changes
+```
+
+Full instructions (token bootstrap, exclusions, dashboard URL) are in
+[CLAUDE.md section 10.5](CLAUDE.md). New bugs / vulnerabilities introduced
+by a PR should be fixed before requesting review.
+
 ## What "drop-in" means here
 
 The user-facing promise is:

@@ -78,4 +78,40 @@
             button.classList.remove(COPIED_CLASS);
         }, COPIED_DURATION_MS);
     }
+
+    //
+    // Password show / hide toggle.
+    //
+    // Any element with `data-va-password-toggle` flips the sibling input
+    // inside the same `.va-password-wrap` between type="password" and
+    // type="text". Icon swap is driven by the native HTML `hidden`
+    // attribute on each SVG — no CSS cascade dependency.
+    //
+    document.addEventListener('click', function (event) {
+        var button = event.target && event.target.closest && event.target.closest('[data-va-password-toggle]');
+        if (!button) {
+            return;
+        }
+        event.preventDefault();
+
+        var wrap = button.closest('.va-password-wrap');
+        if (!wrap) {
+            return;
+        }
+        var input = wrap.querySelector('input');
+        if (!input) {
+            return;
+        }
+
+        var willReveal = input.type === 'password';
+        input.type = willReveal ? 'text' : 'password';
+
+        var eye = button.querySelector('.va-icon-eye');
+        var eyeOff = button.querySelector('.va-icon-eye-off');
+        if (eye) { eye.hidden = willReveal; }
+        if (eyeOff) { eyeOff.hidden = !willReveal; }
+
+        button.setAttribute('aria-label', willReveal ? 'Hide password' : 'Show password');
+        button.setAttribute('aria-pressed', willReveal ? 'true' : 'false');
+    });
 })();

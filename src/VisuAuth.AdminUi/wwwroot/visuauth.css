@@ -566,6 +566,80 @@ body {
     color: var(--visuauth-fg);
 }
 
+/* Password show / hide widget — wrap input + button absolutely positioned
+ * on the right edge so the eye sits inside the field's padding. The input
+ * gets extra right-padding so the typed value never collides with the icon. */
+.va-password-wrap {
+    position: relative;
+    display: block;
+}
+
+.va-password-wrap .va-input {
+    padding-right: 2.5rem;
+    width: 100%;
+}
+
+/* Edge/IE add a native eye and X button inside password inputs via the
+ * `::-ms-reveal` and `::-ms-clear` pseudo-elements. They would stack next
+ * to our custom toggle and confuse the user — hide them. */
+.va-password-wrap .va-input::-ms-reveal,
+.va-password-wrap .va-input::-ms-clear {
+    display: none;
+    width: 0;
+    height: 0;
+}
+
+.va-password-toggle {
+    position: absolute;
+    right: 0.4rem;
+    top: 50%;
+    transform: translateY(-50%);
+    appearance: none;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    padding: 0.3rem;
+    color: var(--visuauth-muted);
+    border-radius: var(--visuauth-radius);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.va-password-toggle:hover {
+    color: var(--visuauth-fg);
+}
+
+.va-password-toggle:focus-visible {
+    outline: 2px solid var(--visuauth-primary);
+    outline-offset: 1px;
+}
+
+/*
+ * Visibility is controlled by the HTML `hidden` attribute — JS flips it
+ * directly on each SVG when the user clicks the toggle. Browser user-agent
+ * styles map [hidden] to display:none with high enough specificity to win
+ * against any stray rule, so we keep the CSS here strictly to size /
+ * style the icons.
+ */
+.va-icon-eye,
+.va-icon-eye-off {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* Some legacy browsers ignore [hidden] when a more specific display rule
+ * fires. Force the fallback here so the icon never leaks through. */
+.va-icon-eye[hidden],
+.va-icon-eye-off[hidden] {
+    display: none !important;
+}
+
 .va-input:focus {
     outline: 2px solid var(--visuauth-primary);
     outline-offset: -1px;

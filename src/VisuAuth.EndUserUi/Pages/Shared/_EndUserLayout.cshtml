@@ -16,6 +16,10 @@
             integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+"
             crossorigin="anonymous"
             defer></script>
+    @* visuauth.js hosts client-side micro-interactions shared between admin
+       and end-user pages (copy-to-clipboard, password show/hide). Same
+       file as the admin layout — single source for both surfaces. *@
+    <script src="/_content/VisuAuth.AdminUi/visuauth.js" asp-append-version="true" defer></script>
 </head>
 <body class="va-enduser-body">
     <main class="va-enduser-shell">

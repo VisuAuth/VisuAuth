@@ -21,7 +21,9 @@
       "Bash(awk -F'\\(' '{print $1}')",
       "Bash(\"/c/Program Files/dotnet/dotnet.exe\" test /c/repos/thiagoluga/VisuAuth/src/VisuAuth.slnx -c Release)",
       "Bash(python3)",
-      "Bash(python /c/Users/Dev/AppData/Local/Temp/strip_using_blanks.py /c/repos/thiagoluga/VisuAuth)"
+      "Bash(python /c/Users/Dev/AppData/Local/Temp/strip_using_blanks.py /c/repos/thiagoluga/VisuAuth)",
+      "Bash(\"/c/Program Files/dotnet/dotnet.exe\" test /c/repos/thiagoluga/VisuAuth/tests/VisuAuth.UnitTests/VisuAuth.UnitTests.csproj --configuration Release --no-build --verbosity minimal)",
+      "Bash(\"/c/Program Files/dotnet/dotnet.exe\" test /c/repos/thiagoluga/VisuAuth/tests/VisuAuth.IntegrationTests/VisuAuth.IntegrationTests.csproj --configuration Release --no-build --verbosity minimal)"
     ]
   }
 }

@@ -8,7 +8,6 @@
 
   <PropertyGroup Label="NuGet">
     <PackageId>VisuAuth.Abstractions</PackageId>
-    <Version>0.1.0-alpha.1</Version>
     <Title>VisuAuth Abstractions</Title>
     <Description>Public contracts and capability model for VisuAuth. Reference this package to write adapters or extensions that plug into VisuAuth (admin UI, auth flows, theming).</Description>
     <PackageTags>visuauth;aspnetcore;identity;abstractions;contracts</PackageTags>

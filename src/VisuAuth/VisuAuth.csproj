@@ -8,13 +8,12 @@
 
   <PropertyGroup Label="NuGet">
     <PackageId>VisuAuth</PackageId>
-    <Version>0.1.0-alpha.1</Version>
     <Title>VisuAuth</Title>
     <Description>The visual admin for ASP.NET Core Identity. Drop-in admin dashboard, multi-tenancy, and themeable end-user auth pages. Install this meta-package to get everything, or pick individual VisuAuth.* packages for finer control.</Description>
     <Summary>Visual admin UI, multi-tenancy and themeable auth pages for ASP.NET Core Identity.</Summary>
     <PackageTags>visuauth;aspnetcore;identity;admin;multitenant;dashboard;htmx;authentication;authorization;ui</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageReleaseNotes>0.1.0-alpha.1 — initial scaffolding release. Public surface still in flux; not for production use.</PackageReleaseNotes>
+    <PackageReleaseNotes>Pre-release builds publish on every merge to main. See https://github.com/VisuAuth/visuauth/commits for changes.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>

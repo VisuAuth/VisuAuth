@@ -1,8 +1,8 @@
 name: CI
 
+# Pull-request validation only. Pushes to `main` are handled by
+# `release.yml`, which also publishes to NuGet — no duplication.
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
   workflow_dispatch:

@@ -9,7 +9,11 @@
       "Bash(\"/c/Program Files/dotnet/dotnet.exe\" build src/VisuAuth.slnx -c Release)",
       "Bash(\"/c/Program Files/dotnet/dotnet.exe\" test src/VisuAuth.slnx -c Release)",
       "Bash(\"/c/Program Files/dotnet/dotnet.exe\" test src/VisuAuth.slnx -c Release --no-build)",
-      "Bash(\"/c/Program Files/dotnet/dotnet.exe\" test src/VisuAuth.slnx -c Release --filter \"FullyQualifiedName~Filtering_by_locked_status\" --logger \"console;verbosity=detailed\")"
+      "Bash(\"/c/Program Files/dotnet/dotnet.exe\" test src/VisuAuth.slnx -c Release --filter \"FullyQualifiedName~Filtering_by_locked_status\" --logger \"console;verbosity=detailed\")",
+      "Bash(rm -rf /tmp/visuauth-artifacts)",
+      "Bash(\"/c/Program Files/dotnet/dotnet.exe\" pack src/VisuAuth.slnx -c Release --no-build --output /tmp/visuauth-artifacts -p:VersionSuffix=alpha.999)",
+      "Bash(rm -rf /tmp/visuauth-stable)",
+      "Bash(\"/c/Program Files/dotnet/dotnet.exe\" pack src/VisuAuth.slnx -c Release --no-build --output /tmp/visuauth-stable -p:Version=0.2.0 -p:VersionSuffix=)"
     ]
   }
 }

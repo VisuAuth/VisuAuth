@@ -9,7 +9,6 @@
 
   <PropertyGroup Label="NuGet">
     <PackageId>VisuAuth.EndUserUi</PackageId>
-    <Version>0.1.0-alpha.1</Version>
     <Title>VisuAuth End-User Pages</Title>
     <Description>Drop-in end-user authentication pages for VisuAuth: login, register, forgot/reset password, email confirmation, two-factor, profile, and logout. Razor Pages + htmx, themeable via CSS variables, programmatic config, or view override. Multi-tenant aware.</Description>
     <PackageTags>visuauth;login;register;auth;razor;htmx;aspnetcore;identity</PackageTags>

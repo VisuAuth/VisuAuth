@@ -1,17 +1,13 @@
 using System.Net;
 using System.Text.RegularExpressions;
-
 using FluentAssertions;
-
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
-
 using Sample.WebApp.Data;
-
 using Xunit;
 
-namespace VisuAuth.AdminUi.Tests;
+namespace VisuAuth.IntegrationTests.MultiTenancy;
 
 /// <summary>
 /// Integration tests for multi-tenancy: header-based tenant resolution,
@@ -32,7 +28,7 @@ public sealed class MultiTenancyTests : IClassFixture<WebApplicationFactory<Prog
     }
 
     [Fact]
-    public async Task Users_list_scoped_to_acme_hides_other_tenants_users()
+    public async Task GetUsers_WithAcmeTenantHeader_HidesOtherTenants()
     {
         using var client = _factory.CreateClient(new WebApplicationFactoryClientOptions
         {
@@ -53,7 +49,7 @@ public sealed class MultiTenancyTests : IClassFixture<WebApplicationFactory<Prog
     }
 
     [Fact]
-    public async Task Users_list_with_no_tenant_header_returns_every_tenants_users()
+    public async Task GetUsers_WithoutTenantHeader_ReturnsAllTenants()
     {
         using var client = CreateClient();
 
@@ -67,7 +63,7 @@ public sealed class MultiTenancyTests : IClassFixture<WebApplicationFactory<Prog
     }
 
     [Fact]
-    public async Task Tenant_column_renders_when_multi_tenancy_is_enabled()
+    public async Task GetUsers_WithMultiTenancyOn_RendersTenantColumn()
     {
         using var client = CreateClient();
 
@@ -81,7 +77,7 @@ public sealed class MultiTenancyTests : IClassFixture<WebApplicationFactory<Prog
     }
 
     [Fact]
-    public async Task Sidebar_shows_the_resolved_tenant_indicator()
+    public async Task Sidebar_WithResolvedTenant_ShowsIndicator()
     {
         using var client = _factory.CreateClient(new WebApplicationFactoryClientOptions
         {
@@ -99,7 +95,7 @@ public sealed class MultiTenancyTests : IClassFixture<WebApplicationFactory<Prog
     }
 
     [Fact]
-    public async Task Detail_page_404s_when_user_belongs_to_a_different_tenant()
+    public async Task GetDetail_OnUserFromDifferentTenant_Returns404()
     {
         // Look up a globex user's id first.
         string globexUserId;
@@ -126,7 +122,7 @@ public sealed class MultiTenancyTests : IClassFixture<WebApplicationFactory<Prog
     }
 
     [Fact]
-    public async Task Created_users_inherit_the_resolved_tenant_via_the_interceptor()
+    public async Task PostNewUser_WithTenantScope_InheritsTenantIdViaInterceptor()
     {
         using var client = _factory.CreateClient(new WebApplicationFactoryClientOptions
         {

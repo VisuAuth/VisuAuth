@@ -1,17 +1,13 @@
 using System.Net;
 using System.Text.RegularExpressions;
-
 using FluentAssertions;
-
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
-
 using Sample.WebApp.Data;
-
 using Xunit;
 
-namespace VisuAuth.AdminUi.Tests;
+namespace VisuAuth.IntegrationTests.EndUser;
 
 /// <summary>
 /// Integration tests for the register / forgot-password / reset-password /
@@ -35,7 +31,7 @@ public sealed class RegisterAndResetTests : IClassFixture<WebApplicationFactory<
     }
 
     [Fact]
-    public async Task Register_page_renders_form_with_required_fields()
+    public async Task GetRegister_DefaultRender_ShowsFormWithRequiredFields()
     {
         using var client = CreateClient();
         var response = await client.GetAsync(new Uri("/visuauth/register", UriKind.Relative));
@@ -50,7 +46,7 @@ public sealed class RegisterAndResetTests : IClassFixture<WebApplicationFactory<
     }
 
     [Fact]
-    public async Task Register_with_matching_passwords_creates_the_user()
+    public async Task PostRegister_WithMatchingPasswords_CreatesUser()
     {
         using var client = CreateClient();
         var email = $"new.{Guid.NewGuid():N}@example.com";
@@ -77,7 +73,7 @@ public sealed class RegisterAndResetTests : IClassFixture<WebApplicationFactory<
     }
 
     [Fact]
-    public async Task Register_with_mismatched_passwords_surfaces_validation_error()
+    public async Task PostRegister_WithMismatchedPasswords_ShowsValidationError()
     {
         using var client = CreateClient();
         var token = await GetTokenAsync(client, "/visuauth/register");
@@ -97,7 +93,7 @@ public sealed class RegisterAndResetTests : IClassFixture<WebApplicationFactory<
     }
 
     [Fact]
-    public async Task Register_with_duplicate_email_surfaces_identity_error()
+    public async Task PostRegister_WithDuplicateEmail_ShowsIdentityError()
     {
         using var client = CreateClient();
         var token = await GetTokenAsync(client, "/visuauth/register");
@@ -118,7 +114,7 @@ public sealed class RegisterAndResetTests : IClassFixture<WebApplicationFactory<
     }
 
     [Fact]
-    public async Task Forgot_password_with_known_email_renders_reset_link_in_development_mode()
+    public async Task PostForgotPassword_WithKnownEmailInDevMode_ShowsResetLink()
     {
         using var client = CreateClient();
         var token = await GetTokenAsync(client, "/visuauth/forgot-password");
@@ -143,7 +139,7 @@ public sealed class RegisterAndResetTests : IClassFixture<WebApplicationFactory<
     }
 
     [Fact]
-    public async Task Forgot_password_with_unknown_email_renders_the_same_generic_response_with_no_link()
+    public async Task PostForgotPassword_WithUnknownEmail_ShowsSameGenericResponseWithoutLink()
     {
         using var client = CreateClient();
         var token = await GetTokenAsync(client, "/visuauth/forgot-password");
@@ -163,7 +159,7 @@ public sealed class RegisterAndResetTests : IClassFixture<WebApplicationFactory<
     }
 
     [Fact]
-    public async Task Reset_password_with_valid_token_updates_the_password()
+    public async Task PostResetPassword_WithValidToken_UpdatesPassword()
     {
         // Provision a fresh user so other tests do not collide.
         string email = $"reset.{Guid.NewGuid():N}@example.com";
@@ -235,7 +231,7 @@ public sealed class RegisterAndResetTests : IClassFixture<WebApplicationFactory<
     }
 
     [Fact]
-    public async Task Reset_password_with_garbage_token_surfaces_an_error()
+    public async Task PostResetPassword_WithGarbageToken_ShowsError()
     {
         using var client = CreateClient();
         var resetGet = await client.GetAsync(new Uri(
@@ -260,7 +256,7 @@ public sealed class RegisterAndResetTests : IClassFixture<WebApplicationFactory<
     }
 
     [Fact]
-    public async Task Confirm_email_with_valid_token_marks_user_confirmed()
+    public async Task GetConfirmEmail_WithValidToken_MarksUserConfirmed()
     {
         // Provision a user with EmailConfirmed=false so we have something to confirm.
         var email = $"confirm.{Guid.NewGuid():N}@example.com";
@@ -296,7 +292,7 @@ public sealed class RegisterAndResetTests : IClassFixture<WebApplicationFactory<
     }
 
     [Fact]
-    public async Task Confirm_email_with_garbage_token_surfaces_an_error()
+    public async Task GetConfirmEmail_WithGarbageToken_ShowsError()
     {
         using var client = CreateClient();
         var response = await client.GetAsync(new Uri(
@@ -312,7 +308,7 @@ public sealed class RegisterAndResetTests : IClassFixture<WebApplicationFactory<
     [InlineData("/visuauth/register")]
     [InlineData("/visuauth/forgot-password")]
     [InlineData("/visuauth/confirm-email?userId=anything&token=anything")]
-    public async Task End_user_pages_render_with_the_end_user_layout_not_the_admin_layout(string url)
+    public async Task EndUserPages_AnyOf_RenderWithEndUserLayoutNotAdmin(string url)
     {
         using var client = CreateClient();
         var response = await client.GetAsync(new Uri(url, UriKind.Relative));
@@ -334,7 +330,7 @@ public sealed class RegisterAndResetTests : IClassFixture<WebApplicationFactory<
     }
 
     [Fact]
-    public async Task Register_in_development_mode_surfaces_a_real_confirm_email_link()
+    public async Task PostRegister_InDevelopmentMode_SurfacesRealConfirmEmailLink()
     {
         using var client = CreateClient();
         var email = $"with-confirm.{Guid.NewGuid():N}@example.com";
@@ -373,7 +369,7 @@ public sealed class RegisterAndResetTests : IClassFixture<WebApplicationFactory<
     }
 
     [Fact]
-    public async Task Login_footer_links_register_and_forgot_password()
+    public async Task LoginFooter_DefaultRender_LinksRegisterAndForgotPassword()
     {
         using var client = CreateClient();
         var response = await client.GetAsync(new Uri("/visuauth/login", UriKind.Relative));

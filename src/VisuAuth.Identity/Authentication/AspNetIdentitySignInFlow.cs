@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Identity;
-
 using VisuAuth.Abstractions.Authentication;
 using VisuAuth.Abstractions.Capabilities;
 using VisuAuth.Abstractions.Common;

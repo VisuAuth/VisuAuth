@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-
 using VisuAuth.Abstractions.Common;
 using VisuAuth.Abstractions.Tenancy;
 

@@ -2,18 +2,14 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-
 using FluentAssertions;
-
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
-
 using Sample.WebApp.Data;
-
 using Xunit;
 
-namespace VisuAuth.AdminUi.Tests;
+namespace VisuAuth.IntegrationTests.Api;
 
 /// <summary>
 /// Integration tests for the mobile / native JWT REST API at
@@ -33,7 +29,7 @@ public sealed class AuthApiTests : IClassFixture<WebApplicationFactory<Program>>
     }
 
     [Fact]
-    public async Task Login_with_valid_credentials_returns_a_signed_jwt()
+    public async Task PostLogin_WithValidCredentials_ReturnsSignedJwt()
     {
         using var client = _factory.CreateClient();
 
@@ -56,7 +52,7 @@ public sealed class AuthApiTests : IClassFixture<WebApplicationFactory<Program>>
     }
 
     [Fact]
-    public async Task Login_attaches_tenant_id_claim_for_a_multi_tenant_user()
+    public async Task PostLogin_WithTenantUser_AttachesTenantIdClaim()
     {
         using var client = _factory.CreateClient();
 
@@ -77,7 +73,7 @@ public sealed class AuthApiTests : IClassFixture<WebApplicationFactory<Program>>
     }
 
     [Fact]
-    public async Task Login_with_wrong_password_returns_401_and_no_token()
+    public async Task PostLogin_WithWrongPassword_Returns401WithoutToken()
     {
         using var client = _factory.CreateClient();
 
@@ -94,7 +90,7 @@ public sealed class AuthApiTests : IClassFixture<WebApplicationFactory<Program>>
     }
 
     [Fact]
-    public async Task Login_with_unknown_email_returns_the_same_generic_401()
+    public async Task PostLogin_WithUnknownEmail_ReturnsSameGeneric401()
     {
         using var client = _factory.CreateClient();
 
@@ -108,7 +104,7 @@ public sealed class AuthApiTests : IClassFixture<WebApplicationFactory<Program>>
     }
 
     [Fact]
-    public async Task Login_with_missing_fields_returns_400()
+    public async Task PostLogin_WithMissingFields_Returns400()
     {
         using var client = _factory.CreateClient();
 
@@ -118,7 +114,7 @@ public sealed class AuthApiTests : IClassFixture<WebApplicationFactory<Program>>
     }
 
     [Fact]
-    public async Task Register_creates_a_user_and_returns_a_jwt()
+    public async Task PostRegister_WithValidPayload_CreatesUserAndReturnsJwt()
     {
         using var client = _factory.CreateClient();
         var email = $"api.register.{Guid.NewGuid():N}@example.com";
@@ -141,7 +137,7 @@ public sealed class AuthApiTests : IClassFixture<WebApplicationFactory<Program>>
     }
 
     [Fact]
-    public async Task Register_with_duplicate_email_returns_400_with_identity_errors()
+    public async Task PostRegister_WithDuplicateEmail_Returns400WithIdentityErrors()
     {
         using var client = _factory.CreateClient();
 
@@ -157,7 +153,7 @@ public sealed class AuthApiTests : IClassFixture<WebApplicationFactory<Program>>
     }
 
     [Fact]
-    public async Task Refresh_with_a_valid_bearer_returns_a_brand_new_jwt()
+    public async Task PostRefresh_WithValidBearer_ReturnsFreshJwt()
     {
         using var client = _factory.CreateClient();
 
@@ -185,7 +181,7 @@ public sealed class AuthApiTests : IClassFixture<WebApplicationFactory<Program>>
     }
 
     [Fact]
-    public async Task Refresh_without_bearer_returns_401()
+    public async Task PostRefresh_WithoutBearer_Returns401()
     {
         using var client = _factory.CreateClient();
 
@@ -195,7 +191,7 @@ public sealed class AuthApiTests : IClassFixture<WebApplicationFactory<Program>>
     }
 
     [Fact]
-    public async Task Refresh_with_malformed_token_returns_401()
+    public async Task PostRefresh_WithMalformedToken_Returns401()
     {
         using var client = _factory.CreateClient();
 

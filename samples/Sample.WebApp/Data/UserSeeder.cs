@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-
 using VisuAuth.Identity.MultiTenancy;
 
 namespace Sample.WebApp.Data;

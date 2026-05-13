@@ -13,7 +13,15 @@
       "Bash(rm -rf /tmp/visuauth-artifacts)",
       "Bash(\"/c/Program Files/dotnet/dotnet.exe\" pack src/VisuAuth.slnx -c Release --no-build --output /tmp/visuauth-artifacts -p:VersionSuffix=alpha.999)",
       "Bash(rm -rf /tmp/visuauth-stable)",
-      "Bash(\"/c/Program Files/dotnet/dotnet.exe\" pack src/VisuAuth.slnx -c Release --no-build --output /tmp/visuauth-stable -p:Version=0.2.0 -p:VersionSuffix=)"
+      "Bash(\"/c/Program Files/dotnet/dotnet.exe\" pack src/VisuAuth.slnx -c Release --no-build --output /tmp/visuauth-stable -p:Version=0.2.0 -p:VersionSuffix=)",
+      "Bash(\"/c/Program Files/dotnet/dotnet.exe\" build /c/repos/thiagoluga/VisuAuth/src/VisuAuth.slnx -c Release)",
+      "Bash(\"/c/Program Files/dotnet/dotnet.exe\" test /c/repos/thiagoluga/VisuAuth/src/VisuAuth.slnx -c Release --no-build)",
+      "Bash(awk -F: '{print $1\":\"$NF}')",
+      "Bash(awk '{print $4}')",
+      "Bash(awk -F'\\(' '{print $1}')",
+      "Bash(\"/c/Program Files/dotnet/dotnet.exe\" test /c/repos/thiagoluga/VisuAuth/src/VisuAuth.slnx -c Release)",
+      "Bash(python3)",
+      "Bash(python /c/Users/Dev/AppData/Local/Temp/strip_using_blanks.py /c/repos/thiagoluga/VisuAuth)"
     ]
   }
 }

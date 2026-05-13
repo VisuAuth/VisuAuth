@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-
 using VisuAuth.Abstractions.Tenancy;
 using VisuAuth.Identity.MultiTenancy;
 

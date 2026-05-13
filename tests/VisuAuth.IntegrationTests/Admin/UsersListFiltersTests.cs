@@ -1,14 +1,11 @@
 using FluentAssertions;
-
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
-
 using Sample.WebApp.Data;
-
 using Xunit;
 
-namespace VisuAuth.AdminUi.Tests;
+namespace VisuAuth.IntegrationTests.Admin;
 
 /// <summary>
 /// Smoke tests for the user-list filter row (search + role / status /
@@ -25,7 +22,7 @@ public sealed class UsersListFiltersTests : IClassFixture<WebApplicationFactory<
     }
 
     [Fact]
-    public async Task Filter_row_renders_all_dropdowns_and_search()
+    public async Task Get_DefaultRender_ShowsAllFiltersAndSearch()
     {
         using var client = CreateClient();
         var response = await client.GetAsync(new Uri("/visuauth/admin/users", UriKind.Relative));
@@ -46,7 +43,7 @@ public sealed class UsersListFiltersTests : IClassFixture<WebApplicationFactory<
     }
 
     [Fact]
-    public async Task Filtering_by_role_hides_users_that_do_not_have_it()
+    public async Task Get_WithRoleFilter_HidesUsersWithoutThatRole()
     {
         using var client = CreateClient();
         var response = await client.GetAsync(new Uri("/visuauth/admin/users?role=Support", UriKind.Relative));
@@ -63,7 +60,7 @@ public sealed class UsersListFiltersTests : IClassFixture<WebApplicationFactory<
     }
 
     [Fact]
-    public async Task Filtering_by_locked_status_only_shows_locked_users()
+    public async Task Get_WithLockedStatusFilter_ShowsOnlyLockedUsers()
     {
         // Lock a throwaway user so the filter has something to find.
         string lockedEmail;
@@ -94,7 +91,7 @@ public sealed class UsersListFiltersTests : IClassFixture<WebApplicationFactory<
     }
 
     [Fact]
-    public async Task Combining_filters_narrows_the_intersection()
+    public async Task Get_WithMultipleFilters_ReturnsIntersection()
     {
         using var client = CreateClient();
         var response = await client.GetAsync(
@@ -108,7 +105,7 @@ public sealed class UsersListFiltersTests : IClassFixture<WebApplicationFactory<
     }
 
     [Fact]
-    public async Task Pagination_links_preserve_active_filters()
+    public async Task Pagination_AfterFilterApplied_PreservesFilterInLinks()
     {
         using var client = CreateClient();
         var response = await client.GetAsync(

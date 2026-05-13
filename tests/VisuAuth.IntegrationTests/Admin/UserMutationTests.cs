@@ -1,17 +1,13 @@
 using System.Net;
 using System.Text.RegularExpressions;
-
 using FluentAssertions;
-
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
-
 using Sample.WebApp.Data;
-
 using Xunit;
 
-namespace VisuAuth.AdminUi.Tests;
+namespace VisuAuth.IntegrationTests.Admin;
 
 /// <summary>
 /// Integration tests for the mutation handlers on the user detail page.
@@ -32,7 +28,7 @@ public sealed class UserMutationTests : IClassFixture<WebApplicationFactory<Prog
     }
 
     [Fact]
-    public async Task Lock_action_locks_the_user_and_unlock_clears_the_lockout()
+    public async Task PostLockAndUnlock_RoundTrip_TogglesLockoutState()
     {
         var (userId, detailUrl) = await SetupAsync("bruno.costa@example.com");
         using var client = CreateClient();
@@ -51,7 +47,7 @@ public sealed class UserMutationTests : IClassFixture<WebApplicationFactory<Prog
     }
 
     [Fact]
-    public async Task Reset_password_surfaces_temporary_password_and_invalidates_old_one()
+    public async Task PostResetPassword_AfterValidPost_SurfacesTempPasswordAndInvalidatesOld()
     {
         var (userId, detailUrl) = await SetupAsync("carla.dias@example.com");
         using var client = CreateClient();
@@ -80,7 +76,7 @@ public sealed class UserMutationTests : IClassFixture<WebApplicationFactory<Prog
     }
 
     [Fact]
-    public async Task Reset_two_factor_disables_2fa_and_rotates_authenticator_key()
+    public async Task PostResetTwoFactor_AfterEnabledTwoFactor_DisablesAndRotatesKey()
     {
         var (userId, detailUrl) = await SetupAsync("daniel.eloi@example.com");
         using var client = CreateClient();
@@ -104,7 +100,7 @@ public sealed class UserMutationTests : IClassFixture<WebApplicationFactory<Prog
     }
 
     [Fact]
-    public async Task Revoke_sessions_rotates_the_security_stamp()
+    public async Task PostRevokeSessions_AfterValidPost_RotatesSecurityStamp()
     {
         var (userId, detailUrl) = await SetupAsync("eduarda.ferraz@example.com");
         using var client = CreateClient();
@@ -127,7 +123,7 @@ public sealed class UserMutationTests : IClassFixture<WebApplicationFactory<Prog
     }
 
     [Fact]
-    public async Task Update_profile_changes_email_and_username()
+    public async Task PostUpdateProfile_WithNewEmailUsernameAndPhone_PersistsAllThree()
     {
         var (userId, detailUrl) = await SetupAsync("fabio.gomes@example.com");
         using var client = CreateClient();
@@ -165,7 +161,7 @@ public sealed class UserMutationTests : IClassFixture<WebApplicationFactory<Prog
     }
 
     [Fact]
-    public async Task Update_profile_with_invalid_email_surfaces_validation_error()
+    public async Task PostUpdateProfile_WithInvalidEmail_KeepsEditFormOpenAndShowsError()
     {
         var (_, detailUrl) = await SetupAsync("gabriela.henriques@example.com");
         using var client = CreateClient();
@@ -188,7 +184,7 @@ public sealed class UserMutationTests : IClassFixture<WebApplicationFactory<Prog
     }
 
     [Fact]
-    public async Task Edit_profile_GET_returns_form_partial()
+    public async Task GetEditProfile_WithHxRequest_ReturnsFormPartial()
     {
         var (_, detailUrl) = await SetupAsync("hugo.iglesias@example.com");
         using var client = CreateClient();

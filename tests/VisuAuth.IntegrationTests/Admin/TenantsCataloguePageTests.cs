@@ -1,19 +1,14 @@
 using System.Net;
 using System.Text.RegularExpressions;
-
 using FluentAssertions;
-
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-
 using Sample.WebApp.Data;
-
 using VisuAuth.Identity.MultiTenancy;
-
 using Xunit;
 
-namespace VisuAuth.AdminUi.Tests;
+namespace VisuAuth.IntegrationTests.Admin;
 
 /// <summary>
 /// Integration tests for <c>/visuauth/admin/tenants</c> and the sidebar
@@ -33,7 +28,7 @@ public sealed class TenantsCataloguePageTests : IClassFixture<WebApplicationFact
     }
 
     [Fact]
-    public async Task Catalogue_renders_seeded_tenants_with_member_counts()
+    public async Task Get_DefaultRender_ShowsSeededTenantsWithMemberCounts()
     {
         using var client = CreateClient();
         var response = await client.GetAsync(new Uri("/visuauth/admin/tenants", UriKind.Relative));
@@ -51,7 +46,7 @@ public sealed class TenantsCataloguePageTests : IClassFixture<WebApplicationFact
     }
 
     [Fact]
-    public async Task Create_handler_adds_a_tenant()
+    public async Task PostCreate_WithValidPayload_AddsTenant()
     {
         using var client = CreateClient();
         var id = $"t{Guid.NewGuid():N}"[..10];
@@ -79,7 +74,7 @@ public sealed class TenantsCataloguePageTests : IClassFixture<WebApplicationFact
     }
 
     [Fact]
-    public async Task Create_with_invalid_id_surfaces_validation_error()
+    public async Task PostCreate_WithInvalidId_ShowsValidationError()
     {
         using var client = CreateClient();
         var token = await GetTokenAsync(client, "/visuauth/admin/tenants");
@@ -102,7 +97,7 @@ public sealed class TenantsCataloguePageTests : IClassFixture<WebApplicationFact
     }
 
     [Fact]
-    public async Task Delete_handler_refuses_to_remove_a_tenant_with_members()
+    public async Task PostDelete_WithMembersAttached_RefusesAndExplains()
     {
         using var client = CreateClient();
         var token = await GetTokenAsync(client, "/visuauth/admin/tenants");
@@ -126,7 +121,7 @@ public sealed class TenantsCataloguePageTests : IClassFixture<WebApplicationFact
     }
 
     [Fact]
-    public async Task Delete_handler_removes_empty_tenants()
+    public async Task PostDelete_OnEmptyTenant_RemovesIt()
     {
         // Provision a throwaway empty tenant.
         var id = $"empty{Guid.NewGuid():N}"[..12];
@@ -165,7 +160,7 @@ public sealed class TenantsCataloguePageTests : IClassFixture<WebApplicationFact
     }
 
     [Fact]
-    public async Task Sidebar_switcher_renders_tenants_for_browser_scoping()
+    public async Task Sidebar_Switcher_RendersAvailableTenants()
     {
         using var client = CreateClient();
         var response = await client.GetAsync(new Uri("/visuauth/admin/users", UriKind.Relative));
@@ -181,7 +176,7 @@ public sealed class TenantsCataloguePageTests : IClassFixture<WebApplicationFact
     }
 
     [Fact]
-    public async Task Sidebar_switcher_form_includes_its_own_antiforgery_token()
+    public async Task Sidebar_SwitcherForm_IncludesAntiforgeryToken()
     {
         // Browser-driven submissions only carry the inputs of the form being
         // submitted — the form tag helper must inject the antiforgery token
@@ -201,7 +196,7 @@ public sealed class TenantsCataloguePageTests : IClassFixture<WebApplicationFact
     }
 
     [Fact]
-    public async Task Switch_handler_sets_the_tenant_cookie_and_redirects_to_returnUrl()
+    public async Task PostSwitch_WithTenantId_SetsCookieAndRedirects()
     {
         using var client = _factory.CreateClient(new WebApplicationFactoryClientOptions
         {
@@ -235,7 +230,7 @@ public sealed class TenantsCataloguePageTests : IClassFixture<WebApplicationFact
     }
 
     [Fact]
-    public async Task Switch_handler_with_empty_tenant_clears_the_cookie()
+    public async Task PostSwitch_WithEmptyTenantId_ClearsCookie()
     {
         using var client = _factory.CreateClient(new WebApplicationFactoryClientOptions
         {
@@ -274,7 +269,7 @@ public sealed class TenantsCataloguePageTests : IClassFixture<WebApplicationFact
     }
 
     [Fact]
-    public async Task Switch_handler_rejects_non_local_return_urls()
+    public async Task PostSwitch_WithNonLocalReturnUrl_FallsBackToSafeDefault()
     {
         using var client = _factory.CreateClient(new WebApplicationFactoryClientOptions
         {

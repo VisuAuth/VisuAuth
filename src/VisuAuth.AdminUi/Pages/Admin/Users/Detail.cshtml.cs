@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-
 using VisuAuth.Abstractions.Capabilities;
 using VisuAuth.Abstractions.Common;
 using VisuAuth.Abstractions.Roles;

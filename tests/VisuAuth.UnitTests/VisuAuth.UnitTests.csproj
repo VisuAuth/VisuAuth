@@ -2,10 +2,10 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>VisuAuth.UnitTests</RootNamespace>
+    <AssemblyName>VisuAuth.UnitTests</AssemblyName>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
-    <!-- Tests don't need StyleCop-level strictness; the cli runner triggers some analyzer rules
-         that don't apply to test code. -->
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
   </PropertyGroup>
 
@@ -14,11 +14,13 @@
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />
     <PackageReference Include="FluentAssertions" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Moq" />
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\samples\Sample.WebApp\Sample.WebApp.csproj" />
+    <ProjectReference Include="..\..\src\VisuAuth.Abstractions\VisuAuth.Abstractions.csproj" />
+    <ProjectReference Include="..\..\src\VisuAuth.Identity\VisuAuth.Identity.csproj" />
   </ItemGroup>
 
 </Project>

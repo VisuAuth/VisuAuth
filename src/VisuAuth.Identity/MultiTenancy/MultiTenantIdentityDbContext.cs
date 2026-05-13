@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-
 using VisuAuth.Abstractions.Tenancy;
 
 namespace VisuAuth.Identity.MultiTenancy;

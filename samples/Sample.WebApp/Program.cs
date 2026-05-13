@@ -5,6 +5,7 @@ using Sample.WebApp.Data;
 using Sample.WebApp.Home;
 
 using VisuAuth;
+using VisuAuth.Identity.Authentication;
 using VisuAuth.Identity.MultiTenancy;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -22,6 +23,17 @@ builder.Services.AddVisuAuth<ApplicationUser>();
 builder.Services.Configure<VisuAuth.Abstractions.Authentication.EndUserUiOptions>(options =>
 {
     options.DevelopmentMode = true;
+});
+
+// Mobile / native API channel: HS256 JWTs at /visuauth/api/auth. The signing
+// key below is committed for dev convenience — a real deployment loads it
+// from a secret store / Key Vault. 32+ UTF-8 bytes is mandatory for HS256.
+builder.Services.AddVisuAuthJwt<ApplicationUser>(options =>
+{
+    options.SigningKey = "sample-dev-signing-key-do-not-use-in-production-or-anywhere-else";
+    options.Issuer = "VisuAuth.Sample";
+    options.Audience = "VisuAuth.Sample";
+    options.LifetimeMinutes = 60;
 });
 
 // Opt into multi-tenancy. Without this the sample is single-tenant — every

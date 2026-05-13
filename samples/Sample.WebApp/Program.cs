@@ -16,6 +16,14 @@ var dbPath = Path.Combine(builder.Environment.ContentRootPath, "visuauth-sample.
 // end-user UI.
 builder.Services.AddVisuAuth<ApplicationUser>();
 
+// Sample app turns on the end-user dev mode so password-reset / email
+// confirmation tokens render inline (we ship no real email sender here).
+// Production consumers leave this off and plug their own IEmailSender.
+builder.Services.Configure<VisuAuth.Abstractions.Authentication.EndUserUiOptions>(options =>
+{
+    options.DevelopmentMode = true;
+});
+
 // Opt into multi-tenancy. Without this the sample is single-tenant — every
 // other VisuAuth feature works the same. The generic overload also wires the
 // tenant catalogue store at /visuauth/admin/tenants.

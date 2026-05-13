@@ -92,6 +92,10 @@ internal static class SampleHomePage
               <h2>End-user UI</h2>
               <ul>
                 <li><a href="/visuauth/login"><code>/visuauth/login</code></a> &mdash; sign-in form (email + password + remember-me)</li>
+                <li><a href="/visuauth/register"><code>/visuauth/register</code></a> &mdash; self-service registration</li>
+                <li><a href="/visuauth/forgot-password"><code>/visuauth/forgot-password</code></a> &mdash; request a password reset (dev mode surfaces the reset link)</li>
+                <li><code>/visuauth/reset-password?email=&amp;token=</code> &mdash; reset landing (reached from the link above)</li>
+                <li><code>/visuauth/confirm-email?userId=&amp;token=</code> &mdash; email confirmation landing</li>
                 <li><a href="/visuauth/logout"><code>/visuauth/logout</code></a> &mdash; sign-out endpoint (POST-only confirmation)</li>
               </ul>
 

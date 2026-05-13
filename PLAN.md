@@ -11,7 +11,7 @@ Updated as PRs land. Long-term direction lives in `CLAUDE.md` section 13 (Roadma
 - **Latest shipped on NuGet**: `VisuAuth 0.0.1-alpha` (placeholder, name reservation)
 - **Default branch**: `main` at <https://github.com/VisuAuth/visuauth>
 - **Build state**: green (`dotnet build src/VisuAuth.slnx -c Release` → 0 errors, 0 warnings)
-- **Test state**: 55 / 55 passing (on `main`; this branch adds more)
+- **Test state**: 62 / 62 passing (on `main`; this branch adds more)
 
 ---
 
@@ -70,60 +70,57 @@ Updated as PRs land. Long-term direction lives in `CLAUDE.md` section 13 (Roadma
 
 ## In flight
 
-### `feat/end-user-login-page`
+### `feat/end-user-register-and-reset`
 
-First end-user UI page: a public `/visuauth/login` form. Authenticates via
-ASP.NET Identity's `SignInManager`, surfaces invalid-credentials / lockout
-errors inline, and respects a sanitised `returnUrl`. End-user pages get a
-dedicated clean layout (no admin sidebar).
+Round out the end-user authentication surface: self-service registration,
+forgot / reset password, and email confirmation. Every method on
+`IAuthenticationFlow` is already implemented in the previous PR — this
+PR adds the four missing Razor Pages, all on the existing end-user layout.
 
-- Promote `VisuAuth.EndUserUi` from stub to a real Razor Pages library
-  (mirroring `VisuAuth.AdminUi` setup with `AddApplicationPart`)
-- `/visuauth/login` page with email + password + remember-me + return-url
-- Capability-aware: only renders when `UserBackendCapabilities.SupportsLocalLogin`;
-  otherwise shows a "this backend does not support local sign-in" message
-  (paves the way for the Entra adapter)
-- `/visuauth/logout` POST endpoint
-- End-user layout `Pages/Shared/_Layout.cshtml` — centered card, brand,
-  no nav
-- Sample app wires `app.UseAuthentication()` / `UseAuthorization()` and
-  links to the new URLs from the home page
-- Tests for: successful sign-in (cookie set, redirect to return-url),
-  wrong password (error rendered, no cookie), open-redirect guard,
-  unsupported-backend message
+- `/visuauth/register` — self-service registration form (email + password +
+  confirm password); auto-populates `TenantId` from the current scope when
+  multi-tenancy is on
+- `/visuauth/forgot-password` — request a reset; generic
+  "if this email exists, instructions were sent" response (anti-enumeration);
+  development mode surfaces the reset URL inline so the sample is testable
+- `/visuauth/reset-password` — GET with `email`+`token` query params, POST
+  with the new password
+- `/visuauth/confirm-email` — GET with `userId`+`token`, auto-confirms on
+  page load, shows success / failure
+- Login page footer links the new flows ("Forgot password?" / "Create account")
+- Sample app home lists the new URLs and home page recognises the
+  `signed in / signed out` state already wired
+- `EndUserUiOptions.DevelopmentMode` flag — when true, reset / confirm tokens
+  are surfaced inline; false (default) shows only the generic "we sent you
+  an email" message. Sample app sets it true; production consumers leave it
+  off and wire their own `IEmailSender`.
 
 **Out of scope** (deferred):
 
-- Registration, forgot-password, reset-password, confirm-email — land
-  together in `feat/end-user-register-and-reset`
 - Two-factor challenge page — needs TOTP plumbing, ships with the
   external providers / 2FA PR
 - External login buttons (Google, Microsoft, Apple)
+- Real `IEmailSender` plumbing — VisuAuth stays adapter-agnostic here;
+  the development-mode toggle gives the sample a usable flow without
+  taking a dep on a particular mailer
 
 ---
 
 ## Next up (ordered)
 
-### 1. `feat/end-user-register-and-reset`
-
-### 2. `feat/end-user-register-and-reset`
-
-Registration, forgot password, reset password, confirm email. Each is its
-own page; they share the end-user layout introduced with the login PR.
-
-### 3. `feat/mobile-rest-api-and-jwt`
+### 1. `feat/mobile-rest-api-and-jwt`
 
 `POST /visuauth/api/auth/login`, `POST /visuauth/api/auth/register`, `POST /visuauth/api/auth/refresh`, JWT issuance with HS256. WebView callback flow added on top.
 
-### 4. `feat/theming-programmatic-config`
+### 2. `feat/theming-programmatic-config`
 
 `services.AddVisuAuth().Configure<VisuAuthTheme>(...)` generates CSS variables at runtime, overriding the defaults from `wwwroot/visuauth.css`. View override (layer 3) and per-tenant theme (layer 4) deferred to v0.2.
 
-### 5. `feat/i18n-pt-br-and-en`
+### 3. `feat/i18n-pt-br-and-en`
 
 `IStringLocalizer` wired up. All hardcoded English strings in views moved to resource files. pt-BR translation added.
 
-### 6. `feat/embedded-htmx-asset`
+### 4. `feat/embedded-htmx-asset`
 
 Replace the htmx CDN reference with an embedded static asset at `wwwroot/htmx.min.js`. Required for offline / air-gapped deployments.
 

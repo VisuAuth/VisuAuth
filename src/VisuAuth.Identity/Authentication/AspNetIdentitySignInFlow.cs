@@ -119,9 +119,25 @@ public sealed class AspNetIdentitySignInFlow<TUser>(
         }
 
         var result = await _userManager.CreateAsync(user, password);
-        return result.Succeeded
-            ? UserResult.Success(user.Id)
-            : ToFailure(result, "Failed to register user.");
+        if (!result.Succeeded)
+        {
+            return ToFailure(result, "Failed to register user.");
+        }
+
+        // Surface the email-confirmation token so the end-user UI can build
+        // a clickable confirm link (development mode) or hand it off to an
+        // email sender (production, when one is wired). The page is
+        // responsible for not leaking the token to the wrong audience.
+        var metadata = new Dictionary<string, string>();
+        if (Capabilities.SupportsEmailConfirmation && !user.EmailConfirmed)
+        {
+            var confirmationToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+            if (!string.IsNullOrEmpty(confirmationToken))
+            {
+                metadata["emailConfirmationToken"] = confirmationToken;
+            }
+        }
+        return UserResult.Success(user.Id, metadata);
     }
 
     /// <inheritdoc />

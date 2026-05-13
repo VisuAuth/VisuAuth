@@ -13,6 +13,10 @@ publish/
 *.userosscache
 *.sln.docstates
 
+# Claude Code local-only settings (per-machine permissions / allow-list,
+# may contain tokens used in ad-hoc commands — must never be committed).
+.claude/settings.local.json
+
 # Tool output
 .dotnet/
 .fake/
@@ -22,6 +26,8 @@ coverage*/
 *.coverage
 *.coveragexml
 *.trx
+.sonarqube/
+.sonar/
 
 # OS
 .DS_Store

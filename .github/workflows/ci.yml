@@ -1,9 +1,12 @@
 name: CI
 
-# Pull-request validation only. Pushes to `main` are handled by
-# `release.yml`, which also publishes to NuGet — no duplication.
+# PR validation + SonarCloud analysis. Also runs on pushes to `main` so the
+# SonarCloud quality gate has a baseline for the default branch — that run
+# is separate from `release.yml`, which only packs and publishes to NuGet.
 on:
   pull_request:
+    branches: [main]
+  push:
     branches: [main]
   workflow_dispatch:
 
@@ -14,6 +17,8 @@ env:
   DOTNET_NOLOGO: true
   DOTNET_CLI_TELEMETRY_OPTOUT: true
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  SONAR_PROJECT_KEY: VisuAuth_VisuAuth
+  SONAR_ORGANIZATION: visuauth
 
 jobs:
   build:
@@ -24,6 +29,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          # SonarCloud needs the full history for accurate blame / new-code detection.
           fetch-depth: 0
 
       - name: Setup .NET
@@ -31,20 +37,76 @@ jobs:
         with:
           global-json-file: global.json
 
+      - name: Setup Java (required by SonarScanner)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Cache SonarCloud packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      - name: Cache SonarScanner tool
+        id: cache-sonar-scanner
+        uses: actions/cache@v4
+        with:
+          path: ./.sonar/scanner
+          key: ${{ runner.os }}-sonar-scanner
+          restore-keys: ${{ runner.os }}-sonar-scanner
+
+      - name: Install SonarScanner tool
+        if: steps.cache-sonar-scanner.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ./.sonar/scanner
+          dotnet tool update dotnet-sonarscanner --tool-path ./.sonar/scanner
+
       - name: Restore
         run: dotnet restore src/VisuAuth.slnx
+
+      - name: SonarScanner begin
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ./.sonar/scanner/dotnet-sonarscanner begin \
+            /k:"${SONAR_PROJECT_KEY}" \
+            /o:"${SONAR_ORGANIZATION}" \
+            /d:sonar.token="${SONAR_TOKEN}" \
+            /d:sonar.host.url="https://sonarcloud.io" \
+            /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml" \
+            /d:sonar.coverage.exclusions="samples/**,tests/**" \
+            /d:sonar.exclusions="samples/**"
 
       - name: Build
         run: dotnet build src/VisuAuth.slnx --configuration Release --no-restore
 
       - name: Unit tests
-        run: dotnet test tests/VisuAuth.UnitTests/VisuAuth.UnitTests.csproj --configuration Release --no-build --verbosity minimal
+        run: |
+          dotnet test tests/VisuAuth.UnitTests/VisuAuth.UnitTests.csproj \
+            --configuration Release --no-build --verbosity minimal \
+            --collect:"XPlat Code Coverage" --results-directory ./coverage \
+            -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
 
       - name: Integration tests
         # Run integration even if unit failed so the report shows both
         # outcomes. The whole job still fails on any test failure.
         if: '!cancelled()'
-        run: dotnet test tests/VisuAuth.IntegrationTests/VisuAuth.IntegrationTests.csproj --configuration Release --no-build --verbosity minimal
+        run: |
+          dotnet test tests/VisuAuth.IntegrationTests/VisuAuth.IntegrationTests.csproj \
+            --configuration Release --no-build --verbosity minimal \
+            --collect:"XPlat Code Coverage" --results-directory ./coverage \
+            -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+
+      - name: SonarScanner end
+        if: '!cancelled()'
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./.sonar/scanner/dotnet-sonarscanner end /d:sonar.token="${SONAR_TOKEN}"
 
       - name: Pack
         run: dotnet pack src/VisuAuth.slnx --configuration Release --no-build --output ./artifacts

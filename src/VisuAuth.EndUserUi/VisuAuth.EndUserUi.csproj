@@ -21,6 +21,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\VisuAuth.Abstractions\VisuAuth.Abstractions.csproj" />
+    <!-- The end-user pages already load AdminUi's static assets at runtime
+         (/_content/VisuAuth.AdminUi/visuauth.css and visuauth.js). Adding the
+         compile-time reference unlocks the shared TagHelpers (va-password,
+         va-form-errors) so duplicated markup lives in one source of truth. -->
+    <ProjectReference Include="..\VisuAuth.AdminUi\VisuAuth.AdminUi.csproj" />
   </ItemGroup>
 
   <ItemGroup>

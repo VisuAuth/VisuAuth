@@ -21,6 +21,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\VisuAuth.Abstractions\VisuAuth.Abstractions.csproj" />
     <ProjectReference Include="..\..\src\VisuAuth.Identity\VisuAuth.Identity.csproj" />
+    <ProjectReference Include="..\..\src\VisuAuth.AdminUi\VisuAuth.AdminUi.csproj" />
   </ItemGroup>
 
 </Project>

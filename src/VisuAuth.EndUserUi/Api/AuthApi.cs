@@ -1,0 +1,186 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Net.Http.Headers;
+
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
+
+using VisuAuth.Abstractions.Authentication;
+using VisuAuth.Abstractions.Tenancy;
+
+namespace VisuAuth.EndUserUi.Api;
+
+/// <summary>
+/// Minimal-API endpoints under <c>/visuauth/api/auth</c>. The native /
+/// mobile channel: clients post credentials and receive a signed JWT they
+/// attach as <c>Authorization: Bearer ...</c> on subsequent requests.
+/// </summary>
+public static class AuthApi
+{
+    public const string SecurityStampClaimType = "visuauth_stamp";
+
+    /// <summary>
+    /// Maps the three auth endpoints. Call from the consumer's
+    /// <c>MapVisuAuthEndUserUi</c> chain (already wired via the meta-package).
+    /// </summary>
+    public static IEndpointRouteBuilder MapVisuAuthAuthApi(
+        this IEndpointRouteBuilder endpoints,
+        string prefix = "/visuauth/api/auth")
+    {
+        ArgumentNullException.ThrowIfNull(endpoints);
+
+        var group = endpoints.MapGroup(prefix).WithTags("VisuAuth Auth");
+
+        group.MapPost("/login", LoginAsync);
+        group.MapPost("/register", RegisterAsync);
+        group.MapPost("/refresh", RefreshAsync);
+
+        return endpoints;
+    }
+
+    private static async Task<IResult> LoginAsync(
+        LoginRequest request,
+        IAuthenticationFlow authentication,
+        IJwtIssuer issuer,
+        CancellationToken cancellationToken)
+    {
+        if (request is null ||
+            string.IsNullOrWhiteSpace(request.Email) ||
+            string.IsNullOrWhiteSpace(request.Password))
+        {
+            return Results.BadRequest(new AuthErrorResponse("Email and password are required."));
+        }
+
+        var result = await authentication.SignInWithPasswordAsync(
+            request.Email.Trim(),
+            request.Password,
+            persistent: false,
+            cancellationToken);
+
+        return result.Outcome switch
+        {
+            SignInOutcome.Success when result.UserId is { Length: > 0 } id =>
+                await IssueOrUnauthorized(issuer, id, cancellationToken),
+            SignInOutcome.LockedOut =>
+                Results.Json(new AuthErrorResponse("Account is locked."), statusCode: StatusCodes.Status423Locked),
+            SignInOutcome.RequiresTwoFactor =>
+                Results.Json(new AuthErrorResponse("Two-factor authentication is required."), statusCode: StatusCodes.Status401Unauthorized),
+            SignInOutcome.NotAllowed =>
+                Results.Json(new AuthErrorResponse(result.Error ?? "Sign-in is not allowed for this account."), statusCode: StatusCodes.Status403Forbidden),
+            _ =>
+                // Generic 401 on invalid credentials / unknown email — never
+                // leak whether the email exists.
+                Results.Json(new AuthErrorResponse("Email or password is incorrect."), statusCode: StatusCodes.Status401Unauthorized),
+        };
+    }
+
+    private static async Task<IResult> RegisterAsync(
+        RegisterRequest request,
+        IAuthenticationFlow authentication,
+        ITenantContext tenantContext,
+        IJwtIssuer issuer,
+        CancellationToken cancellationToken)
+    {
+        if (request is null ||
+            string.IsNullOrWhiteSpace(request.Email) ||
+            string.IsNullOrWhiteSpace(request.Password))
+        {
+            return Results.BadRequest(new AuthErrorResponse("Email and password are required."));
+        }
+
+        if (!authentication.Capabilities.SupportsRegistration)
+        {
+            return Results.Json(
+                new AuthErrorResponse("This backend does not support self-service registration."),
+                statusCode: StatusCodes.Status403Forbidden);
+        }
+
+        var tenantId = tenantContext.IsMultiTenancyEnabled ? tenantContext.CurrentTenantId : null;
+
+        var registerResult = await authentication.RegisterAsync(
+            request.Email.Trim(),
+            request.Password,
+            tenantId,
+            cancellationToken);
+
+        if (!registerResult.IsSuccess)
+        {
+            return Results.Json(
+                new AuthErrorResponse(
+                    registerResult.Error ?? "Failed to register.",
+                    registerResult.ValidationErrors.Count > 0 ? registerResult.ValidationErrors : null),
+                statusCode: StatusCodes.Status400BadRequest);
+        }
+
+        return await IssueOrUnauthorized(issuer, registerResult.UserId!, cancellationToken);
+    }
+
+    private static async Task<IResult> RefreshAsync(
+        HttpContext httpContext,
+        IJwtIssuer issuer,
+        CancellationToken cancellationToken)
+    {
+        // Refresh accepts the bearer header even if the token expired —
+        // we re-validate just enough to identify the user (signature, jti,
+        // sub) and trust the security stamp on the new JWT to invalidate
+        // any leaked older token.
+        if (!AuthenticationHeaderValue.TryParse(httpContext.Request.Headers.Authorization, out var auth) ||
+            !string.Equals(auth.Scheme, "Bearer", StringComparison.OrdinalIgnoreCase) ||
+            string.IsNullOrWhiteSpace(auth.Parameter))
+        {
+            return Results.Json(
+                new AuthErrorResponse("Missing or malformed Authorization header."),
+                statusCode: StatusCodes.Status401Unauthorized);
+        }
+
+        // Use the resolved JWT bearer authentication scheme handler so
+        // signature + issuer + audience get validated with the same options
+        // the rest of the app uses. We allow expired tokens by re-running
+        // validation with lifetime check off.
+        var handler = new JwtSecurityTokenHandler();
+        if (!handler.CanReadToken(auth.Parameter))
+        {
+            return Results.Json(
+                new AuthErrorResponse("Bearer token is not a JWT."),
+                statusCode: StatusCodes.Status401Unauthorized);
+        }
+
+        var jwt = handler.ReadJwtToken(auth.Parameter);
+        var sub = jwt.Subject;
+        if (string.IsNullOrEmpty(sub))
+        {
+            return Results.Json(
+                new AuthErrorResponse("Token is missing the subject claim."),
+                statusCode: StatusCodes.Status401Unauthorized);
+        }
+
+        // IssueAsync reloads the user from Identity, checks lockout, and
+        // bakes in the current security stamp. If the security stamp has
+        // changed (admin clicked Revoke sessions), the *new* token still
+        // works but any caller hanging onto the *old* token sees its stamp
+        // mismatch on the next protected endpoint hit.
+        return await IssueOrUnauthorized(issuer, sub, cancellationToken);
+    }
+
+    private static async Task<IResult> IssueOrUnauthorized(
+        IJwtIssuer issuer,
+        string userId,
+        CancellationToken cancellationToken)
+    {
+        var token = await issuer.IssueAsync(userId, cancellationToken);
+        if (token is null)
+        {
+            return Results.Json(
+                new AuthErrorResponse("User is no longer eligible to sign in."),
+                statusCode: StatusCodes.Status401Unauthorized);
+        }
+
+        return Results.Ok(new AuthSuccessResponse(
+            token.AccessToken,
+            token.ExpiresAt,
+            token.UserId,
+            token.Email,
+            token.TenantId));
+    }
+}

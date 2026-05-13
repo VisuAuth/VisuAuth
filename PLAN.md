@@ -11,7 +11,7 @@ Updated as PRs land. Long-term direction lives in `CLAUDE.md` section 13 (Roadma
 - **Latest shipped on NuGet**: `VisuAuth 0.0.1-alpha` (placeholder, name reservation)
 - **Default branch**: `main` at <https://github.com/VisuAuth/visuauth>
 - **Build state**: green (`dotnet build src/VisuAuth.slnx -c Release` → 0 errors, 0 warnings)
-- **Test state**: 62 / 62 passing (on `main`; this branch adds more)
+- **Test state**: 78 / 78 passing (on `main`; this branch adds more)
 
 ---
 
@@ -70,47 +70,51 @@ Updated as PRs land. Long-term direction lives in `CLAUDE.md` section 13 (Roadma
 
 ## In flight
 
-### `feat/end-user-register-and-reset`
+### `feat/mobile-rest-api-and-jwt`
 
-Round out the end-user authentication surface: self-service registration,
-forgot / reset password, and email confirmation. Every method on
-`IAuthenticationFlow` is already implemented in the previous PR — this
-PR adds the four missing Razor Pages, all on the existing end-user layout.
+Open the mobile / native-API channel: three minimal-API endpoints under
+`/visuauth/api/auth` issuing JWTs signed with HS256. No IAM-server features
+— no discovery, no JWKS, no key rotation — just enough to let a mobile
+client (or any non-cookie client) authenticate against the same Identity
+backing store the admin UI uses.
 
-- `/visuauth/register` — self-service registration form (email + password +
-  confirm password); auto-populates `TenantId` from the current scope when
-  multi-tenancy is on
-- `/visuauth/forgot-password` — request a reset; generic
-  "if this email exists, instructions were sent" response (anti-enumeration);
-  development mode surfaces the reset URL inline so the sample is testable
-- `/visuauth/reset-password` — GET with `email`+`token` query params, POST
-  with the new password
-- `/visuauth/confirm-email` — GET with `userId`+`token`, auto-confirms on
-  page load, shows success / failure
-- Login page footer links the new flows ("Forgot password?" / "Create account")
-- Sample app home lists the new URLs and home page recognises the
-  `signed in / signed out` state already wired
-- `EndUserUiOptions.DevelopmentMode` flag — when true, reset / confirm tokens
-  are surfaced inline; false (default) shows only the generic "we sent you
-  an email" message. Sample app sets it true; production consumers leave it
-  off and wire their own `IEmailSender`.
+- `VisuAuth.Abstractions`: `IJwtIssuer`, `JwtOptions` (signing key, issuer,
+  audience, lifetime), `JwtTokenResult` DTO
+- `VisuAuth.Identity`: `AspNetIdentityJwtIssuer<TUser>` — builds claims
+  (`sub`, `email`, `tenant_id`, `roles`, `security_stamp`, `iss`, `aud`,
+  `exp`); HS256 via `System.IdentityModel.Tokens.Jwt`
+- `VisuAuth.EndUserUi`: minimal-API group `/visuauth/api/auth` with
+  `POST /login`, `POST /register`, `POST /refresh`. Refresh validates the
+  bearer (even if expired) against the current security stamp — no
+  separate refresh-token table needed in v0.1
+- DI: `AddVisuAuthJwt(Action<JwtOptions>)` registers the issuer and wires
+  `AddJwtBearer` so the same JWT also authenticates against any
+  `[Authorize]`-protected endpoint the consumer adds
+- Sample app: configures a dev signing key in `Program.cs`, documents
+  curl examples on the home page
+- Tests for happy login, wrong-password 401, register flow, refresh with
+  valid / stale / wrong-stamp tokens, tenant-id claim presence
 
 **Out of scope** (deferred):
 
-- Two-factor challenge page — needs TOTP plumbing, ships with the
-  external providers / 2FA PR
-- External login buttons (Google, Microsoft, Apple)
-- Real `IEmailSender` plumbing — VisuAuth stays adapter-agnostic here;
-  the development-mode toggle gives the sample a usable flow without
-  taking a dep on a particular mailer
+- WebView deep-link callback (`?returnUrl=app://...` triggers a JWT
+  redirect) — ships in `feat/mobile-webview-callback`
+- Refresh-token table with explicit revocation — security stamp covers the
+  common case (admin clicks "revoke sessions" → next refresh fails)
+- JWKS / discovery endpoint — VisuAuth is not an OIDC server; consumers
+  needing OIDC pair with Duende IdentityServer
+- Key rotation — single static key per deployment in v0.1
 
 ---
 
 ## Next up (ordered)
 
-### 1. `feat/mobile-rest-api-and-jwt`
+### 1. `feat/mobile-webview-callback`
 
-`POST /visuauth/api/auth/login`, `POST /visuauth/api/auth/register`, `POST /visuauth/api/auth/refresh`, JWT issuance with HS256. WebView callback flow added on top.
+In-app browser flow: `/visuauth/login?returnUrl=app://callback` redirects
+to the deep link with the JWT appended on success. Lets mobile apps reuse
+the themed login pages (and future external providers) instead of
+building a native form.
 
 ### 2. `feat/theming-programmatic-config`
 

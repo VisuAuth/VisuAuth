@@ -111,9 +111,19 @@ internal static class SampleHomePage
               <pre style="background:#f1f5f9;padding:0.75rem;border-radius:0.5rem;overflow:auto;">curl -H "X-Tenant-Id: acme" http://localhost:5239/visuauth/admin/users</pre>
 
               <h2>Mobile / API</h2>
+              <p>
+                JWT-issuing REST endpoints for native / mobile clients. HS256,
+                1-hour tokens, claims include <code>sub</code>, <code>email</code>,
+                <code>tenant_id</code>, and <code>roles</code>.
+              </p>
               <ul>
-                <li><em>No mobile endpoints shipped yet &mdash; coming in <code>feat/mobile-rest-api-and-jwt</code>.</em></li>
+                <li><code>POST /visuauth/api/auth/login</code> &mdash; <code>{ email, password }</code> &rArr; JWT</li>
+                <li><code>POST /visuauth/api/auth/register</code> &mdash; same body, also auto-logs in</li>
+                <li><code>POST /visuauth/api/auth/refresh</code> &mdash; <code>Authorization: Bearer &lt;old token&gt;</code> &rArr; new JWT</li>
               </ul>
+              <pre style="background:#f1f5f9;padding:0.75rem;border-radius:0.5rem;overflow:auto;">curl -X POST http://localhost:5239/visuauth/api/auth/login \
+              -H "Content-Type: application/json" \
+              -d '{"email":"admin@visuauth.dev","password":"Pa$$w0rd!"}'</pre>
             </body>
             </html>
             """);

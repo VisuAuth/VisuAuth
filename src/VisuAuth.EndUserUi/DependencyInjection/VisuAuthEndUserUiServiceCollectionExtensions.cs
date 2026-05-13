@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 
 using VisuAuth.Abstractions.Authentication;
+using VisuAuth.EndUserUi.Api;
 
 namespace VisuAuth.EndUserUi.DependencyInjection;
 
@@ -47,10 +48,11 @@ public static class VisuAuthEndUserUiServiceCollectionExtensions
         string prefix = "/visuauth")
     {
         ArgumentNullException.ThrowIfNull(endpoints);
-        // No-op for now — the mobile/JWT REST routes will land here in
-        // `feat/mobile-rest-api-and-jwt`. Razor pages from this assembly
-        // are auto-picked-up by the existing MapRazorPages call.
-        _ = prefix;
+
+        // Razor pages auto-picked-up by the existing MapRazorPages call from
+        // AdminUi. The mobile / native REST endpoints under `/api/auth` need
+        // explicit registration via minimal APIs.
+        endpoints.MapVisuAuthAuthApi($"{prefix.TrimEnd('/')}/api/auth");
         return endpoints;
     }
 }

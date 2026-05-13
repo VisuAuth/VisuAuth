@@ -11,7 +11,7 @@ Updated as PRs land. Long-term direction lives in `CLAUDE.md` section 13 (Roadma
 - **Latest shipped on NuGet**: `VisuAuth 0.0.1-alpha` (placeholder, name reservation)
 - **Default branch**: `main` at <https://github.com/VisuAuth/visuauth>
 - **Build state**: green (`dotnet build src/VisuAuth.slnx -c Release` → 0 errors, 0 warnings)
-- **Test state**: 78 / 78 passing (on `main`; this branch adds more)
+- **Test state**: 106 / 106 passing (on `main`; 18 unit + 88 integration; this branch adds more)
 
 ---
 
@@ -70,61 +70,57 @@ Updated as PRs land. Long-term direction lives in `CLAUDE.md` section 13 (Roadma
 
 ## In flight
 
-### `feat/mobile-rest-api-and-jwt`
+### `feat/mobile-webview-callback`
 
-Open the mobile / native-API channel: three minimal-API endpoints under
-`/visuauth/api/auth` issuing JWTs signed with HS256. No IAM-server features
-— no discovery, no JWKS, no key rotation — just enough to let a mobile
-client (or any non-cookie client) authenticate against the same Identity
-backing store the admin UI uses.
+Close the WebView side of the mobile story (CLAUDE.md §9.1 Flow 2). A
+native app opens an in-app browser at
+`/visuauth/login?returnUrl=myapp://auth/callback`; after a successful
+sign-in the server recognises the deep-link scheme, mints a JWT, and
+redirects to the callback URL with the token appended in the URL
+fragment. The OS hands control back to the native app, which extracts
+the token client-side. No new endpoints — the existing themed login
+page becomes WebView-aware via configuration.
 
-- `VisuAuth.Abstractions`: `IJwtIssuer`, `JwtOptions` (signing key, issuer,
-  audience, lifetime), `JwtTokenResult` DTO
-- `VisuAuth.Identity`: `AspNetIdentityJwtIssuer<TUser>` — builds claims
-  (`sub`, `email`, `tenant_id`, `roles`, `security_stamp`, `iss`, `aud`,
-  `exp`); HS256 via `System.IdentityModel.Tokens.Jwt`
-- `VisuAuth.EndUserUi`: minimal-API group `/visuauth/api/auth` with
-  `POST /login`, `POST /register`, `POST /refresh`. Refresh validates the
-  bearer (even if expired) against the current security stamp — no
-  separate refresh-token table needed in v0.1
-- DI: `AddVisuAuthJwt(Action<JwtOptions>)` registers the issuer and wires
-  `AddJwtBearer` so the same JWT also authenticates against any
-  `[Authorize]`-protected endpoint the consumer adds
-- Sample app: configures a dev signing key in `Program.cs`, documents
-  curl examples on the home page
-- Tests for happy login, wrong-password 401, register flow, refresh with
-  valid / stale / wrong-stamp tokens, tenant-id claim presence
+- `VisuAuth.Abstractions`: `WebViewCallbackOptions` with
+  `AllowedSchemes` (list of non-HTTP schemes the host permits) and
+  `TokenPlacement` enum (`Fragment` default, `Query` opt-in)
+- `LoginModel` extension: post-success, when `returnUrl` parses to a
+  non-HTTP scheme in the allowlist, issue a JWT via `IJwtIssuer` and
+  redirect to `scheme://host/path#access_token=...&expires_at=...&user_id=...`
+- Security guards:
+  - `http` / `https` are never accepted into the effective allowlist
+    even if the consumer configures them (open-redirect protection)
+  - Schemes are matched case-insensitively
+  - Malformed `returnUrl` falls back to `/` (same posture as the
+    existing local-URL guard)
+- Sample app: registers `visuauth-sample` scheme; home page documents
+  the test URL pattern
+- Tests: happy fragment path, happy query path (opt-in), disallowed
+  scheme falls back, `https` rejected even when listed, malformed URL
+  falls back
 
 **Out of scope** (deferred):
 
-- WebView deep-link callback (`?returnUrl=app://...` triggers a JWT
-  redirect) — ships in `feat/mobile-webview-callback`
-- Refresh-token table with explicit revocation — security stamp covers the
-  common case (admin clicks "revoke sessions" → next refresh fails)
-- JWKS / discovery endpoint — VisuAuth is not an OIDC server; consumers
-  needing OIDC pair with Duende IdentityServer
-- Key rotation — single static key per deployment in v0.1
+- Refresh-token rotation via the WebView flow — JWT lifetime + the
+  existing `/api/auth/refresh` endpoint cover this
+- External-provider WebView callback (Google / Apple sign-in inside
+  WebView) — ships with the external-providers PR
+- App Links / Universal Links / Asset Links file generation —
+  consumer-side setup, not a VisuAuth concern
 
 ---
 
 ## Next up (ordered)
 
-### 1. `feat/mobile-webview-callback`
-
-In-app browser flow: `/visuauth/login?returnUrl=app://callback` redirects
-to the deep link with the JWT appended on success. Lets mobile apps reuse
-the themed login pages (and future external providers) instead of
-building a native form.
-
-### 2. `feat/theming-programmatic-config`
+### 1. `feat/theming-programmatic-config`
 
 `services.AddVisuAuth().Configure<VisuAuthTheme>(...)` generates CSS variables at runtime, overriding the defaults from `wwwroot/visuauth.css`. View override (layer 3) and per-tenant theme (layer 4) deferred to v0.2.
 
-### 3. `feat/i18n-pt-br-and-en`
+### 2. `feat/i18n-pt-br-and-en`
 
 `IStringLocalizer` wired up. All hardcoded English strings in views moved to resource files. pt-BR translation added.
 
-### 4. `feat/embedded-htmx-asset`
+### 3. `feat/embedded-htmx-asset`
 
 Replace the htmx CDN reference with an embedded static asset at `wwwroot/htmx.min.js`. Required for offline / air-gapped deployments.
 

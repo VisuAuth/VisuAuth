@@ -5,59 +5,84 @@
     ViewData["Title"] = "Sign in — VisuAuth";
 }
 
-<h1 class="va-enduser-heading">Sign in</h1>
-<p class="va-enduser-subtitle">Use your email and password to continue.</p>
-
-@if (Model.ErrorMessage is { Length: > 0 } error)
+@if (Model.DeepLinkPreviewUrl is { Length: > 0 } callback)
 {
-    <div class="va-alert va-alert-danger" role="alert">@error</div>
-}
+    <h1 class="va-enduser-heading">Sign-in successful</h1>
+    <p class="va-enduser-subtitle">
+        The native app would normally pick up this callback URL. You're
+        seeing this preview because <code>WebViewCallbackOptions.ShowPreviewPage</code>
+        is enabled — turn it off in production so the redirect is silent.
+    </p>
 
-@if (Model.Capabilities.SupportsLocalLogin)
-{
-    <form method="post" asp-page="/Login" class="va-enduser-form" autocomplete="on">
-        @Html.AntiForgeryToken()
-        <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
+    <div class="va-alert va-alert-info" role="status">
+        <p><strong>Callback URL</strong> (token in the URL fragment):</p>
+        <code class="va-temp-password">@callback</code>
+    </div>
 
-        <label class="va-field">
-            <span class="va-field-label">Email</span>
-            <input type="email"
-                   name="Form.Email"
-                   value="@Model.Form.Email"
-                   class="va-input"
-                   autocomplete="username"
-                   required
-                   autofocus />
-        </label>
-
-        <label class="va-field">
-            <span class="va-field-label">Password</span>
-            <input type="password"
-                   name="Form.Password"
-                   class="va-input"
-                   autocomplete="current-password"
-                   required />
-        </label>
-
-        <label class="va-checkbox">
-            @{ var rememberChecked = Model.Form.RememberMe ? "checked" : null; }
-            <input type="checkbox" name="Form.RememberMe" value="true" checked="@rememberChecked" />
-            <span>Keep me signed in on this device</span>
-        </label>
-
-        <button type="submit" class="va-btn va-btn-primary">Sign in</button>
-    </form>
+    <div class="va-enduser-form">
+        <a href="@callback" class="va-btn va-btn-primary">Continue (open the app)</a>
+    </div>
 
     <div class="va-enduser-footer">
-        <a href="/visuauth/forgot-password">Forgot password?</a>
-        &middot;
-        <a href="/visuauth/register">Create account</a>
+        <a href="/">Back to home</a>
     </div>
 }
 else
 {
-    <p class="va-enduser-subtitle">
-        Sign-in is delegated to an external identity provider. A follow-up
-        PR wires the "Sign in with Microsoft" button here.
-    </p>
+    <h1 class="va-enduser-heading">Sign in</h1>
+    <p class="va-enduser-subtitle">Use your email and password to continue.</p>
+
+    @if (Model.ErrorMessage is { Length: > 0 } error)
+    {
+        <div class="va-alert va-alert-danger" role="alert">@error</div>
+    }
+
+    @if (Model.Capabilities.SupportsLocalLogin)
+    {
+        <form method="post" asp-page="/Login" class="va-enduser-form" autocomplete="on">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
+
+            <label class="va-field">
+                <span class="va-field-label">Email</span>
+                <input type="email"
+                       name="Form.Email"
+                       value="@Model.Form.Email"
+                       class="va-input"
+                       autocomplete="username"
+                       required
+                       autofocus />
+            </label>
+
+            <label class="va-field">
+                <span class="va-field-label">Password</span>
+                <input type="password"
+                       name="Form.Password"
+                       class="va-input"
+                       autocomplete="current-password"
+                       required />
+            </label>
+
+            <label class="va-checkbox">
+                @{ var rememberChecked = Model.Form.RememberMe ? "checked" : null; }
+                <input type="checkbox" name="Form.RememberMe" value="true" checked="@rememberChecked" />
+                <span>Keep me signed in on this device</span>
+            </label>
+
+            <button type="submit" class="va-btn va-btn-primary">Sign in</button>
+        </form>
+
+        <div class="va-enduser-footer">
+            <a href="/visuauth/forgot-password">Forgot password?</a>
+            &middot;
+            <a href="/visuauth/register">Create account</a>
+        </div>
+    }
+    else
+    {
+        <p class="va-enduser-subtitle">
+            Sign-in is delegated to an external identity provider. A follow-up
+            PR wires the "Sign in with Microsoft" button here.
+        </p>
+    }
 }

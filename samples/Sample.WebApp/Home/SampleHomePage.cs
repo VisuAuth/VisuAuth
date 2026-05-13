@@ -122,6 +122,28 @@ internal static class SampleHomePage
               <pre style="background:#f1f5f9;padding:0.75rem;border-radius:0.5rem;overflow:auto;">curl -X POST http://localhost:5239/visuauth/api/auth/login \
               -H "Content-Type: application/json" \
               -d '{"email":"admin@visuauth.dev","password":"Pa$$w0rd!"}'</pre>
+
+              <h2>WebView deep-link callback</h2>
+              <p>
+                Native apps can open <code>/visuauth/login</code> in an in-app browser with a
+                custom-scheme <code>returnUrl</code>. After sign-in the server mints a JWT
+                and redirects to the callback URL with the token in the fragment.
+                This sample allows the <code>visuauth-sample</code> scheme; production
+                deployments configure their own via
+                <code>WebViewCallbackOptions.AllowedSchemes</code>.
+              </p>
+              <ul>
+                <li>
+                  Open in your browser:
+                  <a href="/visuauth/login?returnUrl=visuauth-sample%3A%2F%2Fauth%2Fcallback">
+                    <code>/visuauth/login?returnUrl=visuauth-sample://auth/callback</code>
+                  </a>
+                  &mdash; after sign-in your browser will try to follow the deep link
+                  (and fail, since <code>visuauth-sample://</code> is not registered as
+                  a handler on a desktop). Inspect the DevTools Network tab to see
+                  <code>Location: visuauth-sample://auth/callback#access_token=&hellip;</code>.
+                </li>
+              </ul>
             </body>
             </html>
             """);

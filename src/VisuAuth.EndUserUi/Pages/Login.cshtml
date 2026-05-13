@@ -1,6 +1,7 @@
 @page "/visuauth/login"
 @model VisuAuth.EndUserUi.Pages.LoginModel
 @{
+    Layout = "_EndUserLayout";
     ViewData["Title"] = "Sign in — VisuAuth";
 }
 
@@ -48,9 +49,9 @@
     </form>
 
     <div class="va-enduser-footer">
-        <a href="#" aria-disabled="true" class="va-muted">Forgot password? (soon)</a>
+        <a href="/visuauth/forgot-password">Forgot password?</a>
         &middot;
-        <a href="#" aria-disabled="true" class="va-muted">Create account (soon)</a>
+        <a href="/visuauth/register">Create account</a>
     </div>
 }
 else

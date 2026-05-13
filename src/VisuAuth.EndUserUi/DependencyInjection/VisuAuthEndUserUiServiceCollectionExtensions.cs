@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 
+using VisuAuth.Abstractions.Authentication;
+
 namespace VisuAuth.EndUserUi.DependencyInjection;
 
 /// <summary>
@@ -28,6 +30,10 @@ public static class VisuAuthEndUserUiServiceCollectionExtensions
         services
             .AddRazorPages()
             .AddApplicationPart(AssemblyMarker.Assembly);
+
+        // Default options instance so consumers that never call Configure
+        // still resolve a non-null `IOptions<EndUserUiOptions>`.
+        services.AddOptions<EndUserUiOptions>();
 
         return services;
     }

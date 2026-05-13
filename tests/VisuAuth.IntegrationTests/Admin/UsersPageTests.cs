@@ -1,10 +1,8 @@
 using FluentAssertions;
-
 using Microsoft.AspNetCore.Mvc.Testing;
-
 using Xunit;
 
-namespace VisuAuth.AdminUi.Tests;
+namespace VisuAuth.IntegrationTests.Admin;
 
 /// <summary>
 /// Smoke tests that exercise the full pipeline: sample app boots, ASP.NET Identity
@@ -21,7 +19,7 @@ public sealed class UsersPageTests : IClassFixture<WebApplicationFactory<Program
     }
 
     [Fact]
-    public async Task Users_index_renders_seeded_users_inside_layout()
+    public async Task Get_DefaultRequest_RendersSeededUsersInsideLayout()
     {
         using var client = _factory.CreateClient();
 
@@ -36,7 +34,7 @@ public sealed class UsersPageTests : IClassFixture<WebApplicationFactory<Program
     }
 
     [Fact]
-    public async Task Users_index_filters_by_search_term()
+    public async Task Get_WithSearchTerm_FiltersToMatchingUsers()
     {
         using var client = _factory.CreateClient();
 
@@ -50,7 +48,7 @@ public sealed class UsersPageTests : IClassFixture<WebApplicationFactory<Program
     }
 
     [Fact]
-    public async Task Users_index_returns_partial_when_called_via_htmx()
+    public async Task Get_WithHxRequestHeader_ReturnsPartialWithoutLayout()
     {
         using var client = _factory.CreateClient();
 

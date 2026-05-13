@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-
 using VisuAuth.Abstractions.Tenancy;
 using TenantOptions = VisuAuth.Abstractions.Tenancy.TenantOptions;
 

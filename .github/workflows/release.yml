@@ -68,8 +68,14 @@ jobs:
       - name: Build
         run: dotnet build src/VisuAuth.slnx --configuration Release --no-restore
 
-      - name: Test
-        run: dotnet test src/VisuAuth.slnx --configuration Release --no-build --verbosity minimal
+      - name: Unit tests
+        run: dotnet test tests/VisuAuth.UnitTests/VisuAuth.UnitTests.csproj --configuration Release --no-build --verbosity minimal
+
+      - name: Integration tests
+        # Run integration even if unit failed so the report shows both
+        # outcomes. Any test failure still aborts the publish chain.
+        if: '!cancelled()'
+        run: dotnet test tests/VisuAuth.IntegrationTests/VisuAuth.IntegrationTests.csproj --configuration Release --no-build --verbosity minimal
 
       - name: Pack (stable)
         if: steps.channel.outputs.kind == 'stable'

@@ -1,17 +1,13 @@
 using System.Net;
 using System.Text.RegularExpressions;
-
 using FluentAssertions;
-
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
-
 using Sample.WebApp.Data;
-
 using Xunit;
 
-namespace VisuAuth.AdminUi.Tests;
+namespace VisuAuth.IntegrationTests.Admin;
 
 /// <summary>
 /// Integration tests for the create-user form and the delete action on the
@@ -31,7 +27,7 @@ public sealed class UserCreateDeleteTests : IClassFixture<WebApplicationFactory<
     }
 
     [Fact]
-    public async Task New_user_form_renders()
+    public async Task GetNew_DefaultRender_ShowsAllFormFields()
     {
         using var client = CreateClient();
         var response = await client.GetAsync(new Uri("/visuauth/admin/users/new", UriKind.Relative));
@@ -46,7 +42,7 @@ public sealed class UserCreateDeleteTests : IClassFixture<WebApplicationFactory<
     }
 
     [Fact]
-    public async Task Users_index_has_new_user_button()
+    public async Task GetIndex_DefaultRender_HasNewUserButton()
     {
         using var client = CreateClient();
         var response = await client.GetAsync(new Uri("/visuauth/admin/users", UriKind.Relative));
@@ -58,7 +54,7 @@ public sealed class UserCreateDeleteTests : IClassFixture<WebApplicationFactory<
     }
 
     [Fact]
-    public async Task Create_with_password_redirects_to_detail_and_persists_user()
+    public async Task PostNew_WithExplicitPassword_RedirectsToDetailAndPersists()
     {
         using var client = CreateClient(allowRedirects: false);
         var email = UniqueEmail();
@@ -89,7 +85,7 @@ public sealed class UserCreateDeleteTests : IClassFixture<WebApplicationFactory<
     }
 
     [Fact]
-    public async Task Create_without_password_keeps_admin_on_page_and_surfaces_temporary_password()
+    public async Task PostNew_WithBlankPassword_StaysOnPageAndSurfacesTempPassword()
     {
         using var client = CreateClient();
         var email = UniqueEmail();
@@ -129,7 +125,7 @@ public sealed class UserCreateDeleteTests : IClassFixture<WebApplicationFactory<
     }
 
     [Fact]
-    public async Task Create_with_duplicate_email_surfaces_validation_error()
+    public async Task PostNew_WithDuplicateEmail_ShowsIdentityValidationError()
     {
         using var client = CreateClient();
         var token = await GetTokenAsync(client, "/visuauth/admin/users/new");
@@ -154,7 +150,7 @@ public sealed class UserCreateDeleteTests : IClassFixture<WebApplicationFactory<
     }
 
     [Fact]
-    public async Task New_user_form_renders_role_checkboxes()
+    public async Task GetNew_WithRoleManagementSupported_RendersRoleCheckboxes()
     {
         using var client = CreateClient();
         var response = await client.GetAsync(new Uri("/visuauth/admin/users/new", UriKind.Relative));
@@ -169,7 +165,7 @@ public sealed class UserCreateDeleteTests : IClassFixture<WebApplicationFactory<
     }
 
     [Fact]
-    public async Task Create_with_selected_roles_lands_user_in_those_roles()
+    public async Task PostNew_WithSelectedRoles_AssignsUserToThoseRolesOnly()
     {
         using var client = CreateClient(allowRedirects: false);
         var email = UniqueEmail("withroles");
@@ -205,7 +201,7 @@ public sealed class UserCreateDeleteTests : IClassFixture<WebApplicationFactory<
     }
 
     [Fact]
-    public async Task Delete_action_removes_the_user_and_redirects_to_the_list()
+    public async Task PostDelete_OnExistingUser_RemovesAndRedirectsToList()
     {
         // Provision a throwaway user so the delete does not knock out a seeded one.
         string userId;

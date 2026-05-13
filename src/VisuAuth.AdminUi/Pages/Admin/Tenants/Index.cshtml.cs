@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Options;
-
 using VisuAuth.Abstractions.Tenancy;
 
 namespace VisuAuth.AdminUi.Pages.Admin.Tenants;

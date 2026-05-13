@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
-
 using VisuAuth.AdminUi.DependencyInjection;
 using VisuAuth.EndUserUi.DependencyInjection;
 using VisuAuth.Identity.DependencyInjection;

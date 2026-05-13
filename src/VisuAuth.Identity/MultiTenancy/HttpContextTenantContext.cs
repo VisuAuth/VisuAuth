@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Http;
-
 using VisuAuth.Abstractions.Tenancy;
 
 namespace VisuAuth.Identity.MultiTenancy;

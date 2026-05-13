@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-
 using VisuAuth.Abstractions.Authentication;
 using VisuAuth.Abstractions.Roles;
 using VisuAuth.Abstractions.Tenancy;

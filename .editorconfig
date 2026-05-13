@@ -68,6 +68,10 @@ csharp_using_directive_placement = outside_namespace:warning
 csharp_style_prefer_primary_constructors = true:suggestion
 csharp_style_prefer_collection_expression = when_types_loosely_match:suggestion
 
+# Using directives: keep them flat, no blank-line grouping by namespace prefix.
+dotnet_separate_import_directive_groups = false
+dotnet_sort_system_directives_first = true
+
 # Code analysis
 dotnet_diagnostic.CA1707.severity = none      # underscore in identifiers (tests)
 dotnet_diagnostic.CA1014.severity = none      # CLS compliant

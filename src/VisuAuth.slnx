@@ -10,6 +10,7 @@
     <Project Path="VisuAuth/VisuAuth.csproj" />
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="../tests/VisuAuth.AdminUi.Tests/VisuAuth.AdminUi.Tests.csproj" />
+    <Project Path="../tests/VisuAuth.IntegrationTests/VisuAuth.IntegrationTests.csproj" />
+    <Project Path="../tests/VisuAuth.UnitTests/VisuAuth.UnitTests.csproj" />
   </Folder>
 </Solution>

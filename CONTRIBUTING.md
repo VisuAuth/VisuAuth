@@ -93,6 +93,7 @@ the EF Core idiom. Adapters must be updated.
 
 We use **squash merge** exclusively. Your PR's commits are squashed into a single commit on `main` whose message is the PR title (which should follow Conventional Commits). Keep the PR title clean and you don't have to worry about cleaning individual commits.
 
+## Code style
 
 - **Nullable reference types** are enabled and required.
 - **Warnings as errors** in `Release` builds.
@@ -102,6 +103,83 @@ We use **squash merge** exclusively. Your PR's commits are squashed into a singl
 - **`TimeProvider`** instead of `DateTime.Now`/`DateTime.UtcNow`.
 - **Records for DTOs**, classes for behavior.
 - 1 file = 1 public type.
+- **`using` directives are flat** — no blank lines between them, no grouping
+  by namespace prefix. `dotnet_separate_import_directive_groups = false`
+  enforces this in `.editorconfig`. Example:
+
+  ```csharp
+  using System.Net;
+  using FluentAssertions;
+  using Microsoft.AspNetCore.Mvc.Testing;
+  using VisuAuth.Identity.MultiTenancy;
+  using Xunit;
+  ```
+
+## Tests
+
+Two test projects under `tests/`:
+
+| Project | Purpose | Speed | Tooling |
+|---|---|---|---|
+| `VisuAuth.UnitTests` | Pure logic, no I/O, no host | < 5 ms / test | xUnit + FluentAssertions + Moq |
+| `VisuAuth.IntegrationTests` | End-to-end via the sample app | 30–100 ms / test | + `WebApplicationFactory<Program>` |
+
+Inside each project, sub-folders mirror `src/` so the location of a test
+hints at what it covers (`Identity/Users/`, `Admin/`, `EndUser/`, `Api/`,
+`MultiTenancy/`, etc.).
+
+### Naming: `Method_Scenario_ExpectedResult`
+
+Three underscored parts. This is the
+[Microsoft-documented convention](https://learn.microsoft.com/en-us/dotnet/core/testing/unit-testing-best-practices#naming-your-tests).
+
+**Unit tests** use the method-under-test as the first part:
+
+```csharp
+[Fact]
+public void Generate_WithUppercaseRequired_IncludesAtLeastOneUppercase() { ... }
+
+[Fact]
+public void Success_DefaultArguments_ReturnsSuccessfulResultWithNullUserId() { ... }
+```
+
+**Integration tests** treat the HTTP verb + endpoint name as the "method"
+(there's no single C# method under test — the endpoint is the unit):
+
+```csharp
+[Fact]
+public async Task PostLogin_WithWrongPassword_Returns401WithoutToken() { ... }
+
+[Fact]
+public async Task GetEditRole_OnExistingRole_RendersRowInEditMode() { ... }
+```
+
+### Conventions
+
+- **Every bug fix ships with a regression test.** New behaviour without a
+  test is rejected.
+- **Tests must be order-independent.** Never depend on the side effect of
+  another test. When a test mutates seeded data (rename, lockout, role
+  assignment), provision a throwaway user / role with a `Guid.NewGuid()`-
+  suffixed name so a re-run is safe.
+- **Mocking lib is Moq.** No NSubstitute, no FakeItEasy — one library so
+  test patterns stay uniform.
+- **Use FluentAssertions' `because:` argument** to leave a note for the
+  next reader: `body.Should().Contain("Locked", "the badge must flip
+  after the lock action")`.
+- **Internal API access** — adapter projects expose
+  `<InternalsVisibleTo Include="VisuAuth.UnitTests" />` so the unit-test
+  project can reach internal helpers (e.g. `TemporaryPasswordGenerator`)
+  without leaking `public` onto the production surface.
+- **Antiforgery in integration tests** — Razor Pages require a token on
+  every POST. Tests GET the page first, parse the
+  `__RequestVerificationToken` value with the shared regex
+  `name="__RequestVerificationToken"[^>]*?value="([^"]+)"`, and include
+  it in the form body.
+- **Cookies in integration tests** — pass
+  `WebApplicationFactoryClientOptions { HandleCookies = true }` so the
+  cookie jar survives between the GET that sets the antiforgery cookie
+  and the POST that consumes it.
 
 ## What "drop-in" means here
 

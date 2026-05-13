@@ -1,16 +1,12 @@
 using System.Net;
-
 using FluentAssertions;
-
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
-
 using Sample.WebApp.Data;
-
 using Xunit;
 
-namespace VisuAuth.AdminUi.Tests;
+namespace VisuAuth.IntegrationTests.Admin;
 
 /// <summary>
 /// Smoke tests for the read-only user detail page at <c>/visuauth/admin/users/{id}</c>.
@@ -25,7 +21,7 @@ public sealed class UserDetailPageTests : IClassFixture<WebApplicationFactory<Pr
     }
 
     [Fact]
-    public async Task User_detail_renders_seeded_user_with_all_sections()
+    public async Task Get_WithExistingUserId_RendersAllSections()
     {
         var userId = await ResolveSeededUserIdAsync("alice.silva@example.com");
 
@@ -44,7 +40,7 @@ public sealed class UserDetailPageTests : IClassFixture<WebApplicationFactory<Pr
     }
 
     [Fact]
-    public async Task User_detail_returns_404_for_unknown_id()
+    public async Task Get_WithUnknownId_Returns404()
     {
         using var client = _factory.CreateClient();
 
@@ -54,7 +50,7 @@ public sealed class UserDetailPageTests : IClassFixture<WebApplicationFactory<Pr
     }
 
     [Fact]
-    public async Task Users_index_links_each_row_to_the_detail_page()
+    public async Task UsersListRow_DefaultRender_LinksEmailToDetailPage()
     {
         var userId = await ResolveSeededUserIdAsync("alice.silva@example.com");
 

@@ -1,13 +1,10 @@
 using System.Net;
 using System.Text.RegularExpressions;
-
 using FluentAssertions;
-
 using Microsoft.AspNetCore.Mvc.Testing;
-
 using Xunit;
 
-namespace VisuAuth.AdminUi.Tests;
+namespace VisuAuth.IntegrationTests.EndUser;
 
 /// <summary>
 /// Integration tests for <c>/visuauth/login</c> and <c>/visuauth/logout</c>.
@@ -28,7 +25,7 @@ public sealed class LoginPageTests : IClassFixture<WebApplicationFactory<Program
     }
 
     [Fact]
-    public async Task Login_page_renders_form_with_required_fields()
+    public async Task GetLogin_DefaultRender_ShowsFormWithRequiredFields()
     {
         using var client = CreateClient();
         var response = await client.GetAsync(new Uri("/visuauth/login", UriKind.Relative));
@@ -44,7 +41,7 @@ public sealed class LoginPageTests : IClassFixture<WebApplicationFactory<Program
     }
 
     [Fact]
-    public async Task Successful_sign_in_sets_auth_cookie_and_redirects_to_return_url()
+    public async Task PostLogin_WithValidCredentials_SetsCookieAndRedirects()
     {
         using var client = CreateClient(allowRedirects: false);
 
@@ -69,7 +66,7 @@ public sealed class LoginPageTests : IClassFixture<WebApplicationFactory<Program
     }
 
     [Fact]
-    public async Task Wrong_password_renders_generic_error_and_does_not_authenticate()
+    public async Task PostLogin_WithWrongPassword_ShowsGenericErrorWithoutCookie()
     {
         using var client = CreateClient();
 
@@ -97,7 +94,7 @@ public sealed class LoginPageTests : IClassFixture<WebApplicationFactory<Program
     }
 
     [Fact]
-    public async Task Unknown_email_returns_the_same_generic_error()
+    public async Task PostLogin_WithUnknownEmail_ShowsSameGenericError()
     {
         using var client = CreateClient();
 
@@ -117,7 +114,7 @@ public sealed class LoginPageTests : IClassFixture<WebApplicationFactory<Program
     }
 
     [Fact]
-    public async Task Login_rejects_non_local_returnUrl_after_success()
+    public async Task PostLogin_WithNonLocalReturnUrl_FallsBackToSafeDefault()
     {
         using var client = CreateClient(allowRedirects: false);
 
@@ -138,7 +135,7 @@ public sealed class LoginPageTests : IClassFixture<WebApplicationFactory<Program
     }
 
     [Fact]
-    public async Task Logout_clears_the_cookie_and_redirects()
+    public async Task PostLogout_AfterValidPost_ClearsCookieAndRedirects()
     {
         using var client = CreateClient(allowRedirects: false);
 
@@ -175,7 +172,7 @@ public sealed class LoginPageTests : IClassFixture<WebApplicationFactory<Program
     }
 
     [Fact]
-    public async Task Logout_GET_renders_a_confirmation_page_without_signing_out()
+    public async Task GetLogout_DefaultRender_ShowsConfirmationPageWithoutSigningOut()
     {
         using var client = CreateClient();
 

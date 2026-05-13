@@ -1,5 +1,4 @@
 using System.Security.Cryptography;
-
 using Microsoft.AspNetCore.Identity;
 
 namespace VisuAuth.Identity.Users;

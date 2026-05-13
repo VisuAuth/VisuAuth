@@ -1,10 +1,8 @@
 using System.Net;
 using System.Text;
-
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
-
 using VisuAuth.Abstractions.Users;
 
 namespace Sample.WebApp.Home;

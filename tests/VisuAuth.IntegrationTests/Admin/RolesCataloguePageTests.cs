@@ -1,14 +1,11 @@
 using System.Text.RegularExpressions;
-
 using FluentAssertions;
-
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
-
 using Xunit;
 
-namespace VisuAuth.AdminUi.Tests;
+namespace VisuAuth.IntegrationTests.Admin;
 
 /// <summary>
 /// Integration tests for <c>/visuauth/admin/roles</c> — the role catalogue
@@ -28,7 +25,7 @@ public sealed class RolesCataloguePageTests : IClassFixture<WebApplicationFactor
     }
 
     [Fact]
-    public async Task Catalogue_renders_seeded_roles_with_member_counts()
+    public async Task Get_DefaultRender_ShowsSeededRolesWithMemberCounts()
     {
         using var client = CreateClient();
         var response = await client.GetAsync(new Uri("/visuauth/admin/roles", UriKind.Relative));
@@ -48,7 +45,7 @@ public sealed class RolesCataloguePageTests : IClassFixture<WebApplicationFactor
     }
 
     [Fact]
-    public async Task Catalogue_create_handler_adds_a_role_and_refreshes_the_table()
+    public async Task PostCreate_WithValidName_AddsRoleAndRefreshesTable()
     {
         using var client = CreateClient();
         var unique = $"Role{Guid.NewGuid():N}"[..15];
@@ -75,7 +72,7 @@ public sealed class RolesCataloguePageTests : IClassFixture<WebApplicationFactor
     }
 
     [Fact]
-    public async Task Catalogue_create_with_blank_name_surfaces_validation_error()
+    public async Task PostCreate_WithBlankName_ShowsValidationError()
     {
         using var client = CreateClient();
         var token = await GetTokenAsync(client, "/visuauth/admin/roles");
@@ -96,7 +93,7 @@ public sealed class RolesCataloguePageTests : IClassFixture<WebApplicationFactor
     }
 
     [Fact]
-    public async Task Catalogue_delete_handler_removes_the_role()
+    public async Task PostDelete_OnExistingRole_RemovesIt()
     {
         // Provision a throwaway role so deleting it does not affect other tests.
         string roleId;
@@ -132,7 +129,7 @@ public sealed class RolesCataloguePageTests : IClassFixture<WebApplicationFactor
     }
 
     [Fact]
-    public async Task Edit_role_GET_returns_catalogue_with_row_in_edit_mode()
+    public async Task GetEditRole_OnExistingRole_RendersRowInEditMode()
     {
         // Provision a role we can edit without affecting the seeded ones.
         var name = $"Rename{Guid.NewGuid():N}"[..15];
@@ -162,7 +159,7 @@ public sealed class RolesCataloguePageTests : IClassFixture<WebApplicationFactor
     }
 
     [Fact]
-    public async Task Rename_handler_changes_the_role_name_and_clears_edit_mode()
+    public async Task PostRename_WithNewName_UpdatesAndClearsEditMode()
     {
         // Provision a throwaway role.
         var original = $"Old{Guid.NewGuid():N}"[..12];
@@ -203,7 +200,7 @@ public sealed class RolesCataloguePageTests : IClassFixture<WebApplicationFactor
     }
 
     [Fact]
-    public async Task Rename_with_blank_name_keeps_row_in_edit_mode_and_surfaces_error()
+    public async Task PostRename_WithBlankName_KeepsRowInEditModeWithError()
     {
         var name = $"Stays{Guid.NewGuid():N}"[..12];
         string roleId;
@@ -241,7 +238,7 @@ public sealed class RolesCataloguePageTests : IClassFixture<WebApplicationFactor
     }
 
     [Fact]
-    public async Task Sidebar_promotes_roles_link()
+    public async Task Sidebar_RolesLink_PointsToCatalogue()
     {
         using var client = CreateClient();
         var response = await client.GetAsync(new Uri("/visuauth/admin/users", UriKind.Relative));

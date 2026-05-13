@@ -1,16 +1,12 @@
 using System.Text.RegularExpressions;
-
 using FluentAssertions;
-
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
-
 using Sample.WebApp.Data;
-
 using Xunit;
 
-namespace VisuAuth.AdminUi.Tests;
+namespace VisuAuth.IntegrationTests.Admin;
 
 /// <summary>
 /// Integration tests for the assign-role / remove-role actions on the user
@@ -31,7 +27,7 @@ public sealed class UserRoleAssignmentTests : IClassFixture<WebApplicationFactor
     }
 
     [Fact]
-    public async Task Assign_role_handler_adds_role_to_user_and_refreshes_detail()
+    public async Task PostAssignRole_WithKnownRole_AssignsAndRefreshes()
     {
         var (userId, detailUrl) = await ProvisionUserAsync();
         using var client = CreateClient();
@@ -52,7 +48,7 @@ public sealed class UserRoleAssignmentTests : IClassFixture<WebApplicationFactor
     }
 
     [Fact]
-    public async Task Remove_role_handler_drops_the_role_and_keeps_others()
+    public async Task PostRemoveRole_WithAssignedRole_DropsItAndKeepsOthers()
     {
         var (userId, detailUrl) = await ProvisionUserAsync(initialRoles: ["Manager", "Support"]);
         using var client = CreateClient();
@@ -72,7 +68,7 @@ public sealed class UserRoleAssignmentTests : IClassFixture<WebApplicationFactor
     }
 
     [Fact]
-    public async Task Assign_role_dropdown_hides_roles_the_user_already_has()
+    public async Task AssignRoleDropdown_DefaultRender_HidesAlreadyAssignedRoles()
     {
         var (_, detailUrl) = await ProvisionUserAsync(initialRoles: ["Admin"]);
         using var client = CreateClient();
@@ -97,7 +93,7 @@ public sealed class UserRoleAssignmentTests : IClassFixture<WebApplicationFactor
     }
 
     [Fact]
-    public async Task Assign_role_with_unknown_name_surfaces_validation_error()
+    public async Task PostAssignRole_WithUnknownRole_ShowsValidationError()
     {
         var (_, detailUrl) = await ProvisionUserAsync();
         using var client = CreateClient();
@@ -112,7 +108,7 @@ public sealed class UserRoleAssignmentTests : IClassFixture<WebApplicationFactor
     }
 
     [Fact]
-    public async Task Assign_role_with_missing_role_name_surfaces_validation_error()
+    public async Task PostAssignRole_WithMissingRoleName_ShowsValidationError()
     {
         var (_, detailUrl) = await ProvisionUserAsync();
         using var client = CreateClient();

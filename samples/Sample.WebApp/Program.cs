@@ -1,9 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-
 using Sample.WebApp.Data;
 using Sample.WebApp.Home;
-
 using VisuAuth;
 using VisuAuth.Identity.Authentication;
 using VisuAuth.Identity.MultiTenancy;

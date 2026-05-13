@@ -310,12 +310,61 @@ Both flows share the same `IAuthenticationFlow` implementation and the same JWT 
 
 ## 10. Testing
 
-- **xUnit** + **FluentAssertions** + `WebApplicationFactory<Sample.WebApp.Program>`
-- Integration tests in `tests/VisuAuth.AdminUi.Tests` exercise the sample app end to end
-- Unit tests for pure logic (mappers, validators) in per-package test projects
-- Test naming: `Method_Scenario_ExpectedResult` (e.g. `Users_index_filters_by_search_term`)
-- Every bug fix ships with a regression test
-- Coverage target: 80% on `VisuAuth.Identity` and the public surface of `VisuAuth.Abstractions`
+### 10.1 Layout
+
+Two projects under `tests/`:
+
+```
+tests/
+├── VisuAuth.UnitTests/         # fast, in-memory. xUnit + FluentAssertions + Moq
+└── VisuAuth.IntegrationTests/  # WebApplicationFactory<Sample.WebApp.Program>
+```
+
+**Rule of thumb for picking a project:**
+
+| Criterion | UnitTests | IntegrationTests |
+|---|---|---|
+| Boots an HTTP server | ❌ | ✅ |
+| Touches the DbContext / SQLite | ❌ | ✅ |
+| Renders Razor / asserts on HTML | ❌ | ✅ |
+| Target time per test | < 5 ms | 30–100 ms |
+
+Inside each project, sub-folders mirror `src/`:
+`Abstractions/`, `Identity/Users/`, `Identity/Roles/`, `Identity/Authentication/`,
+`Identity/MultiTenancy/`, `Admin/`, `EndUser/`, `Api/`, `MultiTenancy/`.
+
+### 10.2 Naming
+
+**`Method_Scenario_ExpectedResult`** — three underscored parts.
+
+Unit tests use the method-under-test as the first part:
+`Generate_WithUppercaseRequired_IncludesAtLeastOneUppercase`.
+
+Integration tests use HTTP verb + endpoint as the first part (the
+"method" being exercised is the endpoint):
+`PostLogin_WithWrongPassword_Returns401WithoutToken`,
+`GetEditRole_OnExistingRole_RendersRowInEditMode`.
+
+### 10.3 Tooling
+
+- **xUnit** test runner
+- **FluentAssertions** for `Should().Contain(...)` etc.
+- **Moq** for mocks in unit tests (no NSubstitute — single mocking library
+  by convention)
+- **`Microsoft.AspNetCore.Mvc.Testing`** + the sample app for integration
+- **`InternalsVisibleTo("VisuAuth.UnitTests")`** on adapter projects so
+  unit tests can reach internal helpers (`TemporaryPasswordGenerator`, etc.)
+
+### 10.4 Rules
+
+- Every bug fix ships with a regression test.
+- New behaviour without a test is rejected.
+- Tests must run in any order — never depend on prior test state. Provision
+  throwaway users / roles with `Guid.NewGuid()`-suffixed names when mutating.
+- The SQLite DB is shared between integration-test classes; assembly-level
+  `DisableTestParallelization = true` keeps them serialised.
+- Coverage target (post-1.0): 80% on `VisuAuth.Identity` and the public
+  surface of `VisuAuth.Abstractions`.
 
 ---
 

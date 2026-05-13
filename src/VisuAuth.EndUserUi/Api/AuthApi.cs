@@ -1,11 +1,9 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http.Headers;
-
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
-
 using VisuAuth.Abstractions.Authentication;
 using VisuAuth.Abstractions.Tenancy;
 

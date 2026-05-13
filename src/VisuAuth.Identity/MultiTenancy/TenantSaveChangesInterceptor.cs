@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-
 using VisuAuth.Abstractions.Tenancy;
 
 namespace VisuAuth.Identity.MultiTenancy;

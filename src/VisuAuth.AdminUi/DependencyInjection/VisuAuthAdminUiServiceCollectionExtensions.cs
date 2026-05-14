@@ -46,6 +46,10 @@ public static class VisuAuthAdminUiServiceCollectionExtensions
         // means a consumer's own AddSingleton<ITenantThemeResolver, …>()
         // wins regardless of registration order.
         services.TryAddSingleton<ITenantThemeResolver, NoOpTenantThemeResolver>();
+        // Companion to the layer-3 expander: a per-tenant override root
+        // resolved at request time. Same TryAdd no-op default so the
+        // single-tenant pipeline is unchanged.
+        services.TryAddSingleton<ITenantViewOverrideResolver, NoOpTenantViewOverrideResolver>();
 
         // Theming layer 3 (CLAUDE.md §8.4) — view + page overrides.
         // Default root /Views/VisuAuth applies until the consumer calls

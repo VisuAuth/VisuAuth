@@ -60,6 +60,7 @@ Updated as PRs land. Long-term direction lives in `CLAUDE.md` section 13 (Roadma
   - i18n pipeline: JSON-backed `IStringLocalizer<AdminSharedResources>` / `IStringLocalizer<EndUserSharedResources>` (provider: `My.Extensions.Localization.Json`), `en` + `pt-BR` translations, query / cookie / header culture resolution, `POST /visuauth/culture` switch endpoint with open-redirect guard, `<va-language-switcher />` tag helper in both layouts
   - htmx 2.0.4 shipped as an embedded static asset (`VisuAuth.AdminUi/wwwroot/htmx.min.js`); both layouts reference `/_content/VisuAuth.AdminUi/htmx.min.js` so air-gapped deployments work without an outbound CDN call
   - View / page override (theming layer 3) — drop a same-named `.cshtml` in `/Views/VisuAuth/` (root configurable via `VisuAuthViewOverrideOptions`) and Razor uses it instead of the package default; covers partials + layouts via `IViewLocationExpander` and full Razor Pages via `IPageRouteModelConvention` that demotes our routes so a consumer page at the same `@page` route wins
+  - Per-tenant theme (theming layer 4) — consumers implement `ITenantThemeResolver` and VisuAuth overlays the per-tenant `VisuAuthTheme` on top of the global one via `VisuAuthThemeMerger`; default registration is a no-op so single-tenant deployments keep the layer-2 fast path
 - `VisuAuth.EndUserUi`:
   - `/visuauth/login` and `/visuauth/logout` Razor Pages (email + password + remember-me, anti-forgery, redirect-back to `returnUrl`)
   - `/visuauth/register`, `/visuauth/forgot-password`, `/visuauth/reset-password`, `/visuauth/confirm-email` Razor Pages
@@ -82,44 +83,49 @@ Updated as PRs land. Long-term direction lives in `CLAUDE.md` section 13 (Roadma
 
 ## In flight
 
-### `feat/theming-per-tenant`
+### `feat/view-override-per-tenant`
 
-Theming layer 4 from CLAUDE.md §8.4 — when multi-tenancy is on, the
-brand palette can vary per tenant. Sits cleanly on top of layer 2
-(programmatic `VisuAuthTheme`): the consumer implements one resolver
-contract, VisuAuth handles the per-request lookup and merging.
+Pairs theming layer 3 (view override) with the per-tenant resolver
+pattern from layer 4. A consumer can drop a `_UsersTable.cshtml`
+under `/Views/VisuAuth/Tenants/acme/` and Razor will pick that file
+over the global `/Views/VisuAuth/_UsersTable.cshtml` when the
+current request is scoped to the `acme` tenant.
 
-- Contract: `ITenantThemeResolver` (in `VisuAuth.AdminUi.Theming`)
-  with one method
-  `Task<VisuAuthTheme?> ResolveAsync(string? tenantId, CancellationToken)`.
-  Returning `null` means "no per-tenant override" — the global
-  `IOptions<VisuAuthTheme>` applies as before.
-- Default registration: `NoOpTenantThemeResolver` (returns `null`)
-  goes in via `TryAdd` so single-tenant deployments and consumers
-  who never opt in stay on the existing fast path.
-- Merging: `VisuAuthThemeMerger.Merge(tenant, global)` overlays
-  tenant on global property-by-property — tenant wins where set,
-  global fills the rest, anything still null falls through to the
-  CSS defaults in `visuauth.css`. So a tenant resolver can change
-  just `Primary` without restating the rest of the palette.
-- Wiring: the existing `<va-theme-style />` tag helper becomes
-  `ProcessAsync`-based, pulls `ITenantContext.CurrentTenantId`,
-  asks the resolver, merges with the global theme, and renders the
-  same `:root { ... }` block through `VisuAuthThemeCssRenderer`.
-  The output stays identical for single-tenant deployments.
-- Sample app: `Sample.WebApp.Theming.SampleTenantThemeResolver`
-  maps the seeded tenant ids (`acme`, `globex`, `initech`) to
-  distinct presets so flipping the sidebar tenant switcher
-  re-skins the dashboard live.
+- Contract: `ITenantViewOverrideResolver` with one **synchronous**
+  method `string? ResolveOverrideRoot(string? tenantId)`. Sync
+  because Razor's `IViewLocationExpander.PopulateValues` /
+  `ExpandViewLocations` are sync — no async escape hatch in the
+  view-engine pipeline. Per-tenant override roots are typically
+  static config so sync is the right shape anyway.
+- Default registration: `NoOpTenantViewOverrideResolver` (returns
+  `null`) — single-tenant deployments and consumers who never opt in
+  pay nothing.
+- Wiring: `VisuAuthViewLocationExpander` resolves the per-tenant
+  resolver + `ITenantContext` from `HttpContext.RequestServices`
+  (the only safe way to reach scoped services from a singleton
+  expander). When a tenant root resolves, the expander prepends
+  `{tenantRoot}/{0}.cshtml` and `{tenantRoot}/Shared/{0}.cshtml`
+  AHEAD of the global override paths and the package defaults.
+  Order: tenant override → global override → package defaults.
+- Cache key: `PopulateValues` writes both the global root and the
+  resolved tenant id into `context.Values`, so Razor's view-location
+  cache invalidates on either change. Otherwise tenant A's swapped
+  table would shadow tenant B's on the next request.
+- Sample app: `Sample.WebApp.Theming.SampleTenantViewOverrideResolver`
+  maps `acme` → `/Views/VisuAuth/Tenants/acme`. A demo
+  `_UsersTable.cshtml` lives there with a banner that proves the
+  per-tenant path is winning.
 
 **Out of scope** (deferred):
 
-- Caching — resolvers run on every render; consumers that hit a
-  database wrap their own `IMemoryCache` for now. A built-in
-  `CachedTenantThemeResolver` decorator can land later if usage
-  shows it's needed.
-- Per-tenant CSS files (a "drop a `.css` per tenant" model).
-  Strict palette overrides cover the 80% case.
+- Per-tenant whole-page overrides — the `IPageRouteModelConvention`
+  that demotes our routes runs once at startup, not per request, so
+  it can't pick a different consumer page based on the current
+  tenant. Same-route-per-tenant page overrides need a custom
+  `EndpointSelectorPolicy` and are a separate change.
+- Per-tenant CSS files (drop-a-`.css`-per-tenant). Layer-4 theme
+  overrides cover the styling case; per-tenant `.cshtml` covers
+  the markup case. CSS-per-tenant is the third, larger axis.
 
 ---
 

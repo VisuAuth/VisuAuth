@@ -1,0 +1,148 @@
+@*
+    Per-tenant view override demo (CLAUDE.md §8.4 layers 3+4).
+
+    SampleTenantViewOverrideResolver maps tenantId "acme" to the path
+    /Views/VisuAuth/Tenants/acme/, which the expander prepends ahead of
+    both the global /Views/VisuAuth/ override and the package's built-in
+    _UsersTable.cshtml. So flipping the sidebar tenant switcher to acme
+    makes Razor pick THIS file; switching to globex/initech falls back
+    through to the global sample override.
+
+    Structure-preserving copy of the package default (same id, columns,
+    htmx attributes) so existing tests stay green; the only visible
+    difference is an acme-branded banner that proves the per-tenant
+    path is winning.
+*@
+@using VisuAuth.Abstractions.Tenancy
+@inject ITenantContext TenantContext
+@model VisuAuth.AdminUi.Pages.Admin.Users.IndexModel
+@{
+    var result = Model.Result;
+    var hasResults = result.Items.Count > 0;
+    var showTenantColumn = TenantContext.IsMultiTenancyEnabled;
+
+    string PageLink(int page)
+    {
+        var qs = new List<string> { $"page={page}" };
+        if (!string.IsNullOrEmpty(Model.SearchTerm)) qs.Add($"q={Uri.EscapeDataString(Model.SearchTerm)}");
+        if (!string.IsNullOrEmpty(Model.RoleFilter)) qs.Add($"role={Uri.EscapeDataString(Model.RoleFilter)}");
+        if (!string.IsNullOrEmpty(Model.StatusFilter)) qs.Add($"status={Uri.EscapeDataString(Model.StatusFilter)}");
+        if (!string.IsNullOrEmpty(Model.VerifiedFilter)) qs.Add($"verified={Uri.EscapeDataString(Model.VerifiedFilter)}");
+        if (!string.IsNullOrEmpty(Model.TwoFactorFilter)) qs.Add($"twofa={Uri.EscapeDataString(Model.TwoFactorFilter)}");
+        return $"/visuauth/admin/users?{string.Join("&", qs)}";
+    }
+}
+<div id="va-users-table" class="va-card" data-va-override="sample-acme">
+    <div class="va-override-banner" style="margin:0 0 1rem;padding:0.5rem 0.75rem;border:1px dashed var(--visuauth-border);border-radius:var(--visuauth-radius);font-size:0.85rem;color:var(--visuauth-muted);">
+        <strong>acme tenant override</strong> — this <code>_UsersTable.cshtml</code>
+        lives at <code>samples/Sample.WebApp/Views/VisuAuth/Tenants/acme/</code>
+        and only renders when the request is scoped to acme via the sidebar
+        tenant switcher.
+    </div>
+    @if (hasResults)
+    {
+        <table class="va-table">
+            <thead>
+            <tr>
+                <th>@Ls["Users.Col.Email"]</th>
+                <th>@Ls["Users.Col.Username"]</th>
+                @if (showTenantColumn)
+                {
+                    <th>@Ls["Users.Col.Tenant"]</th>
+                }
+                <th>@Ls["Users.Col.Status"]</th>
+                <th>@Ls["Users.Col.2fa"]</th>
+                <th>@Ls["Users.Col.Verified"]</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var user in result.Items)
+            {
+                <tr>
+                    <td>
+                        <a class="va-row-link" href="/visuauth/admin/users/@user.Id">@user.Email</a>
+                    </td>
+                    <td>@(user.UserName ?? Ls["Common.Dash"].Value)</td>
+                    @if (showTenantColumn)
+                    {
+                        <td>
+                            @if (!string.IsNullOrEmpty(user.TenantId))
+                            {
+                                <code class="va-tenant-id">@user.TenantId</code>
+                            }
+                            else
+                            {
+                                <span class="va-muted">@Ls["Common.Dash"]</span>
+                            }
+                        </td>
+                    }
+                    <td>
+                        @if (user.IsEnabled)
+                        {
+                            <span class="va-badge va-success">@Ls["Common.StatusActive"]</span>
+                        }
+                        else
+                        {
+                            <span class="va-badge va-danger">@Ls["Common.StatusLocked"]</span>
+                        }
+                    </td>
+                    <td>
+                        <span class="va-badge">@(user.TwoFactorEnabled ? Ls["Common.On"].Value : Ls["Common.Off"].Value)</span>
+                    </td>
+                    <td>
+                        <span class="va-badge @(user.EmailConfirmed ? "va-success" : "")">
+                            @(user.EmailConfirmed ? Ls["Common.Yes"].Value : Ls["Common.Pending"].Value)
+                        </span>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+
+        <div class="va-pagination">
+            <div>
+                @Ls["Users.PaginationShowing", ((result.Page - 1) * result.PageSize) + 1, Math.Min(result.Page * result.PageSize, result.Total), result.Total]
+            </div>
+            <div>
+                @if (result.HasPrevious)
+                {
+                    <a href="@PageLink(result.Page - 1)"
+                       hx-get="@PageLink(result.Page - 1)"
+                       hx-target="#va-users-table"
+                       hx-swap="outerHTML"
+                       hx-push-url="true">@Ls["Common.Previous"]</a>
+                }
+                else
+                {
+                    <span class="va-disabled">@Ls["Common.Previous"]</span>
+                }
+                <span class="va-muted">@Ls["Common.PageNofTotal", result.Page, Math.Max(result.TotalPages, 1)]</span>
+                @if (result.HasNext)
+                {
+                    <a href="@PageLink(result.Page + 1)"
+                       hx-get="@PageLink(result.Page + 1)"
+                       hx-target="#va-users-table"
+                       hx-swap="outerHTML"
+                       hx-push-url="true">@Ls["Common.Next"]</a>
+                }
+                else
+                {
+                    <span class="va-disabled">@Ls["Common.Next"]</span>
+                }
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="va-empty">
+            @if (!string.IsNullOrWhiteSpace(Model.SearchTerm))
+            {
+                <p>@L["Users.EmptyNoMatch", Model.SearchTerm]</p>
+            }
+            else
+            {
+                <p>@Ls["Users.EmptyNone"]</p>
+            }
+        </div>
+    }
+</div>

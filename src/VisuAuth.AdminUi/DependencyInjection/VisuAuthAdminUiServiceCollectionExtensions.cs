@@ -25,12 +25,21 @@ public static class VisuAuthAdminUiServiceCollectionExtensions
 
         services
             .AddRazorPages()
-            .AddApplicationPart(AssemblyMarker.Assembly);
+            .AddApplicationPart(AssemblyMarker.Assembly)
+            // ViewLocalization unlocks `IHtmlLocalizer<T>` and the
+            // `@inject IViewLocalizer Loc` pattern in Razor views; the
+            // backing IStringLocalizer comes from AddVisuAuthLocalization.
+            .AddViewLocalization()
+            .AddDataAnnotationsLocalization();
 
         // Ensure IOptions<VisuAuthTheme> resolves to an empty bag when the
         // consumer skips Configure<VisuAuthTheme>(…) — the layout's
         // <va-theme-style /> tag helper then suppresses itself.
         services.AddOptions<VisuAuthTheme>();
+
+        // <va-language-switcher /> needs the current request + an
+        // antiforgery token; both come through IHttpContextAccessor.
+        services.AddHttpContextAccessor();
 
         return services;
     }

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Razor.TagHelpers;
+using Microsoft.Extensions.Localization;
 
 namespace VisuAuth.AdminUi.TagHelpers;
 
@@ -16,15 +17,21 @@ namespace VisuAuth.AdminUi.TagHelpers;
 /// the <c>hidden</c> attribute on the eye-off SVG).
 /// </remarks>
 [HtmlTargetElement("va-password", TagStructure = TagStructure.WithoutEndTag)]
-public sealed class PasswordInputTagHelper : TagHelper
+public sealed class PasswordInputTagHelper(IStringLocalizer<AdminSharedResources> localizer) : TagHelper
 {
+    private readonly IStringLocalizer<AdminSharedResources> _l = localizer;
+
     /// <summary>
     /// <c>name</c> attribute on the underlying <c>&lt;input&gt;</c>. Required.
     /// </summary>
     public string Name { get; set; } = string.Empty;
 
-    /// <summary>Label text rendered above the input. Defaults to "Password".</summary>
-    public string Label { get; set; } = "Password";
+    /// <summary>
+    /// Label text rendered above the input. Defaults to the localized
+    /// "Password" string (key <c>Tag.Password.LabelDefault</c>) so the
+    /// majority of call sites can leave this null.
+    /// </summary>
+    public string? Label { get; set; }
 
     /// <summary>
     /// <c>autocomplete</c> attribute. Typical values: <c>current-password</c>
@@ -72,11 +79,14 @@ public sealed class PasswordInputTagHelper : TagHelper
             attrs.Append(" autofocus");
         }
 
+        var label = string.IsNullOrEmpty(Label) ? _l["Tag.Password.LabelDefault"].Value : Label;
+        var showAria = _l["Tag.Password.ShowAria"].Value;
+
         var content =
-            $"<span class=\"va-field-label\">{HtmlEncode(Label)}</span>" +
+            $"<span class=\"va-field-label\">{HtmlEncode(label)}</span>" +
             "<div class=\"va-password-wrap\">" +
             $"<input {attrs} />" +
-            "<button type=\"button\" class=\"va-password-toggle\" data-va-password-toggle aria-label=\"Show password\" aria-pressed=\"false\">" +
+            $"<button type=\"button\" class=\"va-password-toggle\" data-va-password-toggle aria-label=\"{HtmlEncode(showAria)}\" aria-pressed=\"false\">" +
             EyeSvg +
             EyeOffSvg +
             "</button>" +

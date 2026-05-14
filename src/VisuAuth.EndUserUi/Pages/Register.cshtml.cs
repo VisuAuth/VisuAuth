@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Options;
 using VisuAuth.Abstractions.Authentication;
 using VisuAuth.Abstractions.Capabilities;
@@ -15,11 +16,13 @@ namespace VisuAuth.EndUserUi.Pages;
 public sealed class RegisterModel(
     IAuthenticationFlow authentication,
     ITenantContext tenantContext,
-    IOptions<EndUserUiOptions> options) : PageModel
+    IOptions<EndUserUiOptions> options,
+    IStringLocalizer<EndUserSharedResources> localizer) : PageModel
 {
     private readonly IAuthenticationFlow _authentication = authentication ?? throw new ArgumentNullException(nameof(authentication));
     private readonly ITenantContext _tenantContext = tenantContext ?? throw new ArgumentNullException(nameof(tenantContext));
     private readonly EndUserUiOptions _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
+    private readonly IStringLocalizer<EndUserSharedResources> _l = localizer ?? throw new ArgumentNullException(nameof(localizer));
 
     [BindProperty]
     public RegisterForm Form { get; set; } = new();
@@ -41,7 +44,7 @@ public sealed class RegisterModel(
     {
         if (!Capabilities.SupportsRegistration)
         {
-            Errors = ["This backend does not allow self-service registration."];
+            Errors = [_l["Register.Error.NotSupported"].Value];
         }
         return Page();
     }
@@ -50,7 +53,7 @@ public sealed class RegisterModel(
     {
         if (!Capabilities.SupportsRegistration)
         {
-            Errors = ["This backend does not allow self-service registration."];
+            Errors = [_l["Register.Error.NotSupported"].Value];
             return Page();
         }
 
@@ -58,13 +61,13 @@ public sealed class RegisterModel(
             string.IsNullOrWhiteSpace(Form.Email) ||
             string.IsNullOrWhiteSpace(Form.Password))
         {
-            Errors = ["Email and password are required."];
+            Errors = [_l["Register.Error.EmailPasswordRequired"].Value];
             return Page();
         }
 
         if (!string.Equals(Form.Password, Form.ConfirmPassword, StringComparison.Ordinal))
         {
-            Errors = ["Passwords do not match."];
+            Errors = [_l["Register.Error.PasswordMismatch"].Value];
             return Page();
         }
 
@@ -86,7 +89,7 @@ public sealed class RegisterModel(
         {
             Errors = result.ValidationErrors.Count > 0
                 ? result.ValidationErrors
-                : [result.Error ?? "Failed to register."];
+                : [result.Error ?? _l["Register.Error.RegisterFailed"].Value];
             return Page();
         }
 

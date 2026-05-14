@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using VisuAuth.AdminUi.DependencyInjection;
+using VisuAuth.AdminUi.Localization;
 using VisuAuth.EndUserUi.DependencyInjection;
 using VisuAuth.Identity.DependencyInjection;
 
@@ -28,6 +29,11 @@ public static class VisuAuthBuilderExtensions
         ArgumentNullException.ThrowIfNull(services);
 
         services.AddVisuAuthIdentityAdapter<TUser, TRole>();
+        // Localization must register BEFORE the UI projects so the JSON
+        // factory wins over the default ResourceManager one that
+        // AddViewLocalization() would otherwise pin (it uses TryAdd, so
+        // first writer wins — and we want the JSON reader).
+        services.AddVisuAuthLocalization();
         services.AddVisuAuthAdminUi();
         services.AddVisuAuthEndUserUi();
         return services;
@@ -58,6 +64,7 @@ public static class VisuAuthBuilderExtensions
 
         endpoints.MapVisuAuthEndUserUi();
         endpoints.MapVisuAuthAdminUi();
+        endpoints.MapVisuAuthCultureSwitch();
         return endpoints;
     }
 }

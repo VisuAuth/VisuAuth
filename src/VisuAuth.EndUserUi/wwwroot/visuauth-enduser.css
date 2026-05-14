@@ -73,3 +73,20 @@
 .va-enduser-footer a:hover {
     text-decoration: underline;
 }
+
+/* Language switcher inside the end-user card — pushes the select to the
+ * footer so the sign-in form is the visual anchor and the locale flip is
+ * a secondary action. */
+.va-enduser-lang {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--visuauth-border);
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.85rem;
+}
+
+.va-enduser-lang select {
+    font-size: 0.9rem;
+}

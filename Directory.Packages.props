@@ -20,6 +20,10 @@
     <PackageVersion Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.0" />
   </ItemGroup>
 
+  <ItemGroup Label="Localization">
+    <PackageVersion Include="My.Extensions.Localization.Json" Version="4.0.0" />
+  </ItemGroup>
+
   <ItemGroup Label="JWT">
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.0" />
     <PackageVersion Include="System.IdentityModel.Tokens.Jwt" Version="8.2.1" />

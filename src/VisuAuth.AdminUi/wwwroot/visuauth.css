@@ -297,6 +297,17 @@ body {
     margin-top: 0.25rem;
 }
 
+.va-lang-switcher {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    margin-top: 1rem;
+}
+
+.va-lang-switcher select {
+    margin-top: 0.25rem;
+}
+
 .va-detail-status {
     display: flex;
     flex-wrap: wrap;

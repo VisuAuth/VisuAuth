@@ -37,4 +37,17 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
+  <!-- Same propagation pattern as AdminUi. The end-user UI ships its own
+       JSON resource files (login, register, reset, etc.) and needs them
+       on disk next to the consumer's binaries. -->
+  <ItemGroup>
+    <!-- See AdminUi: <Update> instead of <Include> avoids NETSDK1022. -->
+    <Content Update="Resources\**\*.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Pack>true</Pack>
+      <PackagePath>contentFiles\any\any\Resources\;content\Resources\</PackagePath>
+      <PackageCopyToOutput>true</PackageCopyToOutput>
+    </Content>
+  </ItemGroup>
+
 </Project>

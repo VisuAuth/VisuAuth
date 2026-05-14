@@ -6,37 +6,37 @@
 
 <div class="va-page-header">
     <div>
-        <a class="va-back" href="/visuauth/admin/users">‹ Back to users</a>
+        <a class="va-back" href="/visuauth/admin/users">@Ls["Users.Detail.Back"]</a>
         <h1>@detail.Email</h1>
         <div class="va-muted va-detail-subtitle">
-            @(detail.UserName ?? "—")
+            @(detail.UserName ?? Ls["Common.Dash"].Value)
             <span class="va-detail-id">@detail.Id</span>
         </div>
     </div>
     <div class="va-detail-status">
         @if (detail.IsEnabled)
         {
-            <span class="va-badge va-success">Active</span>
+            <span class="va-badge va-success">@Ls["Common.StatusActive"]</span>
         }
         else
         {
-            <span class="va-badge va-danger">Locked</span>
+            <span class="va-badge va-danger">@Ls["Common.StatusLocked"]</span>
         }
         @if (detail.EmailConfirmed)
         {
-            <span class="va-badge va-success">Email verified</span>
+            <span class="va-badge va-success">@Ls["Users.Detail.BadgeEmailVerified"]</span>
         }
         else
         {
-            <span class="va-badge">Email pending</span>
+            <span class="va-badge">@Ls["Users.Detail.BadgeEmailPending"]</span>
         }
         @if (detail.TwoFactorEnabled)
         {
-            <span class="va-badge va-success">2FA on</span>
+            <span class="va-badge va-success">@Ls["Users.Detail.Badge2faOn"]</span>
         }
         else
         {
-            <span class="va-badge">2FA off</span>
+            <span class="va-badge">@Ls["Users.Detail.Badge2faOff"]</span>
         }
     </div>
 </div>
@@ -44,7 +44,7 @@
 @if (Model.ActionErrors.Count > 0)
 {
     <div class="va-alert va-alert-danger" role="alert">
-        <strong>Action failed.</strong>
+        <strong>@Ls["Users.Detail.ActionFailed"]</strong>
         <ul>
             @foreach (var err in Model.ActionErrors)
             {
@@ -62,9 +62,7 @@ else if (Model.ActionMessage is { Length: > 0 } message)
 {
     <div class="va-alert va-alert-info" role="status">
         <p>
-            <strong>Temporary password.</strong> Hand it to the user — VisuAuth
-            will not show it again. They will be signed out of every device until
-            they use it.
+            <strong>@Ls["Users.Detail.TempPasswordHeading"]</strong> @Ls["Users.Detail.TempPasswordDesc"]
         </p>
         <partial name="_CopyableSecret" model="@temp" />
     </div>
@@ -81,19 +79,19 @@ else if (Model.ActionMessage is { Length: > 0 } message)
 @if (capabilities.SupportsCustomClaims)
 {
     <section class="va-card va-detail-card">
-        <h2>Claims <span class="va-muted va-count">(@detail.Claims.Count)</span></h2>
+        <h2>@Ls["Users.Claims.Heading"] <span class="va-muted va-count">(@detail.Claims.Count)</span></h2>
         @if (detail.Claims.Count == 0)
         {
-            <p class="va-empty-inline">No custom claims.</p>
+            <p class="va-empty-inline">@Ls["Users.Claims.None"]</p>
         }
         else
         {
             <table class="va-table">
                 <thead>
                 <tr>
-                    <th>Type</th>
-                    <th>Value</th>
-                    <th>Issuer</th>
+                    <th>@Ls["Users.Claims.Col.Type"]</th>
+                    <th>@Ls["Users.Claims.Col.Value"]</th>
+                    <th>@Ls["Users.Claims.Col.Issuer"]</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -102,7 +100,7 @@ else if (Model.ActionMessage is { Length: > 0 } message)
                     <tr>
                         <td><code>@claim.Type</code></td>
                         <td>@claim.Value</td>
-                        <td class="va-muted">@(claim.Issuer ?? "—")</td>
+                        <td class="va-muted">@(claim.Issuer ?? Ls["Common.Dash"].Value)</td>
                     </tr>
                 }
                 </tbody>
@@ -114,18 +112,18 @@ else if (Model.ActionMessage is { Length: > 0 } message)
 @if (capabilities.SupportsExternalProviders)
 {
     <section class="va-card va-detail-card">
-        <h2>External logins <span class="va-muted va-count">(@detail.ExternalLogins.Count)</span></h2>
+        <h2>@Ls["Users.External.Heading"] <span class="va-muted va-count">(@detail.ExternalLogins.Count)</span></h2>
         @if (detail.ExternalLogins.Count == 0)
         {
-            <p class="va-empty-inline">No external providers linked.</p>
+            <p class="va-empty-inline">@Ls["Users.External.None"]</p>
         }
         else
         {
             <table class="va-table">
                 <thead>
                 <tr>
-                    <th>Provider</th>
-                    <th>Provider key</th>
+                    <th>@Ls["Users.External.Col.Provider"]</th>
+                    <th>@Ls["Users.External.Col.ProviderKey"]</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -144,12 +142,9 @@ else if (Model.ActionMessage is { Length: > 0 } message)
 
 <section class="va-card va-detail-card va-danger-zone">
     <div class="va-detail-card-header">
-        <h2>Danger zone</h2>
+        <h2>@Ls["Users.Danger.Heading"]</h2>
     </div>
-    <p class="va-muted">
-        Deleting a user removes them and all their claims, roles, and external
-        login links. This cannot be undone.
-    </p>
+    <p class="va-muted">@Ls["Users.Danger.Desc"]</p>
     <div class="va-actions">
         @* asp-page-handler="Delete" lets the form tag helper generate the
            action URL with the current id route value and ensures the
@@ -160,8 +155,8 @@ else if (Model.ActionMessage is { Length: > 0 } message)
             @Html.AntiForgeryToken()
             <button type="submit"
                     class="va-btn va-btn-danger"
-                    onclick="return confirm('Permanently delete this user? This cannot be undone.');">
-                Delete user
+                    onclick="return confirm('@Ls["Users.Danger.DeleteConfirm"]');">
+                @Ls["Users.Danger.Delete"]
             </button>
         </form>
     </div>

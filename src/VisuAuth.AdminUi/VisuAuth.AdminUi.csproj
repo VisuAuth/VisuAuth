@@ -27,4 +27,28 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
+  <ItemGroup Label="Localization">
+    <PackageReference Include="My.Extensions.Localization.Json" />
+  </ItemGroup>
+
+  <!--
+    Translation files ship as plain JSON next to the consumer's binaries:
+    My.Extensions.Localization.Json reads them from
+    {AppContext.BaseDirectory}/Resources/SharedResources.{culture}.json,
+    so we copy them to the output of every project that references this
+    one. Pack="true" propagates them through NuGet via contentFiles so
+    package consumers get the same layout in their bin folder.
+  -->
+  <ItemGroup>
+    <!-- The Razor SDK already globs Resources\**\*.json as <Content>; use
+         <Update> to extend the existing item with copy + pack metadata
+         instead of <Include>, which would error with NETSDK1022. -->
+    <Content Update="Resources\**\*.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Pack>true</Pack>
+      <PackagePath>contentFiles\any\any\Resources\;content\Resources\</PackagePath>
+      <PackageCopyToOutput>true</PackageCopyToOutput>
+    </Content>
+  </ItemGroup>
+
 </Project>

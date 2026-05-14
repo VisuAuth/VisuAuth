@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Options;
 using VisuAuth.Abstractions.Tenancy;
 
@@ -14,11 +15,13 @@ namespace VisuAuth.AdminUi.Pages.Admin.Tenants;
 public sealed class IndexModel(
     ITenantStore tenantStore,
     ITenantContext tenantContext,
-    IOptions<TenantOptions> tenantOptions) : PageModel
+    IOptions<TenantOptions> tenantOptions,
+    IStringLocalizer<AdminSharedResources> localizer) : PageModel
 {
     private readonly ITenantStore _tenantStore = tenantStore ?? throw new ArgumentNullException(nameof(tenantStore));
     private readonly ITenantContext _tenantContext = tenantContext ?? throw new ArgumentNullException(nameof(tenantContext));
     private readonly TenantOptions _options = tenantOptions?.Value ?? throw new ArgumentNullException(nameof(tenantOptions));
+    private readonly IStringLocalizer<AdminSharedResources> _l = localizer ?? throw new ArgumentNullException(nameof(localizer));
 
     [BindProperty]
     public string? NewTenantId { get; set; }
@@ -61,11 +64,11 @@ public sealed class IndexModel(
         {
             ActionErrors = result.ValidationErrors.Count > 0
                 ? result.ValidationErrors
-                : [result.Error ?? "Failed to create tenant."];
+                : [result.Error ?? _l["Tenants.Error.CreateFailed"].Value];
         }
         else
         {
-            ActionMessage = $"Tenant '{NewTenantId?.Trim()}' created.";
+            ActionMessage = _l["Tenants.Action.Created", NewTenantId?.Trim() ?? string.Empty].Value;
             NewTenantId = null;
             NewTenantDisplayName = null;
         }
@@ -78,7 +81,7 @@ public sealed class IndexModel(
     {
         if (string.IsNullOrWhiteSpace(id))
         {
-            ActionErrors = ["Missing tenant id."];
+            ActionErrors = [_l["Tenants.Error.MissingId"].Value];
         }
         else
         {
@@ -92,7 +95,7 @@ public sealed class IndexModel(
     {
         if (string.IsNullOrWhiteSpace(id))
         {
-            ActionErrors = ["Missing tenant id."];
+            ActionErrors = [_l["Tenants.Error.MissingId"].Value];
             await LoadAsync(cancellationToken);
             return Partial("_TenantsCatalogue", this);
         }
@@ -101,7 +104,7 @@ public sealed class IndexModel(
         if (string.IsNullOrWhiteSpace(trimmed))
         {
             EditingTenantId = id;
-            ActionErrors = ["Display name is required."];
+            ActionErrors = [_l["Tenants.Error.IdRequired"].Value];
             await LoadAsync(cancellationToken);
             return Partial("_TenantsCatalogue", this);
         }
@@ -112,11 +115,11 @@ public sealed class IndexModel(
             EditingTenantId = id;
             ActionErrors = result.ValidationErrors.Count > 0
                 ? result.ValidationErrors
-                : [result.Error ?? "Failed to rename tenant."];
+                : [result.Error ?? _l["Tenants.Error.RenameFailed"].Value];
         }
         else
         {
-            ActionMessage = $"Tenant '{id}' renamed.";
+            ActionMessage = _l["Tenants.Action.Renamed", id].Value;
             RenamedDisplayName = null;
         }
 
@@ -128,7 +131,7 @@ public sealed class IndexModel(
     {
         if (string.IsNullOrWhiteSpace(id))
         {
-            ActionErrors = ["Missing tenant id."];
+            ActionErrors = [_l["Tenants.Error.MissingId"].Value];
             await LoadAsync(cancellationToken);
             return Partial("_TenantsCatalogue", this);
         }
@@ -138,11 +141,11 @@ public sealed class IndexModel(
         {
             ActionErrors = result.ValidationErrors.Count > 0
                 ? result.ValidationErrors
-                : [result.Error ?? "Failed to delete tenant."];
+                : [result.Error ?? _l["Tenants.Error.DeleteFailed"].Value];
         }
         else
         {
-            ActionMessage = $"Tenant '{id}' deleted.";
+            ActionMessage = _l["Tenants.Action.Deleted", id].Value;
         }
 
         await LoadAsync(cancellationToken);

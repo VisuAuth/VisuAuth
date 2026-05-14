@@ -3,7 +3,7 @@
 @if (Model.ActionErrors.Count > 0)
 {
     <div class="va-alert va-alert-danger" role="alert">
-        <strong>Could not complete the action.</strong>
+        <strong>@Ls["Roles.ActionFailed"]</strong>
         <ul>
             @foreach (var err in Model.ActionErrors)
             {
@@ -19,7 +19,7 @@ else if (Model.ActionMessage is { Length: > 0 } msg)
 
 <section class="va-card va-detail-card">
     <div class="va-detail-card-header">
-        <h2>Create role</h2>
+        <h2>@Ls["Roles.CreateHeading"]</h2>
     </div>
     <form method="post"
           hx-post="/visuauth/admin/roles?handler=Create"
@@ -27,15 +27,15 @@ else if (Model.ActionMessage is { Length: > 0 } msg)
           hx-swap="innerHTML"
           class="va-inline-form">
         <label class="va-field va-inline-field">
-            <span class="va-field-label">Name</span>
+            <span class="va-field-label">@Ls["Common.LabelName"]</span>
             <input type="text"
                    name="NewRoleName"
                    value="@Model.NewRoleName"
-                   placeholder="e.g. Editor"
+                   placeholder="@Ls["Roles.NamePlaceholder"]"
                    class="va-input"
                    required />
         </label>
-        <button type="submit" class="va-btn va-btn-primary">Add role</button>
+        <button type="submit" class="va-btn va-btn-primary">@Ls["Roles.AddButton"]</button>
     </form>
 </section>
 
@@ -43,7 +43,7 @@ else if (Model.ActionMessage is { Length: > 0 } msg)
     @if (Model.Roles.Count == 0)
     {
         <div class="va-empty">
-            <p>No roles defined yet. Use the form above to create the first one.</p>
+            <p>@Ls["Roles.Empty"]</p>
         </div>
     }
     else
@@ -51,9 +51,9 @@ else if (Model.ActionMessage is { Length: > 0 } msg)
         <table class="va-table">
             <thead>
             <tr>
-                <th>Name</th>
-                <th>Members</th>
-                <th class="va-col-actions">Actions</th>
+                <th>@Ls["Common.LabelName"]</th>
+                <th>@Ls["Roles.Col.Members"]</th>
+                <th class="va-col-actions">@Ls["Common.Actions"]</th>
             </tr>
             </thead>
             <tbody>
@@ -71,7 +71,7 @@ else if (Model.ActionMessage is { Length: > 0 } msg)
                                   class="va-inline-form">
                                 <input type="hidden" name="id" value="@role.Id" />
                                 <label class="va-field va-inline-field">
-                                    <span class="va-field-label">Rename '@role.Name' to</span>
+                                    <span class="va-field-label">@Ls["Roles.RenameLabel", role.Name]</span>
                                     <input type="text"
                                            name="RenamedRoleName"
                                            value="@(Model.RenamedRoleName ?? role.Name)"
@@ -79,12 +79,12 @@ else if (Model.ActionMessage is { Length: > 0 } msg)
                                            required
                                            autofocus />
                                 </label>
-                                <button type="submit" class="va-btn va-btn-primary va-btn-small">Save</button>
+                                <button type="submit" class="va-btn va-btn-primary va-btn-small">@Ls["Common.Save"]</button>
                                 <button type="button"
                                         class="va-btn va-btn-ghost va-btn-small"
                                         hx-get="/visuauth/admin/roles"
                                         hx-target="#va-roles-catalogue"
-                                        hx-swap="innerHTML">Cancel</button>
+                                        hx-swap="innerHTML">@Ls["Common.Cancel"]</button>
                             </form>
                         </td>
                     }
@@ -99,16 +99,16 @@ else if (Model.ActionMessage is { Length: > 0 } msg)
                                         hx-get="/visuauth/admin/roles?handler=EditRole&amp;id=@role.Id"
                                         hx-target="#va-roles-catalogue"
                                         hx-swap="innerHTML"
-                                        aria-label="Rename role @role.Name">Rename</button>
+                                        aria-label="@Ls["Roles.RenameAria", role.Name]">@Ls["Common.Rename"]</button>
                                 <form method="post"
                                       hx-post="/visuauth/admin/roles?handler=Delete"
                                       hx-target="#va-roles-catalogue"
                                       hx-swap="innerHTML"
-                                      hx-confirm="Delete role '@role.Name'? Users currently in this role will lose it.">
+                                      hx-confirm="@Ls["Roles.DeleteConfirm", role.Name]">
                                     <input type="hidden" name="id" value="@role.Id" />
                                     <button type="submit"
                                             class="va-btn va-btn-danger va-btn-small"
-                                            aria-label="Delete role @role.Name">Delete</button>
+                                            aria-label="@Ls["Roles.DeleteAria", role.Name]">@Ls["Common.Delete"]</button>
                                 </form>
                             </div>
                         </td>

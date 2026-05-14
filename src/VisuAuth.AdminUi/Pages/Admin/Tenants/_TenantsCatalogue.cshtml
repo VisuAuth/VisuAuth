@@ -3,7 +3,7 @@
 @if (Model.ActionErrors.Count > 0)
 {
     <div class="va-alert va-alert-danger" role="alert">
-        <strong>Could not complete the action.</strong>
+        <strong>@Ls["Roles.ActionFailed"]</strong>
         <ul>
             @foreach (var err in Model.ActionErrors)
             {
@@ -19,7 +19,7 @@ else if (Model.ActionMessage is { Length: > 0 } msg)
 
 <section class="va-card va-detail-card">
     <div class="va-detail-card-header">
-        <h2>Create tenant</h2>
+        <h2>@Ls["Tenants.CreateHeading"]</h2>
     </div>
     <form method="post"
           hx-post="/visuauth/admin/tenants?handler=Create"
@@ -27,23 +27,23 @@ else if (Model.ActionMessage is { Length: > 0 } msg)
           hx-swap="innerHTML"
           class="va-inline-form">
         <label class="va-field va-inline-field">
-            <span class="va-field-label">Id (routing key)</span>
+            <span class="va-field-label">@Ls["Tenants.IdLabel"]</span>
             <input type="text"
                    name="NewTenantId"
                    value="@Model.NewTenantId"
-                   placeholder="e.g. acme"
+                   placeholder="@Ls["Tenants.IdPlaceholder"]"
                    class="va-input"
                    required />
         </label>
         <label class="va-field va-inline-field">
-            <span class="va-field-label">Display name</span>
+            <span class="va-field-label">@Ls["Tenants.DisplayNameLabel"]</span>
             <input type="text"
                    name="NewTenantDisplayName"
                    value="@Model.NewTenantDisplayName"
-                   placeholder="e.g. Acme Corporation"
+                   placeholder="@Ls["Tenants.DisplayNamePlaceholder"]"
                    class="va-input" />
         </label>
-        <button type="submit" class="va-btn va-btn-primary">Add tenant</button>
+        <button type="submit" class="va-btn va-btn-primary">@Ls["Tenants.AddButton"]</button>
     </form>
 </section>
 
@@ -51,7 +51,7 @@ else if (Model.ActionMessage is { Length: > 0 } msg)
     @if (Model.Tenants.Count == 0)
     {
         <div class="va-empty">
-            <p>No tenants defined yet. Use the form above to create the first one.</p>
+            <p>@Ls["Tenants.Empty"]</p>
         </div>
     }
     else
@@ -59,10 +59,10 @@ else if (Model.ActionMessage is { Length: > 0 } msg)
         <table class="va-table">
             <thead>
             <tr>
-                <th>Id</th>
-                <th>Display name</th>
-                <th>Members</th>
-                <th class="va-col-actions">Actions</th>
+                <th>@Ls["Tenants.Col.Id"]</th>
+                <th>@Ls["Tenants.Col.DisplayName"]</th>
+                <th>@Ls["Tenants.Col.Members"]</th>
+                <th class="va-col-actions">@Ls["Common.Actions"]</th>
             </tr>
             </thead>
             <tbody>
@@ -81,7 +81,7 @@ else if (Model.ActionMessage is { Length: > 0 } msg)
                                   class="va-inline-form">
                                 <input type="hidden" name="id" value="@tenant.Id" />
                                 <label class="va-field va-inline-field">
-                                    <span class="va-field-label">Rename '@tenant.Id' to</span>
+                                    <span class="va-field-label">@Ls["Tenants.RenameLabel", tenant.Id]</span>
                                     <input type="text"
                                            name="RenamedDisplayName"
                                            value="@(Model.RenamedDisplayName ?? tenant.DisplayName)"
@@ -89,12 +89,12 @@ else if (Model.ActionMessage is { Length: > 0 } msg)
                                            required
                                            autofocus />
                                 </label>
-                                <button type="submit" class="va-btn va-btn-primary va-btn-small">Save</button>
+                                <button type="submit" class="va-btn va-btn-primary va-btn-small">@Ls["Common.Save"]</button>
                                 <button type="button"
                                         class="va-btn va-btn-ghost va-btn-small"
                                         hx-get="/visuauth/admin/tenants"
                                         hx-target="#va-tenants-catalogue"
-                                        hx-swap="innerHTML">Cancel</button>
+                                        hx-swap="innerHTML">@Ls["Common.Cancel"]</button>
                             </form>
                         </td>
                     }
@@ -110,16 +110,16 @@ else if (Model.ActionMessage is { Length: > 0 } msg)
                                         hx-get="/visuauth/admin/tenants?handler=EditTenant&amp;id=@tenant.Id"
                                         hx-target="#va-tenants-catalogue"
                                         hx-swap="innerHTML"
-                                        aria-label="Rename tenant @tenant.DisplayName">Rename</button>
+                                        aria-label="@Ls["Tenants.RenameAria", tenant.DisplayName]">@Ls["Common.Rename"]</button>
                                 <form method="post"
                                       hx-post="/visuauth/admin/tenants?handler=Delete"
                                       hx-target="#va-tenants-catalogue"
                                       hx-swap="innerHTML"
-                                      hx-confirm="Delete tenant '@tenant.DisplayName'? It must have no members first.">
+                                      hx-confirm="@Ls["Tenants.DeleteConfirm", tenant.DisplayName]">
                                     <input type="hidden" name="id" value="@tenant.Id" />
                                     <button type="submit"
                                             class="va-btn va-btn-danger va-btn-small"
-                                            aria-label="Delete tenant @tenant.DisplayName">Delete</button>
+                                            aria-label="@Ls["Tenants.DeleteAria", tenant.DisplayName]">@Ls["Common.Delete"]</button>
                                 </form>
                             </div>
                         </td>

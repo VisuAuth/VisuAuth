@@ -1,14 +1,14 @@
 @page "/visuauth/admin/users"
 @model VisuAuth.AdminUi.Pages.Admin.Users.IndexModel
 @{
-    ViewData["Title"] = "Users — VisuAuth Admin";
+    ViewData["Title"] = Ls["Users.PageTitle"].Value;
 }
 
 <div class="va-page-header">
-    <h1>Users <span class="va-muted" style="font-weight:400;font-size:1rem;">(@Model.Result.Total)</span></h1>
+    <h1>@Ls["Users.Title"] <span class="va-muted" style="font-weight:400;font-size:1rem;">(@Model.Result.Total)</span></h1>
     <div class="va-detail-status">
-        <span class="va-muted htmx-indicator" id="va-search-indicator">searching…</span>
-        <a class="va-btn va-btn-primary va-btn-small" href="/visuauth/admin/users/new">New user</a>
+        <span class="va-muted htmx-indicator" id="va-search-indicator">@Ls["Users.SearchIndicator"]</span>
+        <a class="va-btn va-btn-primary va-btn-small" href="/visuauth/admin/users/new">@Ls["Users.NewButton"]</a>
     </div>
 </div>
 
@@ -27,13 +27,13 @@
            class="va-search va-input"
            name="q"
            value="@Model.SearchTerm"
-           placeholder="Search by email or username…"
+           placeholder="@Ls["Users.SearchPlaceholder"]"
            autocomplete="off" />
 
     @if (Model.AvailableRoles.Count > 0)
     {
-        <select name="role" class="va-input va-filter-select" aria-label="Filter by role">
-            <option value="">All roles</option>
+        <select name="role" class="va-input va-filter-select" aria-label="@Ls["Users.FilterRoleAria"]">
+            <option value="">@Ls["Users.FilterRoleAny"]</option>
             @foreach (var role in Model.AvailableRoles)
             {
                 <option value="@role.Name" selected="@(string.Equals(role.Name, Model.RoleFilter, StringComparison.OrdinalIgnoreCase) ? "selected" : null)">@role.Name</option>
@@ -41,22 +41,22 @@
         </select>
     }
 
-    <select name="status" class="va-input va-filter-select" aria-label="Filter by status">
-        <option value="">Any status</option>
-        <option value="active" selected="@(Model.StatusFilter == "active" ? "selected" : null)">Active</option>
-        <option value="locked" selected="@(Model.StatusFilter == "locked" ? "selected" : null)">Locked</option>
+    <select name="status" class="va-input va-filter-select" aria-label="@Ls["Users.FilterStatusAria"]">
+        <option value="">@Ls["Users.FilterStatusAny"]</option>
+        <option value="active" selected="@(Model.StatusFilter == "active" ? "selected" : null)">@Ls["Common.StatusActive"]</option>
+        <option value="locked" selected="@(Model.StatusFilter == "locked" ? "selected" : null)">@Ls["Common.StatusLocked"]</option>
     </select>
 
-    <select name="verified" class="va-input va-filter-select" aria-label="Filter by email verified">
-        <option value="">Any verified</option>
-        <option value="true" selected="@(Model.VerifiedFilter == "true" ? "selected" : null)">Verified</option>
-        <option value="false" selected="@(Model.VerifiedFilter == "false" ? "selected" : null)">Pending</option>
+    <select name="verified" class="va-input va-filter-select" aria-label="@Ls["Users.FilterVerifiedAria"]">
+        <option value="">@Ls["Users.FilterVerifiedAny"]</option>
+        <option value="true" selected="@(Model.VerifiedFilter == "true" ? "selected" : null)">@Ls["Common.Verified"]</option>
+        <option value="false" selected="@(Model.VerifiedFilter == "false" ? "selected" : null)">@Ls["Common.Pending"]</option>
     </select>
 
-    <select name="twofa" class="va-input va-filter-select" aria-label="Filter by 2FA">
-        <option value="">Any 2FA</option>
-        <option value="true" selected="@(Model.TwoFactorFilter == "true" ? "selected" : null)">2FA on</option>
-        <option value="false" selected="@(Model.TwoFactorFilter == "false" ? "selected" : null)">2FA off</option>
+    <select name="twofa" class="va-input va-filter-select" aria-label="@Ls["Users.Filter2faAria"]">
+        <option value="">@Ls["Users.Filter2faAny"]</option>
+        <option value="true" selected="@(Model.TwoFactorFilter == "true" ? "selected" : null)">@Ls["Users.Filter2faOn"]</option>
+        <option value="false" selected="@(Model.TwoFactorFilter == "false" ? "selected" : null)">@Ls["Users.Filter2faOff"]</option>
     </select>
 </form>
 

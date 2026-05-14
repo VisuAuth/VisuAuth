@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Localization;
 using VisuAuth.Abstractions.Authentication;
 
 namespace VisuAuth.EndUserUi.Pages;
@@ -9,9 +10,12 @@ namespace VisuAuth.EndUserUi.Pages;
 /// inbox points here with <c>userId</c> + <c>token</c> query params; on
 /// GET we attempt the confirmation immediately and show the result.
 /// </summary>
-public sealed class ConfirmEmailModel(IAuthenticationFlow authentication) : PageModel
+public sealed class ConfirmEmailModel(
+    IAuthenticationFlow authentication,
+    IStringLocalizer<EndUserSharedResources> localizer) : PageModel
 {
     private readonly IAuthenticationFlow _authentication = authentication ?? throw new ArgumentNullException(nameof(authentication));
+    private readonly IStringLocalizer<EndUserSharedResources> _l = localizer ?? throw new ArgumentNullException(nameof(localizer));
 
     [BindProperty(SupportsGet = true, Name = "userId")]
     public string? UserId { get; set; }
@@ -27,7 +31,7 @@ public sealed class ConfirmEmailModel(IAuthenticationFlow authentication) : Page
     {
         if (string.IsNullOrWhiteSpace(UserId) || string.IsNullOrWhiteSpace(Token))
         {
-            Errors = ["This link is missing the user id or token. Open the link from your email."];
+            Errors = [_l["Confirm.Error.MissingLink"].Value];
             return Page();
         }
 
@@ -37,7 +41,7 @@ public sealed class ConfirmEmailModel(IAuthenticationFlow authentication) : Page
         {
             Errors = result.ValidationErrors.Count > 0
                 ? result.ValidationErrors
-                : [result.Error ?? "Failed to confirm email."];
+                : [result.Error ?? _l["Confirm.Error.ConfirmFailed"].Value];
         }
         else
         {

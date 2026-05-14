@@ -4,6 +4,7 @@ using Sample.WebApp.Data;
 using Sample.WebApp.Home;
 using Sample.WebApp.Theming;
 using VisuAuth;
+using VisuAuth.AdminUi.Localization;
 using VisuAuth.AdminUi.Theming;
 using VisuAuth.Identity.Authentication;
 using VisuAuth.Identity.MultiTenancy;
@@ -102,6 +103,9 @@ var app = builder.Build();
 await UserSeeder.SeedAsync(app.Services);
 
 app.UseStaticFiles();
+// UseVisuAuthLocalization plugs the request-localization middleware into
+// the pipeline. Must run before any localized response is rendered.
+app.UseVisuAuthLocalization();
 app.UseRouting();
 app.UseVisuAuthTenancy();
 app.UseAuthentication();

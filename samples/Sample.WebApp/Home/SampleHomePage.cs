@@ -145,6 +145,40 @@ internal static class SampleHomePage
                 the tag helper suppresses itself and that block is absent.
               </p>
 
+              <h2>Localization</h2>
+              <p>
+                The admin and end-user UIs ship with English (default) and
+                Brazilian Portuguese (<code>pt-BR</code>). The request culture
+                resolves from (in order) <code>?culture=…</code>, the
+                <code>.AspNetCore.Culture</code> cookie, and the browser's
+                <code>Accept-Language</code> header.
+              </p>
+              <ul>
+                <li>
+                  <a href="/visuauth/admin/users?culture=pt-BR"><code>/visuauth/admin/users?culture=pt-BR</code></a>
+                  &mdash; force pt-BR on the admin
+                </li>
+                <li>
+                  <a href="/visuauth/login?culture=pt-BR"><code>/visuauth/login?culture=pt-BR</code></a>
+                  &mdash; force pt-BR on sign-in
+                </li>
+                <li>
+                  <a href="/visuauth/admin/users?culture=en"><code>?culture=en</code></a>
+                  &mdash; back to English
+                </li>
+              </ul>
+              <p>
+                The sidebar (admin) and card footer (end-user) also expose a
+                language dropdown that posts to <code>/visuauth/culture</code>
+                and persists the choice in the cookie. Translations live as
+                plain JSON next to the binaries
+                (<code>Resources/AdminSharedResources.{culture}.json</code> /
+                <code>Resources/EndUserSharedResources.{culture}.json</code>) and
+                ship through <code>My.Extensions.Localization.Json</code> behind
+                the standard <code>IStringLocalizer&lt;T&gt;</code> contract,
+                so swapping the storage backend later does not touch any view.
+              </p>
+
               <h2>WebView deep-link callback</h2>
               <p>
                 Native apps can open <code>/visuauth/login</code> in an in-app browser with a

@@ -2,21 +2,21 @@
 @model VisuAuth.EndUserUi.Pages.ConfirmEmailModel
 @{
     Layout = "_EndUserLayout";
-    ViewData["Title"] = "Confirm email — VisuAuth";
+    ViewData["Title"] = Ls["Confirm.PageTitle"].Value;
 }
 
-<h1 class="va-enduser-heading">Confirm email</h1>
+<h1 class="va-enduser-heading">@Ls["Confirm.Heading"]</h1>
 
 @if (Model.Succeeded)
 {
     <div class="va-alert va-alert-success" role="status">
-        <p><strong>Email confirmed.</strong> You can <a href="/visuauth/login">sign in</a> now.</p>
+        <p><strong>@Ls["Confirm.Confirmed"]</strong> @L["Confirm.CanSignInNow"]</p>
     </div>
 }
 else if (Model.Errors.Count > 0)
 {
     <div class="va-alert va-alert-danger" role="alert">
-        <strong>We could not confirm your email.</strong>
+        <strong>@Ls["Confirm.NotConfirmed"]</strong>
         <ul>
             @foreach (var err in Model.Errors)
             {
@@ -27,9 +27,9 @@ else if (Model.Errors.Count > 0)
 }
 else
 {
-    <p class="va-enduser-subtitle">Checking your confirmation link…</p>
+    <p class="va-enduser-subtitle">@Ls["Confirm.Checking"]</p>
 }
 
 <div class="va-enduser-footer">
-    <a href="/visuauth/login">Back to sign in</a>
+    <a href="/visuauth/login">@Ls["Forgot.BackToSignIn"]</a>
 </div>

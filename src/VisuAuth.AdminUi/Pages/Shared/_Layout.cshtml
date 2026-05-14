@@ -2,7 +2,7 @@
 @inject ITenantContext TenantContext
 @inject IServiceProvider Services
 @{
-    var title = ViewData["Title"] as string ?? "VisuAuth Admin";
+    var title = ViewData["Title"] as string ?? Ls["Users.PageTitle"].Value;
     // Tenant catalogue is only registered when the consumer calls the generic
     // EnableVisuAuthTenancy overload, so reach for it via the service locator
     // rather than @inject so single-tenant deployments stay happy.
@@ -13,8 +13,9 @@
         ? Array.Empty<TenantSummary>()
         : (IReadOnlyList<TenantSummary>)await tenantStore.ListAsync();
     var currentPath = Context.Request.Path + Context.Request.QueryString;
+    var pageLang = System.Globalization.CultureInfo.CurrentUICulture.Name;
 }<!doctype html>
-<html lang="en">
+<html lang="@pageLang">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -61,12 +62,12 @@
                       asp-page-handler="Switch"
                       class="va-tenant-indicator">
                     @Html.AntiForgeryToken()
-                    <span class="va-field-label">Tenant scope</span>
+                    <span class="va-field-label">@Ls["Sidebar.TenantScope"]</span>
                     <input type="hidden" name="returnUrl" value="@currentPath" />
                     <select name="tenantId"
                             class="va-input va-tenant-switcher"
                             onchange="this.form.submit();">
-                        <option value="" selected="@(string.IsNullOrEmpty(TenantContext.CurrentTenantId) ? "selected" : null)">(global)</option>
+                        <option value="" selected="@(string.IsNullOrEmpty(TenantContext.CurrentTenantId) ? "selected" : null)">@Ls["Sidebar.TenantGlobal"]</option>
                         @foreach (var tenant in sidebarTenants)
                         {
                             <option value="@tenant.Id" selected="@(string.Equals(tenant.Id, TenantContext.CurrentTenantId, StringComparison.Ordinal) ? "selected" : null)">
@@ -75,22 +76,26 @@
                         }
                     </select>
                     <noscript>
-                        <button type="submit" class="va-btn va-btn-small va-btn-ghost">Apply</button>
+                        <button type="submit" class="va-btn va-btn-small va-btn-ghost">@Ls["Sidebar.TenantApply"]</button>
                     </noscript>
                 </form>
             }
             <nav class="va-nav">
-                <a href="/visuauth/admin/users" class="@NavClass("/visuauth/admin/users")">Users</a>
-                <a href="/visuauth/admin/roles" class="@NavClass("/visuauth/admin/roles")">Roles</a>
+                <a href="/visuauth/admin/users" class="@NavClass("/visuauth/admin/users")">@Ls["Sidebar.NavUsers"]</a>
+                <a href="/visuauth/admin/roles" class="@NavClass("/visuauth/admin/roles")">@Ls["Sidebar.NavRoles"]</a>
                 @if (TenantContext.IsMultiTenancyEnabled)
                 {
-                    <a href="/visuauth/admin/tenants" class="@NavClass("/visuauth/admin/tenants")">Tenants</a>
+                    <a href="/visuauth/admin/tenants" class="@NavClass("/visuauth/admin/tenants")">@Ls["Sidebar.NavTenants"]</a>
                 }
                 else
                 {
-                    <a href="#" aria-disabled="true" class="va-muted">Tenants (soon)</a>
+                    <a href="#" aria-disabled="true" class="va-muted">@Ls["Sidebar.NavTenantsSoon"]</a>
                 }
             </nav>
+            @* Language switcher (CLAUDE.md §10.1). The tag helper suppresses
+               itself when only one culture is configured, so the markup
+               stays clean for single-language deployments. *@
+            <va-language-switcher class="va-tenant-indicator" />
         </aside>
         <main class="va-main">
             @RenderBody()

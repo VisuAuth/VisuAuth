@@ -2,35 +2,31 @@
 @model VisuAuth.EndUserUi.Pages.LoginModel
 @{
     Layout = "_EndUserLayout";
-    ViewData["Title"] = "Sign in — VisuAuth";
+    ViewData["Title"] = Ls["Login.PageTitle"].Value;
 }
 
 @if (Model.DeepLinkPreviewUrl is { Length: > 0 } callback)
 {
-    <h1 class="va-enduser-heading">Sign-in successful</h1>
-    <p class="va-enduser-subtitle">
-        The native app would normally pick up this callback URL. You're
-        seeing this preview because <code>WebViewCallbackOptions.ShowPreviewPage</code>
-        is enabled — turn it off in production so the redirect is silent.
-    </p>
+    <h1 class="va-enduser-heading">@Ls["Login.PreviewHeading"]</h1>
+    <p class="va-enduser-subtitle">@L["Login.PreviewSubtitle"]</p>
 
     <div class="va-alert va-alert-info" role="status">
-        <p><strong>Callback URL</strong> (token in the URL fragment):</p>
+        <p><strong>@Ls["Login.PreviewCallbackLabel"]</strong></p>
         <code class="va-temp-password">@callback</code>
     </div>
 
     <div class="va-enduser-form">
-        <a href="@callback" class="va-btn va-btn-primary">Continue (open the app)</a>
+        <a href="@callback" class="va-btn va-btn-primary">@Ls["Login.PreviewContinue"]</a>
     </div>
 
     <div class="va-enduser-footer">
-        <a href="/">Back to home</a>
+        <a href="/">@Ls["Login.PreviewBack"]</a>
     </div>
 }
 else
 {
-    <h1 class="va-enduser-heading">Sign in</h1>
-    <p class="va-enduser-subtitle">Use your email and password to continue.</p>
+    <h1 class="va-enduser-heading">@Ls["Login.Heading"]</h1>
+    <p class="va-enduser-subtitle">@Ls["Login.Subtitle"]</p>
 
     @if (Model.ErrorMessage is { Length: > 0 } error)
     {
@@ -44,7 +40,7 @@ else
             <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
 
             <label class="va-field">
-                <span class="va-field-label">Email</span>
+                <span class="va-field-label">@Ls["Common.LabelEmail"]</span>
                 <input type="email"
                        name="Form.Email"
                        value="@Model.Form.Email"
@@ -59,23 +55,20 @@ else
             <label class="va-checkbox">
                 @{ var rememberChecked = Model.Form.RememberMe ? "checked" : null; }
                 <input type="checkbox" name="Form.RememberMe" value="true" checked="@rememberChecked" />
-                <span>Keep me signed in on this device</span>
+                <span>@Ls["Login.RememberMe"]</span>
             </label>
 
-            <button type="submit" class="va-btn va-btn-primary">Sign in</button>
+            <button type="submit" class="va-btn va-btn-primary">@Ls["Login.Submit"]</button>
         </form>
 
         <div class="va-enduser-footer">
-            <a href="/visuauth/forgot-password">Forgot password?</a>
+            <a href="/visuauth/forgot-password">@Ls["Login.Forgot"]</a>
             &middot;
-            <a href="/visuauth/register">Create account</a>
+            <a href="/visuauth/register">@Ls["Login.Register"]</a>
         </div>
     }
     else
     {
-        <p class="va-enduser-subtitle">
-            Sign-in is delegated to an external identity provider. A follow-up
-            PR wires the "Sign in with Microsoft" button here.
-        </p>
+        <p class="va-enduser-subtitle">@Ls["Login.ExternalOnly"]</p>
     }
 }

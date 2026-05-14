@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Localization;
 using VisuAuth.Abstractions.Authentication;
 using VisuAuth.Abstractions.Capabilities;
 
@@ -9,9 +10,12 @@ namespace VisuAuth.EndUserUi.Pages;
 /// Reset-password page. GET carries the email + token from the link; POST
 /// applies the new password.
 /// </summary>
-public sealed class ResetPasswordModel(IAuthenticationFlow authentication) : PageModel
+public sealed class ResetPasswordModel(
+    IAuthenticationFlow authentication,
+    IStringLocalizer<EndUserSharedResources> localizer) : PageModel
 {
     private readonly IAuthenticationFlow _authentication = authentication ?? throw new ArgumentNullException(nameof(authentication));
+    private readonly IStringLocalizer<EndUserSharedResources> _l = localizer ?? throw new ArgumentNullException(nameof(localizer));
 
     [BindProperty(SupportsGet = true, Name = "email")]
     public string? Email { get; set; }
@@ -32,7 +36,7 @@ public sealed class ResetPasswordModel(IAuthenticationFlow authentication) : Pag
     {
         if (string.IsNullOrWhiteSpace(Email) || string.IsNullOrWhiteSpace(Token))
         {
-            Errors = ["This link is missing the email or token. Request a fresh one from the forgot-password page."];
+            Errors = [_l["Reset.Error.MissingLink"].Value];
         }
         return Page();
     }
@@ -41,26 +45,26 @@ public sealed class ResetPasswordModel(IAuthenticationFlow authentication) : Pag
     {
         if (!Capabilities.SupportsPasswordReset)
         {
-            Errors = ["This backend does not support password reset."];
+            Errors = [_l["Reset.Error.NotSupported"].Value];
             return Page();
         }
 
         if (string.IsNullOrWhiteSpace(Email) || string.IsNullOrWhiteSpace(Token))
         {
-            Errors = ["Missing email or token."];
+            Errors = [_l["Reset.Error.MissingEmailToken"].Value];
             return Page();
         }
 
         if (string.IsNullOrWhiteSpace(Form.NewPassword) ||
             string.IsNullOrWhiteSpace(Form.ConfirmPassword))
         {
-            Errors = ["Both password fields are required."];
+            Errors = [_l["Reset.Error.BothRequired"].Value];
             return Page();
         }
 
         if (!string.Equals(Form.NewPassword, Form.ConfirmPassword, StringComparison.Ordinal))
         {
-            Errors = ["Passwords do not match."];
+            Errors = [_l["Reset.Error.PasswordMismatch"].Value];
             return Page();
         }
 
@@ -74,7 +78,7 @@ public sealed class ResetPasswordModel(IAuthenticationFlow authentication) : Pag
         {
             Errors = result.ValidationErrors.Count > 0
                 ? result.ValidationErrors
-                : [result.Error ?? "Failed to reset password."];
+                : [result.Error ?? _l["Reset.Error.ResetFailed"].Value];
             return Page();
         }
 

@@ -2,26 +2,21 @@
 @model VisuAuth.EndUserUi.Pages.RegisterModel
 @{
     Layout = "_EndUserLayout";
-    ViewData["Title"] = "Create account — VisuAuth";
+    ViewData["Title"] = Ls["Register.PageTitle"].Value;
 }
 
-<h1 class="va-enduser-heading">Create account</h1>
-<p class="va-enduser-subtitle">Sign up to access the application.</p>
+<h1 class="va-enduser-heading">@Ls["Register.Heading"]</h1>
+<p class="va-enduser-subtitle">@Ls["Register.Subtitle"]</p>
 
-<va-form-errors errors="@Model.Errors" lead="We could not create your account." />
+<va-form-errors errors="@Model.Errors" lead="@Ls["Register.ErrorLead"].Value" />
 
 @if (Model.CreatedUserId is { Length: > 0 })
 {
     <div class="va-alert va-alert-success" role="status">
-        <p><strong>Account created.</strong> You can <a href="/visuauth/login">sign in</a> now.</p>
+        <p><strong>@Ls["Register.Created"]</strong> @L["Register.CanSignInNow"]</p>
         @if (Model.ConfirmationLink is { Length: > 0 } link)
         {
-            <p>
-                Development mode: to verify the email address, the user would
-                receive a link similar to <a href="@link"><code>@link</code></a>.
-                The matching page would carry the email confirmation token in
-                the URL.
-            </p>
+            <p>@L["Register.ConfirmLinkDev", link]</p>
         }
     </div>
 }
@@ -32,7 +27,7 @@
         @Html.AntiForgeryToken()
 
         <label class="va-field">
-            <span class="va-field-label">Email</span>
+            <span class="va-field-label">@Ls["Common.LabelEmail"]</span>
             <input type="email"
                    name="Form.Email"
                    value="@Model.Form.Email"
@@ -43,12 +38,12 @@
         </label>
 
         <va-password name="Form.Password" autocomplete="new-password" />
-        <va-password name="Form.ConfirmPassword" label="Confirm password" autocomplete="new-password" />
+        <va-password name="Form.ConfirmPassword" label="@Ls["Register.ConfirmPasswordLabel"].Value" autocomplete="new-password" />
 
-        <button type="submit" class="va-btn va-btn-primary">Create account</button>
+        <button type="submit" class="va-btn va-btn-primary">@Ls["Register.Submit"]</button>
     </form>
 }
 
 <div class="va-enduser-footer">
-    Already have an account? <a href="/visuauth/login">Sign in</a>
+    @Ls["Register.AlreadyHave"] <a href="/visuauth/login">@Ls["Register.SignInLink"]</a>
 </div>

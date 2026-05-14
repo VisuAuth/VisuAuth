@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Localization;
 using VisuAuth.Abstractions.Capabilities;
 using VisuAuth.Abstractions.Common;
 using VisuAuth.Abstractions.Roles;
@@ -13,10 +14,14 @@ namespace VisuAuth.AdminUi.Pages.Admin.Users;
 /// revocation, role assignment) post to dedicated handlers and refresh the
 /// detail content via htmx.
 /// </summary>
-public sealed class DetailModel(IUserStore userStore, IRoleStore roleStore) : PageModel
+public sealed class DetailModel(
+    IUserStore userStore,
+    IRoleStore roleStore,
+    IStringLocalizer<AdminSharedResources> localizer) : PageModel
 {
     private readonly IUserStore _userStore = userStore ?? throw new ArgumentNullException(nameof(userStore));
     private readonly IRoleStore _roleStore = roleStore ?? throw new ArgumentNullException(nameof(roleStore));
+    private readonly IStringLocalizer<AdminSharedResources> _l = localizer ?? throw new ArgumentNullException(nameof(localizer));
 
     [BindProperty(SupportsGet = true, Name = "id")]
     public string Id { get; set; } = string.Empty;
@@ -87,33 +92,33 @@ public sealed class DetailModel(IUserStore userStore, IRoleStore roleStore) : Pa
             ProfileEditMode = true;
             ActionErrors = result.ValidationErrors.Count > 0
                 ? result.ValidationErrors
-                : [result.Error ?? "Update failed."];
+                : [result.Error ?? _l["Users.Action.UpdateFailed"].Value];
             // Reload to make sure the form repopulates with the canonical state.
             await LoadDetailAsync(cancellationToken);
             return Partial("_DetailContent", this);
         }
 
         await LoadDetailAsync(cancellationToken);
-        ActionMessage = "Profile updated.";
+        ActionMessage = _l["Users.Action.ProfileUpdated"].Value;
         return Partial("_DetailContent", this);
     }
 
     public Task<IActionResult> OnPostLockAsync(CancellationToken cancellationToken)
         => ExecuteAsync(
             () => _userStore.SetEnabledAsync(Id, enabled: false, cancellationToken),
-            success: "Account locked.",
+            success: _l["Users.Action.AccountLocked"].Value,
             cancellationToken);
 
     public Task<IActionResult> OnPostUnlockAsync(CancellationToken cancellationToken)
         => ExecuteAsync(
             () => _userStore.SetEnabledAsync(Id, enabled: true, cancellationToken),
-            success: "Account unlocked.",
+            success: _l["Users.Action.AccountUnlocked"].Value,
             cancellationToken);
 
     public Task<IActionResult> OnPostResetPasswordAsync(CancellationToken cancellationToken)
         => ExecuteAsync(
             () => _userStore.ResetPasswordAsync(Id, cancellationToken),
-            success: "Temporary password generated. Hand it to the user — it will not be shown again.",
+            success: _l["Users.Action.TempPasswordGenerated"].Value,
             cancellationToken,
             onSuccess: r =>
             {
@@ -126,13 +131,13 @@ public sealed class DetailModel(IUserStore userStore, IRoleStore roleStore) : Pa
     public Task<IActionResult> OnPostResetTwoFactorAsync(CancellationToken cancellationToken)
         => ExecuteAsync(
             () => _userStore.ResetTwoFactorAsync(Id, cancellationToken),
-            success: "Two-factor disabled and authenticator key reset.",
+            success: _l["Users.Action.TwoFactorReset"].Value,
             cancellationToken);
 
     public Task<IActionResult> OnPostRevokeSessionsAsync(CancellationToken cancellationToken)
         => ExecuteAsync(
             () => _userStore.RevokeSessionsAsync(Id, cancellationToken),
-            success: "All sessions revoked.",
+            success: _l["Users.Action.SessionsRevoked"].Value,
             cancellationToken);
 
     public Task<IActionResult> OnPostAssignRoleAsync(string? roleName, CancellationToken cancellationToken)
@@ -140,11 +145,11 @@ public sealed class DetailModel(IUserStore userStore, IRoleStore roleStore) : Pa
         var trimmed = roleName?.Trim();
         if (string.IsNullOrWhiteSpace(trimmed))
         {
-            return InvalidRoleAsync("Pick a role to assign.", cancellationToken);
+            return InvalidRoleAsync(_l["Users.Action.PickRoleToAssign"].Value, cancellationToken);
         }
         return ExecuteAsync(
             () => _roleStore.AssignRoleAsync(Id, trimmed, cancellationToken),
-            success: $"Role '{trimmed}' assigned.",
+            success: _l["Users.Action.RoleAssigned", trimmed].Value,
             cancellationToken);
     }
 
@@ -153,11 +158,11 @@ public sealed class DetailModel(IUserStore userStore, IRoleStore roleStore) : Pa
         var trimmed = roleName?.Trim();
         if (string.IsNullOrWhiteSpace(trimmed))
         {
-            return InvalidRoleAsync("Missing role name.", cancellationToken);
+            return InvalidRoleAsync(_l["Users.Action.MissingRoleName"].Value, cancellationToken);
         }
         return ExecuteAsync(
             () => _roleStore.RemoveRoleAsync(Id, trimmed, cancellationToken),
-            success: $"Role '{trimmed}' removed.",
+            success: _l["Users.Action.RoleRemoved", trimmed].Value,
             cancellationToken);
     }
 
@@ -194,7 +199,7 @@ public sealed class DetailModel(IUserStore userStore, IRoleStore roleStore) : Pa
 
             ActionErrors = result.ValidationErrors.Count > 0
                 ? result.ValidationErrors
-                : [result.Error ?? "Failed to delete user."];
+                : [result.Error ?? _l["Users.Action.DeleteFailed"].Value];
 
             return Partial("_DetailContent", this);
         }
@@ -220,7 +225,7 @@ public sealed class DetailModel(IUserStore userStore, IRoleStore roleStore) : Pa
         {
             ActionErrors = result.ValidationErrors.Count > 0
                 ? result.ValidationErrors
-                : [result.Error ?? "Action failed."];
+                : [result.Error ?? _l["Users.Action.Generic"].Value];
         }
         else
         {

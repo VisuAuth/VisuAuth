@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Options;
 using VisuAuth.Abstractions.Authentication;
 using VisuAuth.Abstractions.Capabilities;
@@ -22,11 +23,13 @@ namespace VisuAuth.EndUserUi.Pages;
 public sealed class LoginModel(
     IAuthenticationFlow authentication,
     IJwtIssuer jwtIssuer,
-    IOptions<WebViewCallbackOptions> webViewOptions) : PageModel
+    IOptions<WebViewCallbackOptions> webViewOptions,
+    IStringLocalizer<EndUserSharedResources> localizer) : PageModel
 {
     private readonly IAuthenticationFlow _authentication = authentication ?? throw new ArgumentNullException(nameof(authentication));
     private readonly IJwtIssuer _jwtIssuer = jwtIssuer ?? throw new ArgumentNullException(nameof(jwtIssuer));
     private readonly WebViewCallbackOptions _webViewOptions = webViewOptions?.Value ?? throw new ArgumentNullException(nameof(webViewOptions));
+    private readonly IStringLocalizer<EndUserSharedResources> _l = localizer ?? throw new ArgumentNullException(nameof(localizer));
 
     [BindProperty]
     public LoginForm Form { get; set; } = new();
@@ -55,7 +58,7 @@ public sealed class LoginModel(
             // Backends without local sign-in (e.g. Entra) still render the
             // page, but with a redirect-style message. A future PR adds the
             // "sign in with Microsoft" button here.
-            ErrorMessage = "This backend does not support local sign-in.";
+            ErrorMessage = _l["Login.Error.LocalNotSupported"].Value;
         }
         return Page();
     }
@@ -64,13 +67,13 @@ public sealed class LoginModel(
     {
         if (!Capabilities.SupportsLocalLogin)
         {
-            ErrorMessage = "This backend does not support local sign-in.";
+            ErrorMessage = _l["Login.Error.LocalNotSupported"].Value;
             return Page();
         }
 
         if (!ModelState.IsValid || string.IsNullOrWhiteSpace(Form.Email) || string.IsNullOrWhiteSpace(Form.Password))
         {
-            ErrorMessage = "Email and password are required.";
+            ErrorMessage = _l["Login.Error.EmailPasswordRequired"].Value;
             return Page();
         }
 
@@ -88,26 +91,26 @@ public sealed class LoginModel(
             case SignInOutcome.RequiresTwoFactor:
                 // Two-factor challenge page lands with the register/reset PR.
                 // For now surface a message so the admin knows what is happening.
-                ErrorMessage = "Two-factor authentication is required. The challenge page ships in a follow-up PR.";
+                ErrorMessage = _l["Login.Error.TwoFactor"].Value;
                 return Page();
 
             case SignInOutcome.LockedOut:
-                ErrorMessage = "This account is locked. Contact an administrator.";
+                ErrorMessage = _l["Login.Error.Locked"].Value;
                 return Page();
 
             case SignInOutcome.NotAllowed:
-                ErrorMessage = result.Error ?? "Sign-in is not allowed for this account yet (email may need confirmation).";
+                ErrorMessage = result.Error ?? _l["Login.Error.NotAllowed"].Value;
                 return Page();
 
             case SignInOutcome.RedirectToExternalProvider:
                 // External-provider redirect lands with the providers PR.
-                ErrorMessage = "External provider sign-in is required for this backend.";
+                ErrorMessage = _l["Login.Error.ExternalRequired"].Value;
                 return Page();
 
             case SignInOutcome.InvalidCredentials:
             default:
                 // Deliberately generic — do not leak whether the email exists.
-                ErrorMessage = "Email or password is incorrect.";
+                ErrorMessage = _l["Login.Error.Invalid"].Value;
                 return Page();
         }
     }

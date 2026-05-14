@@ -56,6 +56,8 @@ Updated as PRs land. Long-term direction lives in `CLAUDE.md` section 13 (Roadma
   - One-time secret display with click-to-copy widget (vanilla JS, no framework, animated confirmation)
   - Sidebar active state computed from current route; every nav entry now a real link when its backing capability is on
   - Default CSS theme with custom property hooks for branding
+  - Programmatic theming (`Configure<VisuAuthTheme>(...)`) emits CSS custom property overrides through the `<va-theme-style />` tag helper; sample app ships preset palettes (`Default`, `Purple`, `Orange`, `Forest`, `Midnight`, `Serif`)
+  - i18n pipeline: JSON-backed `IStringLocalizer<AdminSharedResources>` / `IStringLocalizer<EndUserSharedResources>` (provider: `My.Extensions.Localization.Json`), `en` + `pt-BR` translations, query / cookie / header culture resolution, `POST /visuauth/culture` switch endpoint with open-redirect guard, `<va-language-switcher />` tag helper in both layouts
 - `VisuAuth.EndUserUi`:
   - `/visuauth/login` and `/visuauth/logout` Razor Pages (email + password + remember-me, anti-forgery, redirect-back to `returnUrl`)
   - `/visuauth/register`, `/visuauth/forgot-password`, `/visuauth/reset-password`, `/visuauth/confirm-email` Razor Pages
@@ -78,49 +80,72 @@ Updated as PRs land. Long-term direction lives in `CLAUDE.md` section 13 (Roadma
 
 ## In flight
 
-### `feat/theming-programmatic-config`
+### `feat/i18n-pt-br-and-en`
 
-Theming layer 2 from CLAUDE.md §8.4. Consumers configure a
-`VisuAuthTheme` options bag in DI; the layout emits a `<style>:root { ... }`
-block after the default stylesheet so the cascade lets their overrides
-win without forking `visuauth.css`.
+Server-rendered request localization for the admin and end-user UIs.
+English is the default; pt-BR ships as the first translation. The
+storage is plain JSON files behind the standard
+`IStringLocalizer<T>` contract, so swapping the backend later (`.resx`,
+database, etc.) would not touch any view.
 
-- `VisuAuth.AdminUi.Theming.VisuAuthTheme` — POCO with nullable string
-  properties for every CSS custom property in the default theme
-  (`Primary`, `PrimaryFg`, `Bg`, `Fg`, `Muted`, `Border`, `Surface`,
-  `Danger`, `Success`, `Radius`, `Font`)
-- `VisuAuth.AdminUi.Theming.VisuAuthThemeCssRenderer` — pure function
-  that turns the options into a `:root { --visuauth-…: …; }` block.
-  Skips null / blank properties; rejects values containing `< > { } ; \`
-  (defence in depth against breaking out of `<style>` or the rule).
-- `<va-theme-style>` tag helper — server-rendered, no-op when the
-  options bag is empty; consumed by both layouts so admin and end-user
-  pages get the same overrides.
-- Sample app: enables a non-default purple theme so the home page
-  visibly reflects the override and reviewers see the contract end to end.
-- Tests: unit coverage of the renderer (each property emits the right
-  var, blanks are skipped, forbidden chars throw) and integration
-  coverage that the `<style>` block actually appears in HTML when
-  configured and stays absent when not.
+- Translations: `Resources/AdminSharedResources.{culture}.json` +
+  `Resources/EndUserSharedResources.{culture}.json` — files ship with
+  the NuGet packages (`<Content>` + `contentFiles`) and land in the
+  consumer's `bin/Resources/`.
+- Provider: `My.Extensions.Localization.Json` (pinned via Central
+  Package Management) in `TypeBased` mode.
+- DI: `services.AddVisuAuthLocalization()` registers the JSON
+  localizer, the request-localization options (en + pt-BR, providers
+  in order: query → cookie → Accept-Language), and a widened
+  `HtmlEncoder` (`UnicodeRanges.All`) so accented characters aren't
+  serialised as numeric entities.
+- Pipeline: `app.UseVisuAuthLocalization()` (consumer call,
+  same pattern as `UseVisuAuthTenancy`).
+- Endpoint: `POST /visuauth/culture` validates the requested culture
+  against the configured allow-list, writes the
+  `.AspNetCore.Culture` cookie, and `LocalRedirect`s to the
+  open-redirect-guarded `returnUrl`.
+- UI: `<va-language-switcher />` tag helper auto-suppresses when only
+  one culture is configured; otherwise renders a `<select>` of the
+  supported cultures' native names, posts to the endpoint, and
+  refreshes the current page. Wired into the admin sidebar and the
+  end-user card footer.
+- Views: every visible string in 24 `.cshtml` files moved to JSON keys
+  (`Sidebar.NavUsers`, `Users.Title`, `Login.Heading`, …) and resolved
+  via `IHtmlLocalizer<…>` (`@L`) for content and `IStringLocalizer<…>`
+  (`@Ls`) for attribute values. Page models pull the same localizer
+  for `ActionMessage` / `ErrorMessage` strings. `<va-password>` and
+  `<va-form-errors>` tag helpers are localized too.
+- Sample app: home page links the `?culture=pt-BR` deep-link patterns
+  so reviewers can flip between en and pt-BR without touching any code.
+- Tests: 10 new integration tests cover default → English, query →
+  pt-BR, Accept-Language → pt-BR, cookie round-trip, `<html lang="…">`
+  reflects current culture, open-redirect fallback, unsupported
+  culture is silently ignored, and both layouts mount the switcher.
 
-**Out of scope** (deferred to v0.2):
+**Out of scope** (deferred):
 
-- View override (theming layer 3) — drop your own `.cshtml` into a
-  configured folder.
-- Per-tenant theme (theming layer 4) — resolver returns a different
-  theme per `ITenantContext`.
+- Right-to-left support (no Arabic / Hebrew translation yet).
+- Per-tenant translation overrides (tenant-aware
+  `IStringLocalizerFactory` would compose neatly with the existing
+  multi-tenant resolver — but not in scope for v0.1).
+- Translator workflow (Crowdin / Transifex sync).
 
 ---
 
 ## Next up (ordered)
 
-### 1. `feat/i18n-pt-br-and-en`
-
-`IStringLocalizer` wired up. All hardcoded English strings in views moved to resource files. pt-BR translation added.
-
-### 2. `feat/embedded-htmx-asset`
+### 1. `feat/embedded-htmx-asset`
 
 Replace the htmx CDN reference with an embedded static asset at `wwwroot/htmx.min.js`. Required for offline / air-gapped deployments.
+
+### 2. `feat/theming-view-override` (v0.2)
+
+Drop your own `.cshtml` into a configured folder (theming layer 3 from CLAUDE.md §8.4) and let it override VisuAuth's default views without forking the package.
+
+### 3. `feat/theming-per-tenant` (v0.2)
+
+`ITenantThemeResolver` returns a different `VisuAuthTheme` per tenant; the layout consults it on every request. Builds on top of the existing programmatic theming PR.
 
 ---
 

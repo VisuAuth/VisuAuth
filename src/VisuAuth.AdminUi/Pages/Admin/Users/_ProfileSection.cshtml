@@ -12,12 +12,12 @@
               hx-target="#va-user-detail-content"
               hx-swap="innerHTML">
             <div class="va-detail-card-header">
-                <h2>Edit profile</h2>
+                <h2>@Ls["Users.Profile.EditHeading"]</h2>
             </div>
 
             <div class="va-form-grid">
                 <label class="va-field">
-                    <span class="va-field-label">Email</span>
+                    <span class="va-field-label">@Ls["Common.LabelEmail"]</span>
                     <input type="email"
                            name="Profile.Email"
                            value="@Model.Profile.Email"
@@ -26,7 +26,7 @@
                 </label>
 
                 <label class="va-field">
-                    <span class="va-field-label">Username</span>
+                    <span class="va-field-label">@Ls["Common.LabelUsername"]</span>
                     <input type="text"
                            name="Profile.UserName"
                            value="@Model.Profile.UserName"
@@ -34,7 +34,7 @@
                 </label>
 
                 <label class="va-field">
-                    <span class="va-field-label">Phone</span>
+                    <span class="va-field-label">@Ls["Common.LabelPhone"]</span>
                     <input type="tel"
                            name="Profile.PhoneNumber"
                            value="@Model.Profile.PhoneNumber"
@@ -43,59 +43,59 @@
             </div>
 
             <div class="va-form-actions">
-                <button type="submit" class="va-btn va-btn-primary">Save profile</button>
+                <button type="submit" class="va-btn va-btn-primary">@Ls["Users.Profile.Save"]</button>
                 <button type="button"
                         class="va-btn va-btn-ghost"
                         hx-get="@(detailUrl)?handler=ViewProfile"
                         hx-target="#va-user-profile"
-                        hx-swap="outerHTML">Cancel</button>
+                        hx-swap="outerHTML">@Ls["Common.Cancel"]</button>
             </div>
         </form>
     }
     else
     {
         <div class="va-detail-card-header">
-            <h2>Profile</h2>
+            <h2>@Ls["Users.Profile.Heading"]</h2>
             <button type="button"
                     class="va-btn va-btn-ghost va-btn-small"
                     hx-get="@(detailUrl)?handler=EditProfile"
                     hx-target="#va-user-profile"
-                    hx-swap="outerHTML">Edit</button>
+                    hx-swap="outerHTML">@Ls["Common.Edit"]</button>
         </div>
 
         <dl class="va-dl">
-            <dt>Email</dt>
+            <dt>@Ls["Common.LabelEmail"]</dt>
             <dd>@detail.Email</dd>
 
-            <dt>Username</dt>
-            <dd>@(detail.UserName ?? "—")</dd>
+            <dt>@Ls["Common.LabelUsername"]</dt>
+            <dd>@(detail.UserName ?? Ls["Common.Dash"].Value)</dd>
 
-            <dt>Phone</dt>
+            <dt>@Ls["Common.LabelPhone"]</dt>
             <dd>
-                @(string.IsNullOrEmpty(detail.PhoneNumber) ? "—" : detail.PhoneNumber)
+                @(string.IsNullOrEmpty(detail.PhoneNumber) ? Ls["Common.Dash"].Value : detail.PhoneNumber)
                 @if (!string.IsNullOrEmpty(detail.PhoneNumber))
                 {
                     <span class="va-badge @(detail.PhoneNumberConfirmed ? "va-success" : "")">
-                        @(detail.PhoneNumberConfirmed ? "Verified" : "Pending")
+                        @(detail.PhoneNumberConfirmed ? Ls["Common.Verified"].Value : Ls["Common.Pending"].Value)
                     </span>
                 }
             </dd>
 
             @if (!string.IsNullOrEmpty(detail.TenantId))
             {
-                <dt>Tenant</dt>
+                <dt>@Ls["Users.Profile.Tenant"]</dt>
                 <dd><code>@detail.TenantId</code></dd>
             }
 
             @if (detail.CreatedAt != default)
             {
-                <dt>Created</dt>
+                <dt>@Ls["Users.Profile.Created"]</dt>
                 <dd>@detail.CreatedAt.ToString("u")</dd>
             }
 
             @if (detail.LastSignInAt is { } lastSignIn)
             {
-                <dt>Last sign-in</dt>
+                <dt>@Ls["Users.Profile.LastSignIn"]</dt>
                 <dd>@lastSignIn.ToString("u")</dd>
             }
         </dl>

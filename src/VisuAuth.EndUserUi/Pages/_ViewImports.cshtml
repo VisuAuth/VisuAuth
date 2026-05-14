@@ -1,3 +1,10 @@
 @namespace VisuAuth.EndUserUi.Pages
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 @addTagHelper *, VisuAuth.AdminUi
+@using Microsoft.AspNetCore.Mvc.Localization
+@using Microsoft.Extensions.Localization
+@using VisuAuth.EndUserUi
+@* See AdminUi/_ViewImports.cshtml for the L vs Ls split. The marker
+   here points at Resources/EndUserSharedResources.{culture}.json. *@
+@inject IHtmlLocalizer<EndUserSharedResources> L
+@inject IStringLocalizer<EndUserSharedResources> Ls

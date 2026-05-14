@@ -1,11 +1,11 @@
 @page "/visuauth/admin/roles"
 @model VisuAuth.AdminUi.Pages.Admin.Roles.IndexModel
 @{
-    ViewData["Title"] = "Roles — VisuAuth Admin";
+    ViewData["Title"] = Ls["Roles.PageTitle"].Value;
 }
 
 <div class="va-page-header">
-    <h1>Roles <span class="va-muted" style="font-weight:400;font-size:1rem;">(@Model.Roles.Count)</span></h1>
+    <h1>@Ls["Roles.Title"] <span class="va-muted" style="font-weight:400;font-size:1rem;">(@Model.Roles.Count)</span></h1>
 </div>
 
 <div id="va-roles-catalogue">

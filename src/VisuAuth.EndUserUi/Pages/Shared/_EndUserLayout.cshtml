@@ -1,8 +1,9 @@
 @{
     var title = ViewData["Title"] as string ?? "VisuAuth";
     var brand = ViewData["Brand"] as string ?? "VisuAuth";
+    var pageLang = System.Globalization.CultureInfo.CurrentUICulture.Name;
 }<!doctype html>
-<html lang="en">
+<html lang="@pageLang">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -30,6 +31,10 @@
         <div class="va-enduser-card">
             <a class="va-brand va-enduser-brand" href="/">@brand</a>
             @RenderBody()
+            @* Language switcher (CLAUDE.md §10.1). Tucked under the card so
+               the visitor can flip between en / pt-BR without leaving the
+               sign-in flow. Auto-suppresses when a single culture is configured. *@
+            <va-language-switcher class="va-enduser-lang" />
         </div>
     </main>
 </body>

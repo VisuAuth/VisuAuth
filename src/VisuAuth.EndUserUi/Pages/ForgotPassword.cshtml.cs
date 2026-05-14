@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Options;
 using VisuAuth.Abstractions.Authentication;
 using VisuAuth.Abstractions.Capabilities;
@@ -14,10 +15,12 @@ namespace VisuAuth.EndUserUi.Pages;
 /// </summary>
 public sealed class ForgotPasswordModel(
     IAuthenticationFlow authentication,
-    IOptions<EndUserUiOptions> options) : PageModel
+    IOptions<EndUserUiOptions> options,
+    IStringLocalizer<EndUserSharedResources> localizer) : PageModel
 {
     private readonly IAuthenticationFlow _authentication = authentication ?? throw new ArgumentNullException(nameof(authentication));
     private readonly EndUserUiOptions _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
+    private readonly IStringLocalizer<EndUserSharedResources> _l = localizer ?? throw new ArgumentNullException(nameof(localizer));
 
     [BindProperty]
     public ForgotPasswordForm Form { get; set; } = new();
@@ -35,13 +38,13 @@ public sealed class ForgotPasswordModel(
     {
         if (!Capabilities.SupportsPasswordReset)
         {
-            ModelState.AddModelError(string.Empty, "This backend does not support password reset.");
+            ModelState.AddModelError(string.Empty, _l["Forgot.Error.NotSupported"].Value);
             return Page();
         }
 
         if (string.IsNullOrWhiteSpace(Form.Email))
         {
-            ModelState.AddModelError(string.Empty, "Email is required.");
+            ModelState.AddModelError(string.Empty, _l["Forgot.Error.EmailRequired"].Value);
             return Page();
         }
 

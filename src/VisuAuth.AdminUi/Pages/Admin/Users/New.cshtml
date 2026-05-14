@@ -1,27 +1,27 @@
 @page "/visuauth/admin/users/new"
 @model VisuAuth.AdminUi.Pages.Admin.Users.NewModel
 @{
-    ViewData["Title"] = "New user — VisuAuth Admin";
+    ViewData["Title"] = Ls["Users.New.PageTitle"].Value;
 }
 
 <div class="va-page-header">
     <div>
-        <a class="va-back" href="/visuauth/admin/users">‹ Back to users</a>
-        <h1>New user</h1>
+        <a class="va-back" href="/visuauth/admin/users">@Ls["Users.Detail.Back"]</a>
+        <h1>@Ls["Users.New.Heading"]</h1>
         <div class="va-muted va-detail-subtitle">
-            Provision a fresh account in this backend.
+            @Ls["Users.New.Subtitle"]
         </div>
     </div>
 </div>
 
-<va-form-errors errors="@Model.Errors" lead="Could not create the user." />
+<va-form-errors errors="@Model.Errors" lead="@Ls["Users.New.ErrorLead"].Value" />
 
 @if (Model.CreatedUserId is { Length: > 0 } createdId)
 {
     <div class="va-alert va-alert-success" role="status">
         <p>
-            User created.
-            <a href="/visuauth/admin/users/@createdId">Open detail page ›</a>
+            @Ls["Users.New.Created"]
+            <a href="/visuauth/admin/users/@createdId">@Ls["Users.New.OpenDetail"]</a>
         </p>
     </div>
 
@@ -29,8 +29,7 @@
     {
         <div class="va-alert va-alert-info" role="status">
             <p>
-                <strong>Temporary password.</strong> Hand it to the user — VisuAuth
-                will not show it again.
+                <strong>@Ls["Users.Detail.TempPasswordHeading"]</strong> @Ls["Users.New.TempPasswordDesc"]
             </p>
             <partial name="_CopyableSecret" model="@temp" />
         </div>
@@ -39,13 +38,13 @@
 
 <section class="va-card va-detail-card">
     <div class="va-detail-card-header">
-        <h2>Profile</h2>
+        <h2>@Ls["Users.Profile.Heading"]</h2>
     </div>
 
     <form method="post" autocomplete="off">
         <div class="va-form-grid">
             <label class="va-field">
-                <span class="va-field-label">Email <span class="va-required">*</span></span>
+                <span class="va-field-label">@Ls["Common.LabelEmail"] <span class="va-required">*</span></span>
                 <input type="email"
                        name="Form.Email"
                        value="@Model.Form.Email"
@@ -54,21 +53,21 @@
             </label>
 
             <label class="va-field">
-                <span class="va-field-label">Username</span>
+                <span class="va-field-label">@Ls["Common.LabelUsername"]</span>
                 <input type="text"
                        name="Form.UserName"
                        value="@Model.Form.UserName"
-                       placeholder="Defaults to the email when blank"
+                       placeholder="@Ls["Users.New.UsernamePlaceholder"]"
                        class="va-input" />
             </label>
 
             <va-password name="Form.Password"
-                         placeholder="Leave blank to autogenerate a temporary one"
+                         placeholder="@Ls["Users.New.PasswordPlaceholder"].Value"
                          autocomplete="new-password"
                          required="false" />
 
             <label class="va-field">
-                <span class="va-field-label">Phone</span>
+                <span class="va-field-label">@Ls["Common.LabelPhone"]</span>
                 <input type="tel"
                        name="Form.PhoneNumber"
                        value="@Model.Form.PhoneNumber"
@@ -84,17 +83,14 @@
                    name="Form.EmailConfirmed"
                    value="true"
                    checked="@emailConfirmedChecked" />
-            <span>Email already verified (skip the confirmation flow)</span>
+            <span>@Ls["Users.New.EmailConfirmedLabel"]</span>
         </label>
 
         @if (Model.Capabilities.SupportsRoleManagement && Model.AvailableRoles.Count > 0)
         {
             <fieldset class="va-fieldset">
-                <legend class="va-field-label">Roles</legend>
-                <p class="va-muted va-empty-inline">
-                    Select the roles the new user should land in. You can change
-                    these later from the user detail page.
-                </p>
+                <legend class="va-field-label">@Ls["Users.New.RolesHeading"]</legend>
+                <p class="va-muted va-empty-inline">@Ls["Users.New.RolesHint"]</p>
                 <div class="va-checkbox-grid">
                     @foreach (var role in Model.AvailableRoles)
                     {
@@ -112,8 +108,8 @@
         }
 
         <div class="va-form-actions">
-            <button type="submit" class="va-btn va-btn-primary">Create user</button>
-            <a class="va-btn va-btn-ghost" href="/visuauth/admin/users">Cancel</a>
+            <button type="submit" class="va-btn va-btn-primary">@Ls["Users.New.Submit"]</button>
+            <a class="va-btn va-btn-ghost" href="/visuauth/admin/users">@Ls["Common.Cancel"]</a>
         </div>
     </form>
 </section>

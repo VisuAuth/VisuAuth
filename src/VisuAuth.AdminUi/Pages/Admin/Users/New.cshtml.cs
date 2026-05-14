@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Localization;
 using VisuAuth.Abstractions.Capabilities;
 using VisuAuth.Abstractions.Roles;
 using VisuAuth.Abstractions.Users;
@@ -10,10 +11,14 @@ namespace VisuAuth.AdminUi.Pages.Admin.Users;
 /// Create-user form. On success the admin lands on the new user's detail page
 /// so they can immediately follow up with role assignment, lockout, etc.
 /// </summary>
-public sealed class NewModel(IUserStore userStore, IRoleStore roleStore) : PageModel
+public sealed class NewModel(
+    IUserStore userStore,
+    IRoleStore roleStore,
+    IStringLocalizer<AdminSharedResources> localizer) : PageModel
 {
     private readonly IUserStore _userStore = userStore ?? throw new ArgumentNullException(nameof(userStore));
     private readonly IRoleStore _roleStore = roleStore ?? throw new ArgumentNullException(nameof(roleStore));
+    private readonly IStringLocalizer<AdminSharedResources> _l = localizer ?? throw new ArgumentNullException(nameof(localizer));
 
     [BindProperty]
     public CreateUserForm Form { get; set; } = new();
@@ -38,7 +43,7 @@ public sealed class NewModel(IUserStore userStore, IRoleStore roleStore) : PageM
         // admin see why the form is unavailable without first attempting a POST.
         if (!Capabilities.SupportsRegistration)
         {
-            Errors = ["This backend does not support user creation."];
+            Errors = [_l["Users.Error.RegistrationNotSupported"].Value];
         }
 
         await LoadRolesAsync(cancellationToken);
@@ -49,7 +54,7 @@ public sealed class NewModel(IUserStore userStore, IRoleStore roleStore) : PageM
     {
         if (!Capabilities.SupportsRegistration)
         {
-            Errors = ["This backend does not support user creation."];
+            Errors = [_l["Users.Error.RegistrationNotSupported"].Value];
             await LoadRolesAsync(cancellationToken);
             return Page();
         }
@@ -79,7 +84,7 @@ public sealed class NewModel(IUserStore userStore, IRoleStore roleStore) : PageM
         {
             Errors = result.ValidationErrors.Count > 0
                 ? result.ValidationErrors
-                : [result.Error ?? "Failed to create user."];
+                : [result.Error ?? _l["Users.Error.CreateFailed"].Value];
             await LoadRolesAsync(cancellationToken);
             return Page();
         }
@@ -105,7 +110,7 @@ public sealed class NewModel(IUserStore userStore, IRoleStore roleStore) : PageM
                 var assign = await _roleStore.AssignRoleAsync(id, role, cancellationToken);
                 if (!assign.IsSuccess)
                 {
-                    roleErrors.Add(assign.Error ?? $"Failed to assign role '{role}'.");
+                    roleErrors.Add(assign.Error ?? _l["Users.Action.FailedAssignRole", role].Value);
                 }
             }
             if (roleErrors.Count > 0)

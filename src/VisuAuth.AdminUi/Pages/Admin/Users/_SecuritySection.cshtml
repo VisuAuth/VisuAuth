@@ -8,30 +8,30 @@
 
 <section class="va-card va-detail-card" id="va-user-security">
     <div class="va-detail-card-header">
-        <h2>Security</h2>
+        <h2>@Ls["Users.Security.Heading"]</h2>
     </div>
 
     <dl class="va-dl">
-        <dt>Lockout enabled</dt>
-        <dd>@(detail.LockoutEnabled ? "Yes" : "No")</dd>
+        <dt>@Ls["Users.Security.LockoutEnabled"]</dt>
+        <dd>@(detail.LockoutEnabled ? Ls["Common.Yes"].Value : Ls["Common.No"].Value)</dd>
 
-        <dt>Currently locked out</dt>
+        <dt>@Ls["Users.Security.CurrentlyLocked"]</dt>
         <dd>
             @if (isLockedOut)
             {
-                <span class="va-badge va-danger">Until @detail.LockoutEnd!.Value.ToString("u")</span>
+                <span class="va-badge va-danger">@Ls["Users.Security.UntilFormat", detail.LockoutEnd!.Value.ToString("u")]</span>
             }
             else
             {
-                <span class="va-muted">No</span>
+                <span class="va-muted">@Ls["Common.No"]</span>
             }
         </dd>
 
-        <dt>Failed attempts</dt>
+        <dt>@Ls["Users.Security.FailedAttempts"]</dt>
         <dd>@detail.AccessFailedCount</dd>
 
-        <dt>Two-factor</dt>
-        <dd>@(detail.TwoFactorEnabled ? "Enabled" : "Disabled")</dd>
+        <dt>@Ls["Users.Security.TwoFactor"]</dt>
+        <dd>@(detail.TwoFactorEnabled ? Ls["Users.Security.TwoFactorEnabled"].Value : Ls["Users.Security.TwoFactorDisabled"].Value)</dd>
     </dl>
 
     <div class="va-actions">
@@ -43,7 +43,7 @@
                       hx-post="@(detailUrl)?handler=Unlock"
                       hx-target="#va-user-detail-content"
                       hx-swap="innerHTML">
-                    <button type="submit" class="va-btn va-btn-primary">Unlock account</button>
+                    <button type="submit" class="va-btn va-btn-primary">@Ls["Users.Security.Unlock"]</button>
                 </form>
             }
             else
@@ -52,8 +52,8 @@
                       hx-post="@(detailUrl)?handler=Lock"
                       hx-target="#va-user-detail-content"
                       hx-swap="innerHTML"
-                      hx-confirm="Lock this user's account? They will not be able to sign in until you unlock them.">
-                    <button type="submit" class="va-btn va-btn-warning">Lock account</button>
+                      hx-confirm="@Ls["Users.Security.LockConfirm"]">
+                    <button type="submit" class="va-btn va-btn-warning">@Ls["Users.Security.Lock"]</button>
                 </form>
             }
         }
@@ -64,8 +64,8 @@
                   hx-post="@(detailUrl)?handler=ResetPassword"
                   hx-target="#va-user-detail-content"
                   hx-swap="innerHTML"
-                  hx-confirm="Reset the password? A new temporary password will be generated and shown once.">
-                <button type="submit" class="va-btn va-btn-ghost">Reset password</button>
+                  hx-confirm="@Ls["Users.Security.ResetPasswordConfirm"]">
+                <button type="submit" class="va-btn va-btn-ghost">@Ls["Users.Security.ResetPassword"]</button>
             </form>
         }
 
@@ -75,8 +75,8 @@
                   hx-post="@(detailUrl)?handler=ResetTwoFactor"
                   hx-target="#va-user-detail-content"
                   hx-swap="innerHTML"
-                  hx-confirm="Reset two-factor? The user will need to set up their authenticator again.">
-                <button type="submit" class="va-btn va-btn-ghost">Reset 2FA</button>
+                  hx-confirm="@Ls["Users.Security.Reset2faConfirm"]">
+                <button type="submit" class="va-btn va-btn-ghost">@Ls["Users.Security.Reset2fa"]</button>
             </form>
         }
 
@@ -86,8 +86,8 @@
                   hx-post="@(detailUrl)?handler=RevokeSessions"
                   hx-target="#va-user-detail-content"
                   hx-swap="innerHTML"
-                  hx-confirm="Sign this user out of every device?">
-                <button type="submit" class="va-btn va-btn-ghost">Revoke sessions</button>
+                  hx-confirm="@Ls["Users.Security.RevokeSessionsConfirm"]">
+                <button type="submit" class="va-btn va-btn-ghost">@Ls["Users.Security.RevokeSessions"]</button>
             </form>
         }
     </div>

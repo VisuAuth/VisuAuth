@@ -26,15 +26,15 @@
         <table class="va-table">
             <thead>
             <tr>
-                <th>Email</th>
-                <th>Username</th>
+                <th>@Ls["Users.Col.Email"]</th>
+                <th>@Ls["Users.Col.Username"]</th>
                 @if (showTenantColumn)
                 {
-                    <th>Tenant</th>
+                    <th>@Ls["Users.Col.Tenant"]</th>
                 }
-                <th>Status</th>
-                <th>2FA</th>
-                <th>Verified</th>
+                <th>@Ls["Users.Col.Status"]</th>
+                <th>@Ls["Users.Col.2fa"]</th>
+                <th>@Ls["Users.Col.Verified"]</th>
             </tr>
             </thead>
             <tbody>
@@ -44,7 +44,7 @@
                     <td>
                         <a class="va-row-link" href="/visuauth/admin/users/@user.Id">@user.Email</a>
                     </td>
-                    <td>@(user.UserName ?? "—")</td>
+                    <td>@(user.UserName ?? Ls["Common.Dash"].Value)</td>
                     @if (showTenantColumn)
                     {
                         <td>
@@ -54,26 +54,26 @@
                             }
                             else
                             {
-                                <span class="va-muted">—</span>
+                                <span class="va-muted">@Ls["Common.Dash"]</span>
                             }
                         </td>
                     }
                     <td>
                         @if (user.IsEnabled)
                         {
-                            <span class="va-badge va-success">Active</span>
+                            <span class="va-badge va-success">@Ls["Common.StatusActive"]</span>
                         }
                         else
                         {
-                            <span class="va-badge va-danger">Locked</span>
+                            <span class="va-badge va-danger">@Ls["Common.StatusLocked"]</span>
                         }
                     </td>
                     <td>
-                        <span class="va-badge">@(user.TwoFactorEnabled ? "On" : "Off")</span>
+                        <span class="va-badge">@(user.TwoFactorEnabled ? Ls["Common.On"].Value : Ls["Common.Off"].Value)</span>
                     </td>
                     <td>
                         <span class="va-badge @(user.EmailConfirmed ? "va-success" : "")">
-                            @(user.EmailConfirmed ? "Yes" : "Pending")
+                            @(user.EmailConfirmed ? Ls["Common.Yes"].Value : Ls["Common.Pending"].Value)
                         </span>
                     </td>
                 </tr>
@@ -83,8 +83,7 @@
 
         <div class="va-pagination">
             <div>
-                Showing @(((result.Page - 1) * result.PageSize) + 1)–@Math.Min(result.Page * result.PageSize, result.Total)
-                of @result.Total
+                @Ls["Users.PaginationShowing", ((result.Page - 1) * result.PageSize) + 1, Math.Min(result.Page * result.PageSize, result.Total), result.Total]
             </div>
             <div>
                 @if (result.HasPrevious)
@@ -93,24 +92,24 @@
                        hx-get="@PageLink(result.Page - 1)"
                        hx-target="#va-users-table"
                        hx-swap="outerHTML"
-                       hx-push-url="true">‹ Previous</a>
+                       hx-push-url="true">@Ls["Common.Previous"]</a>
                 }
                 else
                 {
-                    <span class="va-disabled">‹ Previous</span>
+                    <span class="va-disabled">@Ls["Common.Previous"]</span>
                 }
-                <span class="va-muted">Page @result.Page of @Math.Max(result.TotalPages, 1)</span>
+                <span class="va-muted">@Ls["Common.PageNofTotal", result.Page, Math.Max(result.TotalPages, 1)]</span>
                 @if (result.HasNext)
                 {
                     <a href="@PageLink(result.Page + 1)"
                        hx-get="@PageLink(result.Page + 1)"
                        hx-target="#va-users-table"
                        hx-swap="outerHTML"
-                       hx-push-url="true">Next ›</a>
+                       hx-push-url="true">@Ls["Common.Next"]</a>
                 }
                 else
                 {
-                    <span class="va-disabled">Next ›</span>
+                    <span class="va-disabled">@Ls["Common.Next"]</span>
                 }
             </div>
         </div>
@@ -120,11 +119,11 @@
         <div class="va-empty">
             @if (!string.IsNullOrWhiteSpace(Model.SearchTerm))
             {
-                <p>No users match <strong>@Model.SearchTerm</strong>.</p>
+                <p>@L["Users.EmptyNoMatch", Model.SearchTerm]</p>
             }
             else
             {
-                <p>No users yet.</p>
+                <p>@Ls["Users.EmptyNone"]</p>
             }
         </div>
     }

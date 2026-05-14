@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Localization;
 using VisuAuth.Abstractions.Capabilities;
 using VisuAuth.Abstractions.Roles;
 using VisuAuth.Abstractions.Users;
@@ -12,10 +13,14 @@ namespace VisuAuth.AdminUi.Pages.Admin.Roles;
 /// deferred to a follow-up PR — needs a view↔edit toggle that would bloat
 /// this change.
 /// </summary>
-public sealed class IndexModel(IUserStore userStore, IRoleStore roleStore) : PageModel
+public sealed class IndexModel(
+    IUserStore userStore,
+    IRoleStore roleStore,
+    IStringLocalizer<AdminSharedResources> localizer) : PageModel
 {
     private readonly IUserStore _userStore = userStore ?? throw new ArgumentNullException(nameof(userStore));
     private readonly IRoleStore _roleStore = roleStore ?? throw new ArgumentNullException(nameof(roleStore));
+    private readonly IStringLocalizer<AdminSharedResources> _l = localizer ?? throw new ArgumentNullException(nameof(localizer));
 
     [BindProperty]
     public string? NewRoleName { get; set; }
@@ -49,7 +54,7 @@ public sealed class IndexModel(IUserStore userStore, IRoleStore roleStore) : Pag
         var trimmed = NewRoleName?.Trim();
         if (string.IsNullOrWhiteSpace(trimmed))
         {
-            ActionErrors = ["Role name is required."];
+            ActionErrors = [_l["Roles.Error.NameRequired"].Value];
             await LoadAsync(cancellationToken);
             return Partial("_RolesCatalogue", this);
         }
@@ -60,11 +65,11 @@ public sealed class IndexModel(IUserStore userStore, IRoleStore roleStore) : Pag
         {
             ActionErrors = result.ValidationErrors.Count > 0
                 ? result.ValidationErrors
-                : [result.Error ?? "Failed to create role."];
+                : [result.Error ?? _l["Roles.Error.CreateFailed"].Value];
         }
         else
         {
-            ActionMessage = $"Role '{trimmed}' created.";
+            ActionMessage = _l["Roles.Action.Created", trimmed].Value;
             NewRoleName = null;
         }
 
@@ -76,7 +81,7 @@ public sealed class IndexModel(IUserStore userStore, IRoleStore roleStore) : Pag
     {
         if (string.IsNullOrWhiteSpace(id))
         {
-            ActionErrors = ["Missing role id."];
+            ActionErrors = [_l["Roles.Error.MissingId"].Value];
         }
         else
         {
@@ -90,7 +95,7 @@ public sealed class IndexModel(IUserStore userStore, IRoleStore roleStore) : Pag
     {
         if (string.IsNullOrWhiteSpace(id))
         {
-            ActionErrors = ["Missing role id."];
+            ActionErrors = [_l["Roles.Error.MissingId"].Value];
             await LoadAsync(cancellationToken);
             return Partial("_RolesCatalogue", this);
         }
@@ -101,7 +106,7 @@ public sealed class IndexModel(IUserStore userStore, IRoleStore roleStore) : Pag
             // Keep the row in edit mode so the admin can fix the input rather
             // than losing their place.
             EditingRoleId = id;
-            ActionErrors = ["Role name is required."];
+            ActionErrors = [_l["Roles.Error.NameRequired"].Value];
             await LoadAsync(cancellationToken);
             return Partial("_RolesCatalogue", this);
         }
@@ -112,11 +117,11 @@ public sealed class IndexModel(IUserStore userStore, IRoleStore roleStore) : Pag
             EditingRoleId = id;
             ActionErrors = result.ValidationErrors.Count > 0
                 ? result.ValidationErrors
-                : [result.Error ?? "Failed to rename role."];
+                : [result.Error ?? _l["Roles.Error.RenameFailed"].Value];
         }
         else
         {
-            ActionMessage = $"Role renamed to '{trimmed}'.";
+            ActionMessage = _l["Roles.Action.Renamed", trimmed].Value;
             RenamedRoleName = null;
         }
 
@@ -128,7 +133,7 @@ public sealed class IndexModel(IUserStore userStore, IRoleStore roleStore) : Pag
     {
         if (string.IsNullOrWhiteSpace(id))
         {
-            ActionErrors = ["Missing role id."];
+            ActionErrors = [_l["Roles.Error.MissingId"].Value];
             await LoadAsync(cancellationToken);
             return Partial("_RolesCatalogue", this);
         }
@@ -141,11 +146,11 @@ public sealed class IndexModel(IUserStore userStore, IRoleStore roleStore) : Pag
         {
             ActionErrors = result.ValidationErrors.Count > 0
                 ? result.ValidationErrors
-                : [result.Error ?? "Failed to delete role."];
+                : [result.Error ?? _l["Roles.Error.DeleteFailed"].Value];
         }
         else
         {
-            ActionMessage = $"Role '{name}' deleted.";
+            ActionMessage = _l["Roles.Action.Deleted", name].Value;
         }
 
         await LoadAsync(cancellationToken);

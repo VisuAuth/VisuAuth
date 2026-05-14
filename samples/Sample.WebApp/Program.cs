@@ -48,6 +48,16 @@ builder.Services.Configure<VisuAuthTheme>(SampleThemes.Purple);
 // Comment this line out to keep the global theme on every tenant.
 builder.Services.AddSingleton<ITenantThemeResolver, SampleTenantThemeResolver>();
 
+// Per-tenant view overrides (CLAUDE.md §8.4 layers 3+4 composed).
+// SampleTenantViewOverrideResolver maps the seeded `acme` tenant to
+// /Views/VisuAuth/Tenants/acme/, which holds an acme-branded
+// _UsersTable.cshtml. Other tenants fall through to the global
+// /Views/VisuAuth/ override (or the package default if neither exists).
+//
+// Same opt-in story as the theme resolver: comment this line out to
+// disable per-tenant view overrides without touching anything else.
+builder.Services.AddSingleton<ITenantViewOverrideResolver, SampleTenantViewOverrideResolver>();
+
 // Theming layer 3 (CLAUDE.md §8.4) — view override. The sample app drops
 // two demo .cshtml files into `Views/VisuAuth/` and `Views/VisuAuth/Shared/`
 // to show how partial + layout overrides plug in without any code change:

@@ -190,7 +190,7 @@ Conversations between contributors can happen in any language; the project owner
 - ASP.NET Core Identity (`UserManager`, `SignInManager`, `RoleManager`) — in adapters only, never in `VisuAuth.Abstractions`
 - EF Core for queries against Identity tables
 - Razor Pages SDK (`Microsoft.NET.Sdk.Razor`) for the UI libraries
-- htmx via CDN in v0.1 (will be embedded as a static asset in a later PR)
+- htmx 2.0.x shipped as an embedded static asset under `VisuAuth.AdminUi/wwwroot/htmx.min.js` (no outbound CDN call — works in air-gapped deployments)
 - xUnit for tests, FluentAssertions for assertions, `WebApplicationFactory` for integration
 
 ### 5.4 What we don't use
@@ -447,8 +447,8 @@ When working on this repository:
 | Version | Scope | Status |
 |---|---|---|
 | 0.0.1-alpha | Placeholder NuGet release reserving the name | ✅ Shipped |
-| 0.1 | Admin UI (CRUD users, roles, lockout, reset), end-user UI (login, register, reset, confirm, profile), multi-tenancy, theming layers 1+2, mobile REST + JWT, WebView flow, i18n (pt-BR + en) | 🚧 In progress |
-| 0.2 | Microsoft Entra ID adapter, TOTP pages, external providers (Google, Microsoft, Apple), audit log plugin, theming layer 3 (view override) and layer 4 (per-tenant), embedded htmx asset | 📋 Planned |
+| 0.1 | Admin UI (CRUD users, roles, lockout, reset), end-user UI (login, register, reset, confirm, profile), multi-tenancy, theming layers 1+2, mobile REST + JWT, WebView flow, i18n (pt-BR + en), embedded htmx asset | 🚧 In progress |
+| 0.2 | Microsoft Entra ID adapter, TOTP pages, external providers (Google, Microsoft, Apple), audit log plugin, theming layer 3 (view override) and layer 4 (per-tenant) | 📋 Planned |
 | 0.3 | Microsoft Entra External ID adapter, profile / sessions management, bulk operations, view-level customization | 📋 Planned |
 | 1.0 | Production-ready, stable contracts, full English documentation site | 📋 Planned |
 

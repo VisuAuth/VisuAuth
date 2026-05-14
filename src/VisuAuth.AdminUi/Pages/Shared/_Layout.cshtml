@@ -28,14 +28,11 @@
        so the markup stays clean for the default-theme case. Placed AFTER
        the stylesheet link so overrides win on source order. *@
     <va-theme-style />
-    @*
-       TODO: Embed htmx as a static asset under wwwroot/ in a future PR for
-       offline/airgapped support. Using the CDN keeps this PR small.
-    *@
-    <script src="https://unpkg.com/htmx.org@2.0.4"
-            integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+"
-            crossorigin="anonymous"
-            defer></script>
+    @* htmx is shipped as an embedded static asset so air-gapped
+       deployments work out of the box (no outbound CDN call). The file
+       at wwwroot/htmx.min.js is htmx 2.0.4 verbatim — keep it in sync
+       when bumping the version. *@
+    <script src="/_content/VisuAuth.AdminUi/htmx.min.js" asp-append-version="true" defer></script>
     <script src="/_content/VisuAuth.AdminUi/visuauth.js" asp-append-version="true" defer></script>
 </head>
 <body>

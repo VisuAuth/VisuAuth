@@ -11,18 +11,18 @@ namespace VisuAuth.IntegrationTests.Admin;
 
 /// <summary>
 /// Integration tests for the mutation handlers on the user detail page.
-/// Each test targets a unique seeded user so they can run in any order even
-/// though the SQLite database is shared by <see cref="WebApplicationFactory{Program}"/>.
+/// Each test targets a unique seeded user so they can run in any order
+/// within the per-class <see cref="VisuAuthTestFactory"/> database.
 /// </summary>
-public sealed class UserMutationTests : IClassFixture<WebApplicationFactory<Program>>
+public sealed class UserMutationTests : IClassFixture<VisuAuthTestFactory>
 {
     private static readonly Regex TokenRegex = new(
         "name=\"__RequestVerificationToken\"[^>]*?value=\"([^\"]+)\"",
         RegexOptions.Compiled);
 
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly VisuAuthTestFactory _factory;
 
-    public UserMutationTests(WebApplicationFactory<Program> factory)
+    public UserMutationTests(VisuAuthTestFactory factory)
     {
         _factory = factory;
     }

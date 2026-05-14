@@ -17,8 +17,8 @@ namespace VisuAuth.IntegrationTests.Admin;
 /// registered for every VisuAuth Razor Page so consumer overrides at the
 /// same <c>@page</c> route win without an <c>AmbiguousMatchException</c>.
 /// </summary>
-public sealed class ViewOverrideTests(WebApplicationFactory<Program> factory)
-    : IClassFixture<WebApplicationFactory<Program>>
+public sealed class ViewOverrideTests(VisuAuthTestFactory factory)
+    : IClassFixture<VisuAuthTestFactory>
 {
     [Fact]
     public async Task GetUsers_WithSampleOverrideUsersTable_RendersConsumerBanner()

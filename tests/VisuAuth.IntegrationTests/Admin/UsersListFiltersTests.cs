@@ -12,11 +12,11 @@ namespace VisuAuth.IntegrationTests.Admin;
 /// verified / 2FA dropdowns) and the new query-string parameters they wire
 /// through to <c>UserFilter</c>.
 /// </summary>
-public sealed class UsersListFiltersTests : IClassFixture<WebApplicationFactory<Program>>
+public sealed class UsersListFiltersTests : IClassFixture<VisuAuthTestFactory>
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly VisuAuthTestFactory _factory;
 
-    public UsersListFiltersTests(WebApplicationFactory<Program> factory)
+    public UsersListFiltersTests(VisuAuthTestFactory factory)
     {
         _factory = factory;
     }

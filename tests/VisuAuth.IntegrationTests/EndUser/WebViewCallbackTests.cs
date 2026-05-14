@@ -11,15 +11,15 @@ namespace VisuAuth.IntegrationTests.EndUser;
 /// <c>/visuauth/login</c>. A successful sign-in with an allowed
 /// non-HTTP returnUrl redirects to that URL with the JWT appended.
 /// </summary>
-public sealed class WebViewCallbackTests : IClassFixture<WebApplicationFactory<Program>>
+public sealed class WebViewCallbackTests : IClassFixture<VisuAuthTestFactory>
 {
     private static readonly Regex TokenRegex = new(
         "name=\"__RequestVerificationToken\"[^>]*?value=\"([^\"]+)\"",
         RegexOptions.Compiled);
 
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly VisuAuthTestFactory _factory;
 
-    public WebViewCallbackTests(WebApplicationFactory<Program> factory)
+    public WebViewCallbackTests(VisuAuthTestFactory factory)
     {
         _factory = factory;
     }

@@ -22,6 +22,11 @@
     @* asp-append-version pins ?v={file-hash}, so a stylesheet rebuild forces
        browsers to fetch the new content instead of serving a stale cached copy. *@
     <link rel="stylesheet" href="/_content/VisuAuth.AdminUi/visuauth.css" asp-append-version="true" />
+    @* Programmatic theme overrides (CLAUDE.md §8.4 layer 2). Tag helper
+       suppresses itself when no VisuAuthTheme properties were configured,
+       so the markup stays clean for the default-theme case. Placed AFTER
+       the stylesheet link so overrides win on source order. *@
+    <va-theme-style />
     @*
        TODO: Embed htmx as a static asset under wwwroot/ in a future PR for
        offline/airgapped support. Using the CDN keeps this PR small.

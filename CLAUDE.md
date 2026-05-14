@@ -284,7 +284,7 @@ Four layers of customization, ranked from simplest to most powerful:
 1. **CSS custom properties** — consumer overrides `--visuauth-primary`, `--visuauth-bg`, etc. in their own stylesheet loaded after ours. Default theme is in `wwwroot/visuauth.css`.
 2. **Programmatic config** — `services.AddVisuAuth().Configure<VisuAuthTheme>(...)`. Generates CSS variables at runtime.
 3. **View override** — consumer drops their own `.cshtml` in `/Views/VisuAuth/` (or a folder configured via `VisuAuthViewOverrideOptions.Root`) and ours falls back if absent. Two mechanisms cooperate: an `IViewLocationExpander` prepends the override folder to Razor's view-engine search list for partials and layouts; a `DemoteVisuAuthPagesConvention` sets `AttributeRouteModel.Order = 1000` on every VisuAuth Razor Page so a consumer page in the host app at the same `@page` route wins via the lower-order-wins rule.
-4. **Per-tenant theme** — when multi-tenancy is enabled, a resolver returns a different theme per tenant. Planned for v0.2.
+4. **Per-tenant theme** — consumers implement `ITenantThemeResolver`, which returns a `VisuAuthTheme?` keyed off `ITenantContext.CurrentTenantId`. The `<va-theme-style />` tag helper calls the resolver on every render and overlays the result on top of the global `IOptions<VisuAuthTheme>` via `VisuAuthThemeMerger.Merge` — tenant wins per property, global fills the rest, anything still null falls through to the CSS defaults. Default registration is `NoOpTenantThemeResolver` (returns null) so consumers who never opt in keep the layer-2 fast path.
 
 ---
 
@@ -447,8 +447,8 @@ When working on this repository:
 | Version | Scope | Status |
 |---|---|---|
 | 0.0.1-alpha | Placeholder NuGet release reserving the name | ✅ Shipped |
-| 0.1 | Admin UI (CRUD users, roles, lockout, reset), end-user UI (login, register, reset, confirm, profile), multi-tenancy, theming layers 1+2+3, mobile REST + JWT, WebView flow, i18n (pt-BR + en), embedded htmx asset | 🚧 In progress |
-| 0.2 | Microsoft Entra ID adapter, TOTP pages, external providers (Google, Microsoft, Apple), audit log plugin, theming layer 4 (per-tenant) | 📋 Planned |
+| 0.1 | Admin UI (CRUD users, roles, lockout, reset), end-user UI (login, register, reset, confirm, profile), multi-tenancy, theming layers 1+2+3+4, mobile REST + JWT, WebView flow, i18n (pt-BR + en), embedded htmx asset | 🚧 In progress |
+| 0.2 | Microsoft Entra ID adapter, TOTP pages, external providers (Google, Microsoft, Apple), audit log plugin | 📋 Planned |
 | 0.3 | Microsoft Entra External ID adapter, profile / sessions management, bulk operations, view-level customization | 📋 Planned |
 | 1.0 | Production-ready, stable contracts, full English documentation site | 📋 Planned |
 

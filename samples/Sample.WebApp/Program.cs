@@ -34,6 +34,20 @@ builder.Services.AddVisuAuth<ApplicationUser>();
 // the call entirely to keep the stock theme.
 builder.Services.Configure<VisuAuthTheme>(SampleThemes.Purple);
 
+// Theming layer 4 (CLAUDE.md §8.4) — per-tenant overrides. Sample maps
+// each seeded tenant id to a different palette so flipping the sidebar
+// switcher visibly re-skins the dashboard:
+//
+//   acme    → Forest (green)
+//   globex  → Orange (warm)
+//   initech → Midnight (dark)
+//   <none>  → falls through to the global SampleThemes.Purple above
+//
+// Production resolvers typically pull from a tenants table and cache
+// the result; this sample uses an in-memory mapping for clarity.
+// Comment this line out to keep the global theme on every tenant.
+builder.Services.AddSingleton<ITenantThemeResolver, SampleTenantThemeResolver>();
+
 // Theming layer 3 (CLAUDE.md §8.4) — view override. The sample app drops
 // two demo .cshtml files into `Views/VisuAuth/` and `Views/VisuAuth/Shared/`
 // to show how partial + layout overrides plug in without any code change:

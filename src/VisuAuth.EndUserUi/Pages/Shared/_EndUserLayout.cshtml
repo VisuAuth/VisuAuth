@@ -12,6 +12,10 @@
        admin dashboard. *@
     <link rel="stylesheet" href="/_content/VisuAuth.AdminUi/visuauth.css" asp-append-version="true" />
     <link rel="stylesheet" href="/_content/VisuAuth.EndUserUi/visuauth-enduser.css" asp-append-version="true" />
+    @* Programmatic theme overrides (CLAUDE.md §8.4 layer 2). Same tag
+       helper as the admin layout — end-user pages stay visually aligned
+       with the dashboard for free. *@
+    <va-theme-style />
     <script src="https://unpkg.com/htmx.org@2.0.4"
             integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+"
             crossorigin="anonymous"

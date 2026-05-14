@@ -11,7 +11,7 @@ Updated as PRs land. Long-term direction lives in `CLAUDE.md` section 13 (Roadma
 - **Latest shipped on NuGet**: `VisuAuth 0.0.1-alpha` (placeholder, name reservation)
 - **Default branch**: `main` at <https://github.com/VisuAuth/visuauth>
 - **Build state**: green (`dotnet build src/VisuAuth.slnx -c Release` → 0 errors, 0 warnings)
-- **Test state**: 106 / 106 passing (on `main`; 18 unit + 88 integration; this branch adds more)
+- **Test state**: green on `main` (split unit + integration projects; this branch adds more)
 
 ---
 
@@ -57,70 +57,68 @@ Updated as PRs land. Long-term direction lives in `CLAUDE.md` section 13 (Roadma
   - Sidebar active state computed from current route; every nav entry now a real link when its backing capability is on
   - Default CSS theme with custom property hooks for branding
 - `VisuAuth.EndUserUi`:
-  - Stub package wired into DI; concrete pages still to come
+  - `/visuauth/login` and `/visuauth/logout` Razor Pages (email + password + remember-me, anti-forgery, redirect-back to `returnUrl`)
+  - `/visuauth/register`, `/visuauth/forgot-password`, `/visuauth/reset-password`, `/visuauth/confirm-email` Razor Pages
+  - `/visuauth/api/auth/{login,register,refresh}` endpoints issuing HS256 JWTs (`sub`, `email`, `tenant_id`, `roles`, `exp`) — mobile / native channel
+  - WebView deep-link callback: when `returnUrl` parses to an allow-listed non-HTTP scheme, login redirects to it with the JWT in the URL fragment; opt-in preview page for desktop dev testing
+  - Shared `<va-password>` and `<va-form-errors>` tag helpers + `visuauth.js` show/hide password widget
+  - Layout reuses the admin CSS for visual continuity
 - `VisuAuth` meta-package:
   - `AddVisuAuth<TUser>()` and `MapVisuAuth()` extension methods
 - Sample app:
   - ASP.NET Core Identity + EF Core SQLite + 12 seeded users
   - Drop-in usage proven (`AddVisuAuth<ApplicationUser>` + `MapVisuAuth`)
 - Tests:
-  - `tests/VisuAuth.AdminUi.Tests` with `WebApplicationFactory` smoke tests covering list rendering, search, htmx partials, user detail rendering, 404, row → detail link, every mutation action, create / delete, role assign / remove, role catalogue, tenants catalogue, multi-tenancy isolation, filter combinations, and the sidebar tenant switcher (cookie round-trip + open-redirect guard)
+  - `tests/VisuAuth.UnitTests` and `tests/VisuAuth.IntegrationTests` projects, with shared method-naming convention `Method_Scenario_ExpectedResult`
+  - Integration coverage (via `WebApplicationFactory<Program>`): admin list rendering, search, htmx partials, user detail, 404, mutation actions, create / delete, role assign / remove, role catalogue, tenants catalogue, multi-tenancy isolation, filter combinations, sidebar tenant switcher (cookie + open-redirect guard), end-user login / register / reset / confirm, JWT API, WebView callback (preview page, fragment / query placement, disallowed scheme fallback), password show/hide toggle markup
+  - Unit coverage: `TemporaryPasswordGenerator`, `UserResult`, tenant context helpers, `<va-password>` and `<va-form-errors>` tag helpers
+  - Local Sonar scan wired via `scripts/sonar-local.ps1` against the same OpenCover coverage emitted on CI
 
 ---
 
 ## In flight
 
-### `feat/mobile-webview-callback`
+### `feat/theming-programmatic-config`
 
-Close the WebView side of the mobile story (CLAUDE.md §9.1 Flow 2). A
-native app opens an in-app browser at
-`/visuauth/login?returnUrl=myapp://auth/callback`; after a successful
-sign-in the server recognises the deep-link scheme, mints a JWT, and
-redirects to the callback URL with the token appended in the URL
-fragment. The OS hands control back to the native app, which extracts
-the token client-side. No new endpoints — the existing themed login
-page becomes WebView-aware via configuration.
+Theming layer 2 from CLAUDE.md §8.4. Consumers configure a
+`VisuAuthTheme` options bag in DI; the layout emits a `<style>:root { ... }`
+block after the default stylesheet so the cascade lets their overrides
+win without forking `visuauth.css`.
 
-- `VisuAuth.Abstractions`: `WebViewCallbackOptions` with
-  `AllowedSchemes` (list of non-HTTP schemes the host permits) and
-  `TokenPlacement` enum (`Fragment` default, `Query` opt-in)
-- `LoginModel` extension: post-success, when `returnUrl` parses to a
-  non-HTTP scheme in the allowlist, issue a JWT via `IJwtIssuer` and
-  redirect to `scheme://host/path#access_token=...&expires_at=...&user_id=...`
-- Security guards:
-  - `http` / `https` are never accepted into the effective allowlist
-    even if the consumer configures them (open-redirect protection)
-  - Schemes are matched case-insensitively
-  - Malformed `returnUrl` falls back to `/` (same posture as the
-    existing local-URL guard)
-- Sample app: registers `visuauth-sample` scheme; home page documents
-  the test URL pattern
-- Tests: happy fragment path, happy query path (opt-in), disallowed
-  scheme falls back, `https` rejected even when listed, malformed URL
-  falls back
+- `VisuAuth.AdminUi.Theming.VisuAuthTheme` — POCO with nullable string
+  properties for every CSS custom property in the default theme
+  (`Primary`, `PrimaryFg`, `Bg`, `Fg`, `Muted`, `Border`, `Surface`,
+  `Danger`, `Success`, `Radius`, `Font`)
+- `VisuAuth.AdminUi.Theming.VisuAuthThemeCssRenderer` — pure function
+  that turns the options into a `:root { --visuauth-…: …; }` block.
+  Skips null / blank properties; rejects values containing `< > { } ; \`
+  (defence in depth against breaking out of `<style>` or the rule).
+- `<va-theme-style>` tag helper — server-rendered, no-op when the
+  options bag is empty; consumed by both layouts so admin and end-user
+  pages get the same overrides.
+- Sample app: enables a non-default purple theme so the home page
+  visibly reflects the override and reviewers see the contract end to end.
+- Tests: unit coverage of the renderer (each property emits the right
+  var, blanks are skipped, forbidden chars throw) and integration
+  coverage that the `<style>` block actually appears in HTML when
+  configured and stays absent when not.
 
-**Out of scope** (deferred):
+**Out of scope** (deferred to v0.2):
 
-- Refresh-token rotation via the WebView flow — JWT lifetime + the
-  existing `/api/auth/refresh` endpoint cover this
-- External-provider WebView callback (Google / Apple sign-in inside
-  WebView) — ships with the external-providers PR
-- App Links / Universal Links / Asset Links file generation —
-  consumer-side setup, not a VisuAuth concern
+- View override (theming layer 3) — drop your own `.cshtml` into a
+  configured folder.
+- Per-tenant theme (theming layer 4) — resolver returns a different
+  theme per `ITenantContext`.
 
 ---
 
 ## Next up (ordered)
 
-### 1. `feat/theming-programmatic-config`
-
-`services.AddVisuAuth().Configure<VisuAuthTheme>(...)` generates CSS variables at runtime, overriding the defaults from `wwwroot/visuauth.css`. View override (layer 3) and per-tenant theme (layer 4) deferred to v0.2.
-
-### 2. `feat/i18n-pt-br-and-en`
+### 1. `feat/i18n-pt-br-and-en`
 
 `IStringLocalizer` wired up. All hardcoded English strings in views moved to resource files. pt-BR translation added.
 
-### 3. `feat/embedded-htmx-asset`
+### 2. `feat/embedded-htmx-asset`
 
 Replace the htmx CDN reference with an embedded static asset at `wwwroot/htmx.min.js`. Required for offline / air-gapped deployments.
 

@@ -123,6 +123,28 @@ internal static class SampleHomePage
               -H "Content-Type: application/json" \
               -d '{"email":"admin@visuauth.dev","password":"Pa$$w0rd!"}'</pre>
 
+              <h2>Theming</h2>
+              <p>
+                <code>services.Configure&lt;VisuAuthTheme&gt;(…)</code> overrides the
+                default CSS custom properties at runtime — no need to fork the
+                stylesheet. To preview different palettes, swap the preset call
+                in <code>Program.cs</code> for any method in
+                <code>Sample.WebApp.Theming.SampleThemes</code>:
+              </p>
+              <ul>
+                <li><code>Default</code> &mdash; stock indigo, no overrides emitted</li>
+                <li><code>Purple</code> &mdash; primary-only override (lightest)</li>
+                <li><code>Orange</code> &mdash; warm palette with matching neutrals</li>
+                <li><code>Forest</code> &mdash; green primary + coherent success badges</li>
+                <li><code>Midnight</code> &mdash; full dark theme (bg / fg / surface flipped)</li>
+                <li><code>Serif</code> &mdash; shape + typography only, keeps colours</li>
+              </ul>
+              <p>
+                Inspect the page source for <code>&lt;style data-visuauth-theme&gt;</code>
+                to confirm the override block; when the preset is <code>Default</code>
+                the tag helper suppresses itself and that block is absent.
+              </p>
+
               <h2>WebView deep-link callback</h2>
               <p>
                 Native apps can open <code>/visuauth/login</code> in an in-app browser with a

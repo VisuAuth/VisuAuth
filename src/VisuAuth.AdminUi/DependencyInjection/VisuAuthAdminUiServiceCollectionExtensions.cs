@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using VisuAuth.AdminUi.Theming;
 
 namespace VisuAuth.AdminUi.DependencyInjection;
 
@@ -25,6 +26,11 @@ public static class VisuAuthAdminUiServiceCollectionExtensions
         services
             .AddRazorPages()
             .AddApplicationPart(AssemblyMarker.Assembly);
+
+        // Ensure IOptions<VisuAuthTheme> resolves to an empty bag when the
+        // consumer skips Configure<VisuAuthTheme>(…) — the layout's
+        // <va-theme-style /> tag helper then suppresses itself.
+        services.AddOptions<VisuAuthTheme>();
 
         return services;
     }

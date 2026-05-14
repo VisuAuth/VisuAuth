@@ -2,7 +2,9 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Sample.WebApp.Data;
 using Sample.WebApp.Home;
+using Sample.WebApp.Theming;
 using VisuAuth;
+using VisuAuth.AdminUi.Theming;
 using VisuAuth.Identity.Authentication;
 using VisuAuth.Identity.MultiTenancy;
 
@@ -14,6 +16,22 @@ var dbPath = Path.Combine(builder.Environment.ContentRootPath, "visuauth-sample.
 // Drop-in: one call wires the Identity adapter, the admin UI, and the
 // end-user UI.
 builder.Services.AddVisuAuth<ApplicationUser>();
+
+// Programmatic theme override (CLAUDE.md §8.4 layer 2). The preset list
+// lives in Sample.WebApp.Theming.SampleThemes — swap the method group
+// below to recolour the entire admin + end-user UI without touching
+// anything else. Available presets:
+//
+//   SampleThemes.Default   — stock indigo (no overrides emitted)
+//   SampleThemes.Purple    — purple primary only (lightest override)
+//   SampleThemes.Orange    — warm orange palette + matching neutrals
+//   SampleThemes.Forest    — green palette, keeps success badges coherent
+//   SampleThemes.Midnight  — full dark theme (bg / fg / surface flipped)
+//   SampleThemes.Serif     — Georgia + larger radius, leaves colours alone
+//
+// Production consumers replace this with their own brand palette, or drop
+// the call entirely to keep the stock theme.
+builder.Services.Configure<VisuAuthTheme>(SampleThemes.Purple);
 
 // Sample app turns on the end-user dev mode so password-reset / email
 // confirmation tokens render inline (we ship no real email sender here).

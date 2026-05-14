@@ -15,8 +15,8 @@ namespace VisuAuth.IntegrationTests.Admin;
 /// sidebar tenant cookie must visibly swap which override file
 /// renders for the next request.
 /// </summary>
-public sealed partial class TenantViewOverrideTests(WebApplicationFactory<Program> factory)
-    : IClassFixture<WebApplicationFactory<Program>>
+public sealed partial class TenantViewOverrideTests(VisuAuthTestFactory factory)
+    : IClassFixture<VisuAuthTestFactory>
 {
     [GeneratedRegex("name=\"__RequestVerificationToken\"[^>]*?value=\"([^\"]+)\"")]
     private static partial Regex TokenRegex();

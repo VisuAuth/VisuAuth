@@ -15,15 +15,15 @@ namespace VisuAuth.IntegrationTests.Api;
 /// Integration tests for the mobile / native JWT REST API at
 /// <c>/visuauth/api/auth</c>.
 /// </summary>
-public sealed class AuthApiTests : IClassFixture<WebApplicationFactory<Program>>
+public sealed class AuthApiTests : IClassFixture<VisuAuthTestFactory>
 {
     private static readonly Uri LoginUri = new("/visuauth/api/auth/login", UriKind.Relative);
     private static readonly Uri RegisterUri = new("/visuauth/api/auth/register", UriKind.Relative);
     private static readonly Uri RefreshUri = new("/visuauth/api/auth/refresh", UriKind.Relative);
 
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly VisuAuthTestFactory _factory;
 
-    public AuthApiTests(WebApplicationFactory<Program> factory)
+    public AuthApiTests(VisuAuthTestFactory factory)
     {
         _factory = factory;
     }

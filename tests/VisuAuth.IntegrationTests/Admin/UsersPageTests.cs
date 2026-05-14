@@ -9,11 +9,11 @@ namespace VisuAuth.IntegrationTests.Admin;
 /// stores are wired, seeder runs, the admin page renders, and htmx partial mode
 /// returns only the inner fragment.
 /// </summary>
-public sealed class UsersPageTests : IClassFixture<WebApplicationFactory<Program>>
+public sealed class UsersPageTests : IClassFixture<VisuAuthTestFactory>
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly VisuAuthTestFactory _factory;
 
-    public UsersPageTests(WebApplicationFactory<Program> factory)
+    public UsersPageTests(VisuAuthTestFactory factory)
     {
         _factory = factory;
     }

@@ -11,11 +11,11 @@ namespace VisuAuth.IntegrationTests.Admin;
 /// <summary>
 /// Smoke tests for the read-only user detail page at <c>/visuauth/admin/users/{id}</c>.
 /// </summary>
-public sealed class UserDetailPageTests : IClassFixture<WebApplicationFactory<Program>>
+public sealed class UserDetailPageTests : IClassFixture<VisuAuthTestFactory>
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly VisuAuthTestFactory _factory;
 
-    public UserDetailPageTests(WebApplicationFactory<Program> factory)
+    public UserDetailPageTests(VisuAuthTestFactory factory)
     {
         _factory = factory;
     }

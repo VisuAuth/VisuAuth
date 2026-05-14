@@ -14,15 +14,15 @@ namespace VisuAuth.IntegrationTests.MultiTenancy;
 /// EF Core query-filter isolation, and the save-changes interceptor's
 /// auto-population of <c>TenantId</c>.
 /// </summary>
-public sealed class MultiTenancyTests : IClassFixture<WebApplicationFactory<Program>>
+public sealed class MultiTenancyTests : IClassFixture<VisuAuthTestFactory>
 {
     private static readonly Regex TokenRegex = new(
         "name=\"__RequestVerificationToken\"[^>]*?value=\"([^\"]+)\"",
         RegexOptions.Compiled);
 
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly VisuAuthTestFactory _factory;
 
-    public MultiTenancyTests(WebApplicationFactory<Program> factory)
+    public MultiTenancyTests(VisuAuthTestFactory factory)
     {
         _factory = factory;
     }

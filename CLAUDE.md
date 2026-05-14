@@ -364,8 +364,11 @@ Integration tests use HTTP verb + endpoint as the first part (the
 - New behaviour without a test is rejected.
 - Tests must run in any order — never depend on prior test state. Provision
   throwaway users / roles with `Guid.NewGuid()`-suffixed names when mutating.
-- The SQLite DB is shared between integration-test classes; assembly-level
-  `DisableTestParallelization = true` keeps them serialised.
+- Each integration-test class boots its own `VisuAuthTestFactory`, which
+  redirects SQLite to a unique `%TEMP%/visuauth-tests-{guid}.db` file and
+  deletes it on dispose — nothing carries over between runs. Assembly-level
+  `DisableTestParallelization = true` still keeps classes serialised so
+  Identity / EF Core boot cost stays predictable.
 - Coverage target (post-1.0): 80% on `VisuAuth.Identity` and the public
   surface of `VisuAuth.Abstractions`.
 

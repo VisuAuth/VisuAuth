@@ -1,6 +1,6 @@
 using Xunit;
 
-// All test classes here share the sample app's SQLite database. xUnit's default
-// is to run classes in parallel, which causes lock contention against the file.
-// Serialise the entire assembly until we move the sample to an in-memory store.
+// Each test class gets its own SQLite database via VisuAuthTestFactory, but the
+// assembly stays serialised to keep Identity / EF Core boot cost predictable
+// and to match the CLAUDE.md §10.4 contract.
 [assembly: CollectionBehavior(DisableTestParallelization = true)]

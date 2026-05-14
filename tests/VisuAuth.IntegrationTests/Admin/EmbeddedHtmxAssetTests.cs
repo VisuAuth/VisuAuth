@@ -11,8 +11,8 @@ namespace VisuAuth.IntegrationTests.Admin;
 /// canonical <c>/_content/VisuAuth.AdminUi/htmx.min.js</c> URL, and
 /// no shipped layout still points at the old unpkg CDN.
 /// </summary>
-public sealed class EmbeddedHtmxAssetTests(WebApplicationFactory<Program> factory)
-    : IClassFixture<WebApplicationFactory<Program>>
+public sealed class EmbeddedHtmxAssetTests(VisuAuthTestFactory factory)
+    : IClassFixture<VisuAuthTestFactory>
 {
     [Fact]
     public async Task GetEmbeddedHtmx_FromStaticWebAssets_ReturnsJavaScript()

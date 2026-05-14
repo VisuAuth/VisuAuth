@@ -13,7 +13,7 @@ namespace VisuAuth.IntegrationTests.EndUser;
 /// Integration tests for the register / forgot-password / reset-password /
 /// confirm-email end-user pages.
 /// </summary>
-public sealed class RegisterAndResetTests : IClassFixture<WebApplicationFactory<Program>>
+public sealed class RegisterAndResetTests : IClassFixture<VisuAuthTestFactory>
 {
     private static readonly Regex TokenRegex = new(
         "name=\"__RequestVerificationToken\"[^>]*?value=\"([^\"]+)\"",
@@ -23,9 +23,9 @@ public sealed class RegisterAndResetTests : IClassFixture<WebApplicationFactory<
         @"href=""(/visuauth/reset-password\?email=[^""]+&amp;token=[^""]+)""",
         RegexOptions.Compiled);
 
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly VisuAuthTestFactory _factory;
 
-    public RegisterAndResetTests(WebApplicationFactory<Program> factory)
+    public RegisterAndResetTests(VisuAuthTestFactory factory)
     {
         _factory = factory;
     }

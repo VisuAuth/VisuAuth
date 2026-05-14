@@ -14,8 +14,8 @@ namespace VisuAuth.IntegrationTests.Admin;
 /// — every <c>SampleThemes</c> preset except <c>Default</c> and <c>Serif</c>
 /// does, and those two intentionally skip this contract.
 /// </summary>
-public sealed class ThemeOverrideTests(WebApplicationFactory<Program> factory)
-    : IClassFixture<WebApplicationFactory<Program>>
+public sealed class ThemeOverrideTests(VisuAuthTestFactory factory)
+    : IClassFixture<VisuAuthTestFactory>
 {
     [Fact]
     public async Task GetUsers_WithSampleAppThemeConfigured_EmitsInlineStyleOverride()

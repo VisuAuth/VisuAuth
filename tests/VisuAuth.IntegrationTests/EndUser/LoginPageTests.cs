@@ -11,15 +11,15 @@ namespace VisuAuth.IntegrationTests.EndUser;
 /// Exercises the full authentication pipeline (cookie auth, antiforgery,
 /// return-url sanitisation) end to end via the sample app.
 /// </summary>
-public sealed class LoginPageTests : IClassFixture<WebApplicationFactory<Program>>
+public sealed class LoginPageTests : IClassFixture<VisuAuthTestFactory>
 {
     private static readonly Regex TokenRegex = new(
         "name=\"__RequestVerificationToken\"[^>]*?value=\"([^\"]+)\"",
         RegexOptions.Compiled);
 
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly VisuAuthTestFactory _factory;
 
-    public LoginPageTests(WebApplicationFactory<Program> factory)
+    public LoginPageTests(VisuAuthTestFactory factory)
     {
         _factory = factory;
     }

@@ -11,15 +11,15 @@ namespace VisuAuth.IntegrationTests.Admin;
 /// Integration tests for <c>/visuauth/admin/roles</c> — the role catalogue
 /// page with inline create / delete and member counts.
 /// </summary>
-public sealed class RolesCataloguePageTests : IClassFixture<WebApplicationFactory<Program>>
+public sealed class RolesCataloguePageTests : IClassFixture<VisuAuthTestFactory>
 {
     private static readonly Regex TokenRegex = new(
         "name=\"__RequestVerificationToken\"[^>]*?value=\"([^\"]+)\"",
         RegexOptions.Compiled);
 
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly VisuAuthTestFactory _factory;
 
-    public RolesCataloguePageTests(WebApplicationFactory<Program> factory)
+    public RolesCataloguePageTests(VisuAuthTestFactory factory)
     {
         _factory = factory;
     }

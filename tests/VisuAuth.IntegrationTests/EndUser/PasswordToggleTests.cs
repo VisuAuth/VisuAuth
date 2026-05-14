@@ -11,11 +11,11 @@ namespace VisuAuth.IntegrationTests.EndUser;
 /// <c>data-va-password-toggle</c> button. Catches accidental copy-paste of
 /// a bare <c>&lt;input type="password"&gt;</c> without the toggle widget.
 /// </summary>
-public sealed class PasswordToggleTests : IClassFixture<WebApplicationFactory<Program>>
+public sealed class PasswordToggleTests : IClassFixture<VisuAuthTestFactory>
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly VisuAuthTestFactory _factory;
 
-    public PasswordToggleTests(WebApplicationFactory<Program> factory)
+    public PasswordToggleTests(VisuAuthTestFactory factory)
     {
         _factory = factory;
     }

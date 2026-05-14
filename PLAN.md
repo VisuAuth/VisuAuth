@@ -58,6 +58,7 @@ Updated as PRs land. Long-term direction lives in `CLAUDE.md` section 13 (Roadma
   - Default CSS theme with custom property hooks for branding
   - Programmatic theming (`Configure<VisuAuthTheme>(...)`) emits CSS custom property overrides through the `<va-theme-style />` tag helper; sample app ships preset palettes (`Default`, `Purple`, `Orange`, `Forest`, `Midnight`, `Serif`)
   - i18n pipeline: JSON-backed `IStringLocalizer<AdminSharedResources>` / `IStringLocalizer<EndUserSharedResources>` (provider: `My.Extensions.Localization.Json`), `en` + `pt-BR` translations, query / cookie / header culture resolution, `POST /visuauth/culture` switch endpoint with open-redirect guard, `<va-language-switcher />` tag helper in both layouts
+  - htmx 2.0.4 shipped as an embedded static asset (`VisuAuth.AdminUi/wwwroot/htmx.min.js`); both layouts reference `/_content/VisuAuth.AdminUi/htmx.min.js` so air-gapped deployments work without an outbound CDN call
 - `VisuAuth.EndUserUi`:
   - `/visuauth/login` and `/visuauth/logout` Razor Pages (email + password + remember-me, anti-forgery, redirect-back to `returnUrl`)
   - `/visuauth/register`, `/visuauth/forgot-password`, `/visuauth/reset-password`, `/visuauth/confirm-email` Razor Pages
@@ -80,70 +81,42 @@ Updated as PRs land. Long-term direction lives in `CLAUDE.md` section 13 (Roadma
 
 ## In flight
 
-### `feat/i18n-pt-br-and-en`
+### `feat/embedded-htmx-asset`
 
-Server-rendered request localization for the admin and end-user UIs.
-English is the default; pt-BR ships as the first translation. The
-storage is plain JSON files behind the standard
-`IStringLocalizer<T>` contract, so swapping the backend later (`.resx`,
-database, etc.) would not touch any view.
+Drop the htmx CDN reference and ship htmx 2.0.4 as an embedded static
+asset under `VisuAuth.AdminUi/wwwroot/htmx.min.js`. Required for
+offline / air-gapped deployments where outbound traffic to `unpkg.com`
+is blocked.
 
-- Translations: `Resources/AdminSharedResources.{culture}.json` +
-  `Resources/EndUserSharedResources.{culture}.json` — files ship with
-  the NuGet packages (`<Content>` + `contentFiles`) and land in the
-  consumer's `bin/Resources/`.
-- Provider: `My.Extensions.Localization.Json` (pinned via Central
-  Package Management) in `TypeBased` mode.
-- DI: `services.AddVisuAuthLocalization()` registers the JSON
-  localizer, the request-localization options (en + pt-BR, providers
-  in order: query → cookie → Accept-Language), and a widened
-  `HtmlEncoder` (`UnicodeRanges.All`) so accented characters aren't
-  serialised as numeric entities.
-- Pipeline: `app.UseVisuAuthLocalization()` (consumer call,
-  same pattern as `UseVisuAuthTenancy`).
-- Endpoint: `POST /visuauth/culture` validates the requested culture
-  against the configured allow-list, writes the
-  `.AspNetCore.Culture` cookie, and `LocalRedirect`s to the
-  open-redirect-guarded `returnUrl`.
-- UI: `<va-language-switcher />` tag helper auto-suppresses when only
-  one culture is configured; otherwise renders a `<select>` of the
-  supported cultures' native names, posts to the endpoint, and
-  refreshes the current page. Wired into the admin sidebar and the
-  end-user card footer.
-- Views: every visible string in 24 `.cshtml` files moved to JSON keys
-  (`Sidebar.NavUsers`, `Users.Title`, `Login.Heading`, …) and resolved
-  via `IHtmlLocalizer<…>` (`@L`) for content and `IStringLocalizer<…>`
-  (`@Ls`) for attribute values. Page models pull the same localizer
-  for `ActionMessage` / `ErrorMessage` strings. `<va-password>` and
-  `<va-form-errors>` tag helpers are localized too.
-- Sample app: home page links the `?culture=pt-BR` deep-link patterns
-  so reviewers can flip between en and pt-BR without touching any code.
-- Tests: 10 new integration tests cover default → English, query →
-  pt-BR, Accept-Language → pt-BR, cookie round-trip, `<html lang="…">`
-  reflects current culture, open-redirect fallback, unsupported
-  culture is silently ignored, and both layouts mount the switcher.
+- Asset: `wwwroot/htmx.min.js` (htmx 2.0.4, byte-identical to
+  `https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js`; SHA-384 matches
+  the SRI hash that was previously used inline). Lives in
+  `VisuAuth.AdminUi` so both surfaces share a single copy — the
+  end-user layout references the same `/_content/VisuAuth.AdminUi/...`
+  URL.
+- Layouts: `_Layout.cshtml` and `_EndUserLayout.cshtml` swap the
+  unpkg `<script>` (with `integrity` + `crossorigin`) for
+  `/_content/VisuAuth.AdminUi/htmx.min.js` plus
+  `asp-append-version="true"` so cache busts on every rebuild.
+- Tests: integration test confirms the asset is reachable at
+  `/_content/VisuAuth.AdminUi/htmx.min.js` and that no admin /
+  end-user page still references `unpkg.com`.
 
 **Out of scope** (deferred):
 
-- Right-to-left support (no Arabic / Hebrew translation yet).
-- Per-tenant translation overrides (tenant-aware
-  `IStringLocalizerFactory` would compose neatly with the existing
-  multi-tenant resolver — but not in scope for v0.1).
-- Translator workflow (Crowdin / Transifex sync).
+- htmx version bumps — separate change with its own review.
+- Self-hosting `htmx.min.js.map` (source map). Optional and not
+  required for the air-gap use case.
 
 ---
 
 ## Next up (ordered)
 
-### 1. `feat/embedded-htmx-asset`
-
-Replace the htmx CDN reference with an embedded static asset at `wwwroot/htmx.min.js`. Required for offline / air-gapped deployments.
-
-### 2. `feat/theming-view-override` (v0.2)
+### 1. `feat/theming-view-override` (v0.2)
 
 Drop your own `.cshtml` into a configured folder (theming layer 3 from CLAUDE.md §8.4) and let it override VisuAuth's default views without forking the package.
 
-### 3. `feat/theming-per-tenant` (v0.2)
+### 2. `feat/theming-per-tenant` (v0.2)
 
 `ITenantThemeResolver` returns a different `VisuAuthTheme` per tenant; the layout consults it on every request. Builds on top of the existing programmatic theming PR.
 

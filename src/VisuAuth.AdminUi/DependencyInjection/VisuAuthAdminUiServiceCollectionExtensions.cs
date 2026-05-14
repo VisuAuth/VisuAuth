@@ -41,6 +41,12 @@ public static class VisuAuthAdminUiServiceCollectionExtensions
         // <va-theme-style /> tag helper then suppresses itself.
         services.AddOptions<VisuAuthTheme>();
 
+        // Theming layer 4 (per-tenant). Default to a no-op so single-tenant
+        // deployments and consumers who never opt in pay nothing. TryAdd
+        // means a consumer's own AddSingleton<ITenantThemeResolver, …>()
+        // wins regardless of registration order.
+        services.TryAddSingleton<ITenantThemeResolver, NoOpTenantThemeResolver>();
+
         // Theming layer 3 (CLAUDE.md §8.4) — view + page overrides.
         // Default root /Views/VisuAuth applies until the consumer calls
         // Configure<VisuAuthViewOverrideOptions>(...).

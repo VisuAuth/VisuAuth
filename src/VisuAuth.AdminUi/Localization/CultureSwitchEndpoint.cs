@@ -64,7 +64,7 @@ public static class CultureSwitchEndpoint
                     Expires = DateTimeOffset.UtcNow.AddYears(1),
                     IsEssential = true,
                     HttpOnly = true,
-                    Secure = httpContext.Request.IsHttps,
+                    Secure = true,
                     SameSite = SameSiteMode.Lax,
                 });
         }

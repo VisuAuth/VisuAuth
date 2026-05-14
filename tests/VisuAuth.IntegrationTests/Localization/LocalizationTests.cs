@@ -119,6 +119,7 @@ public sealed partial class LocalizationTests(WebApplicationFactory<Program> fac
         using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
         {
             HandleCookies = true,
+            BaseAddress = new Uri("https://localhost"),
         });
 
         var seed = await client.GetAsync(new Uri("/visuauth/login", UriKind.Relative));

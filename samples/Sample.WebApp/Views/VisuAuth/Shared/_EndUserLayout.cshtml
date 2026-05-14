@@ -1,0 +1,42 @@
+@*
+    Theming layer 3 demo (CLAUDE.md §8.4) — layout override.
+
+    Razor's view-engine search list is consulted whenever a layout is
+    resolved. Because /Views/VisuAuth/Shared/{name}.cshtml sits at the
+    top of the list (added by VisuAuthViewLocationExpander), this file
+    wins over the package's _EndUserLayout for every end-user page
+    (login, register, password reset, ...).
+
+    Structure-preserving copy of the package default — same stylesheet
+    + script references, same outer markup — plus a small banner so
+    the override is visibly active.
+*@
+@{
+    var title = ViewData["Title"] as string ?? "VisuAuth";
+    var brand = ViewData["Brand"] as string ?? "VisuAuth";
+    var pageLang = System.Globalization.CultureInfo.CurrentUICulture.Name;
+}<!doctype html>
+<html lang="@pageLang">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@title</title>
+    <link rel="stylesheet" href="/_content/VisuAuth.AdminUi/visuauth.css" asp-append-version="true" />
+    <link rel="stylesheet" href="/_content/VisuAuth.EndUserUi/visuauth-enduser.css" asp-append-version="true" />
+    <va-theme-style />
+    <script src="/_content/VisuAuth.AdminUi/htmx.min.js" asp-append-version="true" defer></script>
+    <script src="/_content/VisuAuth.AdminUi/visuauth.js" asp-append-version="true" defer></script>
+</head>
+<body class="va-enduser-body" data-va-override="sample">
+    <main class="va-enduser-shell">
+        <div class="va-enduser-card">
+            <a class="va-brand va-enduser-brand" href="/">@brand</a>
+            <p class="va-override-banner" style="margin:0 0 0.75rem;font-size:0.75rem;color:var(--visuauth-muted);text-align:center;">
+                Sample app override — <code>_EndUserLayout.cshtml</code>
+            </p>
+            @RenderBody()
+            <va-language-switcher class="va-enduser-lang" />
+        </div>
+    </main>
+</body>
+</html>

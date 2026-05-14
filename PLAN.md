@@ -81,42 +81,76 @@ Updated as PRs land. Long-term direction lives in `CLAUDE.md` section 13 (Roadma
 
 ## In flight
 
-### `feat/embedded-htmx-asset`
+### `feat/theming-view-override`
 
-Drop the htmx CDN reference and ship htmx 2.0.4 as an embedded static
-asset under `VisuAuth.AdminUi/wwwroot/htmx.min.js`. Required for
-offline / air-gapped deployments where outbound traffic to `unpkg.com`
-is blocked.
+Theming layer 3 from CLAUDE.md §8.4: the consumer drops a same-named
+`.cshtml` in a configured folder (default `/Views/VisuAuth/`) and
+VisuAuth uses it instead of the built-in one. Works for partials,
+layouts, and entire Razor Pages.
 
-- Asset: `wwwroot/htmx.min.js` (htmx 2.0.4, byte-identical to
-  `https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js`; SHA-384 matches
-  the SRI hash that was previously used inline). Lives in
-  `VisuAuth.AdminUi` so both surfaces share a single copy — the
-  end-user layout references the same `/_content/VisuAuth.AdminUi/...`
-  URL.
-- Layouts: `_Layout.cshtml` and `_EndUserLayout.cshtml` swap the
-  unpkg `<script>` (with `integrity` + `crossorigin`) for
-  `/_content/VisuAuth.AdminUi/htmx.min.js` plus
-  `asp-append-version="true"` so cache busts on every rebuild.
-- Tests: integration test confirms the asset is reachable at
-  `/_content/VisuAuth.AdminUi/htmx.min.js` and that no admin /
-  end-user page still references `unpkg.com`.
+Two cooperating mechanisms because Razor partials and Razor Pages use
+different discovery paths:
+
+- **Partials + layouts** — an `IViewLocationExpander` prepends
+  `{Root}/{name}.cshtml` and `{Root}/Shared/{name}.cshtml` to the
+  Razor view-engine search list. The expander is registered through
+  `IConfigureOptions<RazorViewEngineOptions>` so it reads the live
+  `VisuAuthViewOverrideOptions` on every render — no service-locator
+  hack at startup. Covers every `Html.PartialAsync(...)`,
+  `Partial(...)`, and layout reference (e.g. `_UsersTable`,
+  `_ProfileSection`, `_Layout`, `_EndUserLayout`).
+- **Whole pages** — an `IPageApplicationModelConvention` demotes
+  every Razor Page that lives in the `VisuAuth.AdminUi` or
+  `VisuAuth.EndUserUi` assemblies by setting its
+  `AttributeRouteModel.Order` to a high value. A consumer page in
+  their host app declaring the same `@page "/visuauth/login"` route
+  keeps the default order, so ASP.NET's lower-order-wins rule picks
+  the consumer's page without ambiguity. The consumer page is a
+  plain Razor Page in their own project — no extra config required.
+
+Configuration: `services.AddVisuAuth<TUser>()` registers everything
+with the default root. Consumers tweak the root via
+`services.Configure<VisuAuthViewOverrideOptions>(o => o.Root = "...")`.
+
+Sample app demonstrates all three modes — `_UsersTable.cshtml` with a
+"customised by sample" banner, a `_EndUserLayout.cshtml` with a darker
+chrome, and a `Login.cshtml` Razor Page replacing ours entirely.
+
+**Quality gate notes**
+
+The first SonarCloud run on this branch came back with new-code
+coverage at 77.9% (gate requires ≥ 80%). Integration tests covered
+the happy paths but the expander's `Normalize` edge cases and the
+convention's early-return branches were untested. Follow-up unit
+tests in `tests/VisuAuth.UnitTests/Admin/Theming/` close the gap so
+the gate goes green:
+
+- `VisuAuthViewLocationExpanderTests` — `Normalize` for empty /
+  whitespace / leading-and-trailing slash / backslash inputs;
+  `ExpandViewLocations` with empty root; `PopulateValues` writes the
+  cache key; live re-read through `IOptionsMonitor`.
+- `DemoteVisuAuthPagesConventionTests` — `OwnsAssembly` true / false;
+  `Apply` early-returns on missing `RazorCompiledItem`, on a wrong
+  assembly, and on selectors without an `AttributeRouteModel`.
+
+Reaching the 80% bar required exposing the internal expander to the
+test assembly via `<InternalsVisibleTo Include="VisuAuth.UnitTests" />`
+on `VisuAuth.AdminUi.csproj` — same convention CLAUDE.md §10.3 already
+mentions for the Identity adapter.
 
 **Out of scope** (deferred):
 
-- htmx version bumps — separate change with its own review.
-- Self-hosting `htmx.min.js.map` (source map). Optional and not
-  required for the air-gap use case.
+- Per-tenant view overrides (composes naturally with the existing
+  tenant resolver — separate PR).
+- Hot reload — overrides require a rebuild because Razor Pages are
+  compiled into the consumer's assembly. Runtime compilation is a
+  separate opt-in.
 
 ---
 
 ## Next up (ordered)
 
-### 1. `feat/theming-view-override` (v0.2)
-
-Drop your own `.cshtml` into a configured folder (theming layer 3 from CLAUDE.md §8.4) and let it override VisuAuth's default views without forking the package.
-
-### 2. `feat/theming-per-tenant` (v0.2)
+### 1. `feat/theming-per-tenant` (v0.2)
 
 `ITenantThemeResolver` returns a different `VisuAuthTheme` per tenant; the layout consults it on every request. Builds on top of the existing programmatic theming PR.
 

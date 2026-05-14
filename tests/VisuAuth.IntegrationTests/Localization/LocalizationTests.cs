@@ -166,6 +166,39 @@ public sealed partial class LocalizationTests(WebApplicationFactory<Program> fac
     }
 
     [Fact]
+    public async Task PostCulture_WithEmptySubmission_DeletesCookie()
+    {
+        // The endpoint treats an empty `culture` field as "reset to default"
+        // and explicitly deletes the persistence cookie so the next request
+        // falls back to the configured default culture or to
+        // Accept-Language.
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            HandleCookies = true,
+            AllowAutoRedirect = false,
+        });
+        var seed = await client.GetAsync(new Uri("/visuauth/login", UriKind.Relative));
+        var token = ExtractToken(await seed.Content.ReadAsStringAsync());
+
+        var response = await client.PostAsync(new Uri("/visuauth/culture", UriKind.Relative),
+            new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["__RequestVerificationToken"] = token,
+                ["culture"] = string.Empty,
+                ["returnUrl"] = "/visuauth/login",
+            }));
+
+        response.StatusCode.Should().Be(HttpStatusCode.Redirect);
+        var setCookie = response.Headers
+            .Where(h => h.Key.Equals("Set-Cookie", StringComparison.OrdinalIgnoreCase))
+            .SelectMany(h => h.Value)
+            .FirstOrDefault(c => c.StartsWith(".AspNetCore.Culture=", StringComparison.OrdinalIgnoreCase));
+        // ASP.NET serialises a delete as an empty value with a past expiry.
+        setCookie.Should().NotBeNull("the endpoint must emit a Set-Cookie deleting the locale cookie");
+        setCookie.Should().Contain("expires=", "delete is expressed as a past-dated Set-Cookie");
+    }
+
+    [Fact]
     public async Task PostCulture_WithUnsupportedCulture_DoesNotWriteCookie()
     {
         using var client = factory.CreateClient(new WebApplicationFactoryClientOptions

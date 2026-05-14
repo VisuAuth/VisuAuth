@@ -28,4 +28,11 @@
     <ProjectReference Include="..\..\src\VisuAuth.AdminUi\VisuAuth.AdminUi.csproj" />
   </ItemGroup>
 
+  <!-- RequestLocalizationOptions, HttpContext, IAntiforgery etc. all live
+       in the shared framework. Unit tests that exercise pieces of the
+       AdminUi DI / tag helpers in isolation need this reference too. -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
 </Project>

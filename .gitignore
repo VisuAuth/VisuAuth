@@ -28,6 +28,11 @@ coverage*/
 *.trx
 .sonarqube/
 .sonar/
+# Ad-hoc dumps from `curl https://sonarcloud.io/api/...` or the local
+# SonarQube REST API used while debugging quality gates / hotspots.
+# Project-root noise, never meant for git.
+sc_*.json
+sonar_*.json
 
 # OS
 .DS_Store

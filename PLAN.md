@@ -116,6 +116,28 @@ Sample app demonstrates all three modes — `_UsersTable.cshtml` with a
 "customised by sample" banner, a `_EndUserLayout.cshtml` with a darker
 chrome, and a `Login.cshtml` Razor Page replacing ours entirely.
 
+**Quality gate notes**
+
+The first SonarCloud run on this branch came back with new-code
+coverage at 77.9% (gate requires ≥ 80%). Integration tests covered
+the happy paths but the expander's `Normalize` edge cases and the
+convention's early-return branches were untested. Follow-up unit
+tests in `tests/VisuAuth.UnitTests/Admin/Theming/` close the gap so
+the gate goes green:
+
+- `VisuAuthViewLocationExpanderTests` — `Normalize` for empty /
+  whitespace / leading-and-trailing slash / backslash inputs;
+  `ExpandViewLocations` with empty root; `PopulateValues` writes the
+  cache key; live re-read through `IOptionsMonitor`.
+- `DemoteVisuAuthPagesConventionTests` — `OwnsAssembly` true / false;
+  `Apply` early-returns on missing `RazorCompiledItem`, on a wrong
+  assembly, and on selectors without an `AttributeRouteModel`.
+
+Reaching the 80% bar required exposing the internal expander to the
+test assembly via `<InternalsVisibleTo Include="VisuAuth.UnitTests" />`
+on `VisuAuth.AdminUi.csproj` — same convention CLAUDE.md §10.3 already
+mentions for the Identity adapter.
+
 **Out of scope** (deferred):
 
 - Per-tenant view overrides (composes naturally with the existing

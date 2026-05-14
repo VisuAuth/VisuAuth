@@ -24,6 +24,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Same pattern as VisuAuth.Identity: unit tests reach internals
+         (e.g. VisuAuthViewLocationExpander) without forcing them into
+         the public API surface. -->
+    <InternalsVisibleTo Include="VisuAuth.UnitTests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 

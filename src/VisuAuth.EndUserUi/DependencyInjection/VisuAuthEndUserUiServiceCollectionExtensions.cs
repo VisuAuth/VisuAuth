@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using VisuAuth.Abstractions.Authentication;
+using VisuAuth.AdminUi.Theming;
 using VisuAuth.EndUserUi.Api;
 
 namespace VisuAuth.EndUserUi.DependencyInjection;
@@ -35,6 +37,20 @@ public static class VisuAuthEndUserUiServiceCollectionExtensions
         // still resolve non-null `IOptions<...>` for the LoginModel chain.
         services.AddOptions<EndUserUiOptions>();
         services.AddOptions<WebViewCallbackOptions>();
+
+        // Theming layer 3 — let consumers override end-user pages with
+        // their own Razor Page at the same @page route. The expander +
+        // options are wired by AddVisuAuthAdminUi (which AddVisuAuth calls
+        // before this method); we only contribute the demotion convention
+        // for THIS assembly's pages so consumer routes win.
+        services.Configure<RazorPagesOptions>(options =>
+        {
+            if (!options.Conventions.OfType<DemoteVisuAuthPagesConvention>()
+                    .Any(c => c.OwnsAssembly(AssemblyMarker.Assembly)))
+            {
+                options.Conventions.Add(new DemoteVisuAuthPagesConvention(AssemblyMarker.Assembly));
+            }
+        });
 
         return services;
     }

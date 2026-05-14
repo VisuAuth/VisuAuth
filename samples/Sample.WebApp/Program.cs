@@ -34,6 +34,24 @@ builder.Services.AddVisuAuth<ApplicationUser>();
 // the call entirely to keep the stock theme.
 builder.Services.Configure<VisuAuthTheme>(SampleThemes.Purple);
 
+// Theming layer 3 (CLAUDE.md §8.4) — view override. The sample app drops
+// two demo .cshtml files into `Views/VisuAuth/` and `Views/VisuAuth/Shared/`
+// to show how partial + layout overrides plug in without any code change:
+//
+//   Views/VisuAuth/_UsersTable.cshtml          → replaces the admin users table
+//   Views/VisuAuth/Shared/_EndUserLayout.cshtml → replaces the public sign-in layout
+//
+// The IViewLocationExpander registered by AddVisuAuth() probes /Views/VisuAuth/
+// before the package's own templates, so a same-named file wins automatically.
+// To use a non-default folder, uncomment:
+//
+//   builder.Services.Configure<VisuAuthViewOverrideOptions>(o => o.Root = "/Views/MyBrand");
+//
+// Full-page overrides need no extra config — a consumer Razor Page in the
+// host app declaring `@page "/visuauth/login"` (or any other VisuAuth route)
+// wins via the lower-order-wins routing rule; the sample skips that demo to
+// keep the seeded login flow unchanged.
+
 // Sample app turns on the end-user dev mode so password-reset / email
 // confirmation tokens render inline (we ship no real email sender here).
 // Production consumers leave this off and plug their own IEmailSender.

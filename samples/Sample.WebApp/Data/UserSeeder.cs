@@ -12,6 +12,37 @@ public static class UserSeeder
 {
     private const string DefaultPassword = "Pa$$w0rd!";
 
+    /// <summary>
+    /// Email of the seeded user that boots with 2FA enabled. Dedicated rather
+    /// than reusing an existing user so existing tests that exercise the
+    /// other accounts (e.g. WebView callback, JWT API, mutation flows) keep
+    /// working unchanged.
+    /// </summary>
+    public const string TwoFactorEnabledUserEmail = "twofactor.demo@example.com";
+
+    /// <summary>
+    /// Deterministic authenticator shared key the seeder enrols on
+    /// <see cref="TwoFactorEnabledUserEmail"/>. Base32, 32 chars (160 bits) —
+    /// the canonical RFC 6238 recommendation. Pair an authenticator app with
+    /// this key + the user's email to drive the challenge flow manually.
+    /// </summary>
+    public const string TwoFactorEnabledUserKey = "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP";
+
+    /// <summary>
+    /// Deterministic recovery codes seeded alongside the 2FA enrolment so
+    /// the recovery-code path on <c>/visuauth/two-factor/verify</c> is
+    /// exercisable from the sample without first generating a batch on the
+    /// recovery-codes page. Identity stores them verbatim (string compare);
+    /// the readable shape below avoids the user having to copy random strings
+    /// when testing the flow manually.
+    /// </summary>
+    public static readonly IReadOnlyList<string> TwoFactorEnabledUserRecoveryCodes =
+    [
+        "demo1-aaaaa",
+        "demo2-bbbbb",
+        "demo3-ccccc",
+    ];
+
     private static readonly string[] Roles =
     [
         "Admin",
@@ -41,6 +72,10 @@ public static class UserSeeder
         ("isabela.jorge@example.com", "isabela.jorge", "initech"),
         ("joao.kruger@example.com", "joao.kruger", "initech"),
         ("laura.matos@example.com", "laura.matos", "initech"),
+        // 2FA showcase user — pre-enrolled with TwoFactorEnabledUserKey so the
+        // /visuauth/two-factor/verify challenge flow is reachable without
+        // running setup first. See SeedTwoFactorAsync below.
+        (TwoFactorEnabledUserEmail, "twofactor.demo", "acme"),
     ];
 
     private static readonly (string Email, string[] Roles)[] RoleAssignments =
@@ -139,6 +174,66 @@ public static class UserSeeder
                         $"Failed to assign role '{roleName}' to '{email}': {string.Join("; ", result.Errors.Select(e => e.Description))}");
                 }
             }
+        }
+
+        await SeedTwoFactorAsync(userManager);
+    }
+
+    /// <summary>
+    /// Enrols <see cref="TwoFactorEnabledUserEmail"/> with a deterministic
+    /// authenticator key so the TOTP challenge flow is reachable from
+    /// <c>/visuauth/login</c> without manual setup. Idempotent.
+    /// </summary>
+    private static async Task SeedTwoFactorAsync(UserManager<ApplicationUser> userManager)
+    {
+        var demo = await userManager.FindByEmailAsync(TwoFactorEnabledUserEmail);
+        if (demo is null)
+        {
+            return;
+        }
+
+        if (await userManager.GetTwoFactorEnabledAsync(demo))
+        {
+            return;
+        }
+
+        // SetAuthenticationTokenAsync writes into AspNetUserTokens with the
+        // exact key (`AuthenticatorKey`) that UserManager.GetAuthenticatorKeyAsync
+        // reads back, so the seeded value is the one TOTP validation uses.
+        var setKey = await userManager.SetAuthenticationTokenAsync(
+            demo,
+            "[AspNetUserStore]",
+            "AuthenticatorKey",
+            TwoFactorEnabledUserKey);
+        if (!setKey.Succeeded)
+        {
+            throw new InvalidOperationException(
+                $"Failed to seed authenticator key for '{TwoFactorEnabledUserEmail}': {string.Join("; ", setKey.Errors.Select(e => e.Description))}");
+        }
+
+        var enable = await userManager.SetTwoFactorEnabledAsync(demo, true);
+        if (!enable.Succeeded)
+        {
+            throw new InvalidOperationException(
+                $"Failed to enable 2FA on seeded user '{TwoFactorEnabledUserEmail}': {string.Join("; ", enable.Errors.Select(e => e.Description))}");
+        }
+
+        // Seed a deterministic recovery batch directly into the AspNetUserTokens
+        // row Identity reads back via RedeemTwoFactorRecoveryCodeAsync. Codes
+        // are stored as semicolon-joined plaintext under the canonical
+        // ([AspNetUserStore], RecoveryCodes) key — same shape the runtime path
+        // (UserManager.GenerateNewTwoFactorRecoveryCodesAsync → ReplaceCodesAsync)
+        // produces, just with stable values instead of random ones.
+        var recoveryToken = string.Join(';', TwoFactorEnabledUserRecoveryCodes);
+        var setRecovery = await userManager.SetAuthenticationTokenAsync(
+            demo,
+            "[AspNetUserStore]",
+            "RecoveryCodes",
+            recoveryToken);
+        if (!setRecovery.Succeeded)
+        {
+            throw new InvalidOperationException(
+                $"Failed to seed recovery codes for '{TwoFactorEnabledUserEmail}': {string.Join("; ", setRecovery.Errors.Select(e => e.Description))}");
         }
     }
 }

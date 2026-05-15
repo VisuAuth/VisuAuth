@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "sample",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "samples/Sample.WebApp/Sample.WebApp.csproj", "--launch-profile", "http", "-c", "Release"],
+      "port": 5239
+    }
+  ]
+}

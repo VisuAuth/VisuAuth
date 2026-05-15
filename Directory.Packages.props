@@ -29,6 +29,14 @@
     <PackageVersion Include="System.IdentityModel.Tokens.Jwt" Version="8.2.1" />
   </ItemGroup>
 
+  <ItemGroup Label="TOTP">
+    <!-- QR-code generator (pure-managed, MIT) used by the end-user TOTP setup
+         page to render the otpauth:// URI as an inline SVG. Picked over rolling
+         Reed-Solomon by hand because the library is small, dependency-free,
+         and well-trodden in the .NET ecosystem. -->
+    <PackageVersion Include="QRCoder" Version="1.6.0" />
+  </ItemGroup>
+
   <ItemGroup Label="SourceLink">
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="8.0.0" />
   </ItemGroup>

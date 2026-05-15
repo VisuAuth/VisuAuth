@@ -730,6 +730,11 @@ body {
 }
 
 .va-alert {
+    /* display: block so semantic <output> elements (used for post-form
+     * success notifications, where the implicit "status" role is desirable)
+     * render as a full-width banner like the <div role="alert"> ones, not
+     * as inline. */
+    display: block;
     padding: 0.85rem 1rem;
     border-radius: var(--visuauth-radius);
     border: 1px solid var(--visuauth-border);

@@ -32,6 +32,7 @@ public sealed class AspNetIdentitySignInFlow<TUser>(
         SupportsLocalLogin = true,
         SupportsRegistration = true,
         SupportsPasswordReset = true,
+        SupportsTwoFactor = true,
         SupportsTwoFactorReset = true,
         SupportsImpersonation = true,
         SupportsCustomClaims = true,

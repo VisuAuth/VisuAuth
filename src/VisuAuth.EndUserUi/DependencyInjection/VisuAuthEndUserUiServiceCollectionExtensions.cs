@@ -1,10 +1,13 @@
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using VisuAuth.Abstractions.Authentication;
 using VisuAuth.AdminUi.Theming;
 using VisuAuth.EndUserUi.Api;
+using VisuAuth.EndUserUi.TwoFactor;
 
 namespace VisuAuth.EndUserUi.DependencyInjection;
 
@@ -37,6 +40,26 @@ public static class VisuAuthEndUserUiServiceCollectionExtensions
         // still resolve non-null `IOptions<...>` for the LoginModel chain.
         services.AddOptions<EndUserUiOptions>();
         services.AddOptions<WebViewCallbackOptions>();
+
+        // QR-code renderer used by the TOTP setup page. TryAddSingleton lets
+        // a consumer swap the implementation (e.g. PNG output) without
+        // having to suppress the default registration first.
+        services.TryAddSingleton<IQrCodeSvgRenderer, QrCodeSvgRenderer>();
+
+        // ASP.NET Identity defaults the cookie LoginPath to "/Account/Login"
+        // — which 404s when the consumer relies on VisuAuth's pages instead.
+        // PostConfigure (rather than Configure / ConfigureApplicationCookie)
+        // because AddIdentity registers its own defaults later in the chain
+        // when the consumer wires it after AddVisuAuth (the canonical sample
+        // order); a regular Configure would be overwritten by those defaults.
+        // Hardcoded scheme name ("Identity.Application") keeps EndUserUi free
+        // of a direct Microsoft.AspNetCore.Identity package reference.
+        services.PostConfigure<CookieAuthenticationOptions>("Identity.Application", options =>
+        {
+            options.LoginPath = "/visuauth/login";
+            options.LogoutPath = "/visuauth/logout";
+            options.AccessDeniedPath = "/visuauth/login";
+        });
 
         // Theming layer 3 — let consumers override end-user pages with
         // their own Razor Page at the same @page route. The expander +

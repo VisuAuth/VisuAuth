@@ -90,3 +90,149 @@
 .va-enduser-lang select {
     font-size: 0.9rem;
 }
+
+/* Authenticated quick-nav above the card body. Sits between the brand and
+ * the page heading so it never competes with form inputs for attention. */
+.va-enduser-account {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    font-size: 0.85rem;
+    margin: -0.75rem 0 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--visuauth-border);
+}
+
+.va-enduser-account a {
+    color: var(--visuauth-primary);
+    text-decoration: none;
+}
+
+.va-enduser-account a:hover {
+    text-decoration: underline;
+}
+
+/* TOTP setup — three numbered steps stacked inside the card. */
+.va-twofactor-steps {
+    margin: 1rem 0 0;
+    padding-left: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.va-twofactor-steps li {
+    line-height: 1.5;
+}
+
+.va-twofactor-steps strong {
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.va-twofactor-qr {
+    display: flex;
+    justify-content: center;
+    margin: 0.75rem 0;
+}
+
+/* The QR container — NOT the SVG — owns the white background, padding, and
+ * border. Painting those on the SVG element itself can clip the QR's quiet
+ * zone (the white border QRCoder draws) and confuses some camera apps that
+ * expect the quiet zone to be visually contiguous with the surrounding
+ * background. The wrapper ensures the white field always extends past the
+ * QR's outer modules. */
+.va-twofactor-qr-frame {
+    background: #ffffff;
+    padding: 0.75rem;
+    border: 1px solid var(--visuauth-border);
+    border-radius: var(--visuauth-radius);
+    display: inline-block;
+    line-height: 0;
+}
+
+.va-twofactor-qr svg {
+    /* Cap with max-width so narrow phones never overflow the card, but DO
+     * NOT set width / height — letting the SVG render at its native pixel
+     * grid keeps every QR module crisp and aligned. image-rendering keeps
+     * any forced scaling (e.g. browser zoom) on integer pixel boundaries
+     * so module edges stay sharp instead of blurring into each other. */
+    display: block;
+    max-width: 16rem;
+    height: auto;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+}
+
+.va-twofactor-reset {
+    margin-top: 1.5rem;
+}
+
+/* Recovery codes — single column of monospaced codes with per-row copy. */
+.va-twofactor-codes {
+    list-style: none;
+    margin: 1rem 0 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+}
+
+.va-twofactor-codes li {
+    margin: 0;
+}
+
+.va-twofactor-codes .va-copy-wrap {
+    width: 100%;
+}
+
+.va-twofactor-recovery {
+    margin-top: 1.25rem;
+    border-top: 1px solid var(--visuauth-border);
+    padding-top: 1rem;
+}
+
+.va-twofactor-recovery summary {
+    cursor: pointer;
+    color: var(--visuauth-primary);
+    font-size: 0.9rem;
+    margin-bottom: 0.75rem;
+}
+
+.va-twofactor-disable {
+    margin-top: 1.5rem;
+}
+
+.va-twofactor-disable-hint {
+    margin: 0.5rem 0 0;
+    font-size: 0.8rem;
+}
+
+.va-alert.va-alert-warning {
+    background: #fffbeb;
+    color: #92400e;
+    border: 1px solid #fde68a;
+    border-radius: var(--visuauth-radius);
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+}
+
+.va-btn-secondary {
+    background: var(--visuauth-bg);
+    color: var(--visuauth-primary);
+    border: 1px solid var(--visuauth-primary);
+}
+
+.va-btn-secondary:hover {
+    background: var(--visuauth-surface);
+}
+
+.va-btn-danger {
+    background: var(--visuauth-danger);
+    color: var(--visuauth-primary-fg);
+    border: 1px solid var(--visuauth-danger);
+}
+
+.va-btn-danger:hover {
+    filter: brightness(0.95);
+}

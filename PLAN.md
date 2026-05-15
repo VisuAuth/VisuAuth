@@ -12,7 +12,7 @@ immediate next step. Updated as PRs land. Long-term direction lives in
 - **Latest shipped on NuGet**: [`VisuAuth 0.1.0`](https://www.nuget.org/packages/VisuAuth/0.1.0) — first feature release (admin UI, end-user pages, multi-tenancy, four theming layers, mobile JWT + WebView)
 - **Default branch**: `main` at <https://github.com/VisuAuth/visuauth>
 - **Build state**: green (`dotnet build src/VisuAuth.slnx -c Release` → 0 errors, 0 warnings)
-- **Test state**: green on `main` (114 unit + 133 integration = 247 tests)
+- **Test state**: green on `main` (132 unit + 149 integration = 281 tests)
 
 ---
 
@@ -85,9 +85,15 @@ immediate next step. Updated as PRs land. Long-term direction lives in
 
 ## In flight
 
-Nothing in flight. v0.1 shipped to NuGet on the `v0.1.0` tag and the
-GitHub Release is published. `<VersionPrefix>` is now `0.2.0` so the
-next merge to `main` will emit a `0.2.0-alpha.<run_number>` pre-release.
+- **TOTP pages** (`feat/two-factor-totp`) — first item from the v0.2
+  milestone below. Adds `/visuauth/two-factor/{setup,verify,recovery-codes}`
+  in `VisuAuth.EndUserUi`, an `ITwoFactorFlow` abstraction in
+  `VisuAuth.Abstractions` (with `UserBackendCapabilities.SupportsTwoFactor`),
+  the ASP.NET Identity adapter, and a deterministic
+  `twofactor.demo@example.com` seeded user so the challenge flow is
+  reachable from `/visuauth/login` out of the box. Pulls in QRCoder 1.6.0
+  as a new direct dependency of `VisuAuth.EndUserUi` (only the setup page
+  uses it).
 
 ---
 
@@ -101,10 +107,8 @@ CLAUDE.md §13 names four items for v0.2:
    form for a "Sign in with Microsoft" button automatically (CLAUDE.md
    §6 capability-driven UI). New package `VisuAuth.Entra` referencing
    only `VisuAuth.Abstractions`. Must NOT leak into `VisuAuth.Identity`.
-2. **TOTP pages** — `/visuauth/two-factor/setup`,
-   `/visuauth/two-factor/verify`, recovery-code management. Lives in
-   `VisuAuth.EndUserUi`; depends on the Identity `UserManager` 2FA
-   APIs that already ship.
+2. **TOTP pages** — see "In flight" above. ✅ Shipping in
+   `feat/two-factor-totp`.
 3. **External login providers** — Google, Microsoft, Apple buttons on
    the login page. Shaped via `IAuthenticationFlow.ExternalProviders`
    so the UI iterates the registered schemes (no per-provider markup).

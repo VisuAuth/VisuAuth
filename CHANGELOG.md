@@ -16,6 +16,78 @@ Working toward [`0.2.0`](#020--planned). `<VersionPrefix>` in
 `Directory.Build.props` is now `0.2.0`, so merges to `main` publish as
 `0.2.0-alpha.<run_number>` pre-releases until the next stable tag.
 
+### Added
+
+- TOTP pages for self-service two-factor authentication
+  (`VisuAuth.EndUserUi`):
+  - `/visuauth/two-factor/setup` — pair an authenticator app via inline
+    SVG QR code (rendered with QRCoder) plus manual-entry shared key,
+    confirm the first 6-digit code to enable.
+  - `/visuauth/two-factor/verify` — post-password challenge accepting either
+    a TOTP code or a one-shot recovery code, with optional "trust this
+    device" checkbox that flips the persistent flag on the cookie.
+  - `/visuauth/two-factor/recovery-codes` — generate / regenerate the
+    10-code batch (each individually copyable) and disable 2FA from one
+    place.
+  - `/visuauth/login` redirects to the verify page automatically when the
+    Identity adapter returns `RequiresTwoFactor`, forwarding the original
+    `returnUrl` and remember-me preference.
+  - End-user layout grows a "Setup 2FA" / "Sign out" header link when the
+    visitor is signed in.
+- `ITwoFactorFlow` abstraction in `VisuAuth.Abstractions` so non-Identity
+  adapters (Entra) can opt out via
+  `UserBackendCapabilities.SupportsTwoFactor` while the UI surface stays
+  identical.
+- `AspNetIdentityTwoFactorFlow<TUser>` in `VisuAuth.Identity` wiring the
+  ASP.NET Identity `UserManager` 2FA APIs (authenticator key, recovery
+  codes, TOTP / recovery sign-in) to the new abstraction.
+- `OtpAuthUriBuilder` helper in `VisuAuth.Abstractions` for the canonical
+  RFC 6238 / Key Uri Format `otpauth://totp/...` URI.
+- Sample app pre-enrols a `twofactor.demo@example.com` account with a
+  deterministic shared key so the challenge flow is reachable without
+  pairing first; pairing details + the user are linked from `/`.
+- TOTP setup page exposes the encoded `otpauth://` URI as a
+  `data-otpauth-uri` attribute on the QR container — useful for desktop
+  developers who want to copy the URI directly into a password manager
+  or import it elsewhere without scanning.
+
+### Fixed (in-flight before first 0.2 pre-release)
+
+- TOTP setup QR now carries a `viewBox` so CSS scaling renders as true
+  vector graphics — the previous `width`/`height`-only SVG was scaled
+  bitmap-style by browsers, producing sub-pixel module edges that
+  authenticator camera apps refused to lock on to. Manual key entry was
+  unaffected; only QR scanning was failing.
+- Setup page now renders the verification-code error inline next to the
+  input (with an autoscroll fragment) instead of at the top of the
+  page, where it was scrolled out of view behind the QR + manual key.
+- Setup page error text is now properly localized through
+  `IStringLocalizer<EndUserSharedResources>` instead of leaking the
+  English fallback string from the Identity adapter.
+- `[Authorize]`'d end-user pages (e.g. TOTP setup) now redirect anonymous
+  visitors to `/visuauth/login` — `AddVisuAuthEndUserUi` post-configures
+  the Identity cookie's `LoginPath` so the default `/Account/Login` no
+  longer 404s in apps that only ship VisuAuth's pages.
+- TOTP challenge page (`/visuauth/two-factor/verify`) now splits errors
+  by form: an authenticator-code failure renders above the code input
+  with the "try the latest code from your app" wording, while a
+  recovery-code failure renders inside the recovery `<details>` (which
+  auto-reopens) with a recovery-specific "invalid or already used" message.
+  The previous shared error message bled the authenticator phrasing into
+  recovery failures and rendered above the visible form regardless of
+  which one the user submitted.
+- Sample app seeder now also pre-enrols a deterministic recovery batch
+  (`demo1-aaaaa`, `demo2-bbbbb`, `demo3-ccccc`) on `twofactor.demo@example.com`
+  so the recovery-code flow is exercisable from the home page without
+  first generating a batch on the recovery-codes page. Codes + a clock-drift
+  hint are linked from `/`.
+
+### Dependencies
+
+- Adds [QRCoder 1.6.0](https://github.com/codebude/QRCoder) (MIT) as a
+  direct dependency of `VisuAuth.EndUserUi`. Used by the TOTP setup page
+  to render the `otpauth://` URI as inline SVG; no other surface uses it.
+
 ## [0.2.0] — Planned
 
 Microsoft Entra ID adapter milestone. Tracks CLAUDE.md §13 row for v0.2.

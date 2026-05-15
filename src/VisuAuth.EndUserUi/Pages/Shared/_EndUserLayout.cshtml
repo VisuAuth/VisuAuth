@@ -2,6 +2,7 @@
     var title = ViewData["Title"] as string ?? "VisuAuth";
     var brand = ViewData["Brand"] as string ?? "VisuAuth";
     var pageLang = System.Globalization.CultureInfo.CurrentUICulture.Name;
+    var isAuthenticated = User?.Identity?.IsAuthenticated == true;
 }<!doctype html>
 <html lang="@pageLang">
 <head>
@@ -29,6 +30,16 @@
     <main class="va-enduser-shell">
         <div class="va-enduser-card">
             <a class="va-brand va-enduser-brand" href="/">@brand</a>
+            @if (isAuthenticated)
+            {
+                @* Authenticated quick-nav (CLAUDE.md §8 — drop-in surface; no
+                   separate /account page). Setup 2FA + Sign out are the only
+                   self-service entry points the end-user pages own today. *@
+                <nav class="va-enduser-account" aria-label="@Ls["Layout.AccountNav"]">
+                    <a href="/visuauth/two-factor/setup">@Ls["Layout.SetupTwoFactor"]</a>
+                    <a href="/visuauth/logout">@Ls["Layout.SignOut"]</a>
+                </nav>
+            }
             @RenderBody()
             @* Language switcher (CLAUDE.md §10.1). Tucked under the card so
                the visitor can flip between en / pt-BR without leaving the

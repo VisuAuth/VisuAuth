@@ -12,7 +12,7 @@ Drop-in admin dashboard, multi-tenancy, and themeable end-user auth pages — wi
 
 </div>
 
-> 🚧 **Pre-alpha.** The current NuGet release is a placeholder reserving the package name. Real releases will follow as the project matures.
+> 🚀 **v0.1.0 is live on NuGet.** First feature release — admin UI, end-user pages, multi-tenancy, the four theming layers, and the mobile JWT / WebView channel. Install via `dotnet add package VisuAuth`. Pre-1.0, breaking changes can land on any `0.x` bump and will always be flagged in the [CHANGELOG](CHANGELOG.md).
 
 ## What it is
 
@@ -107,8 +107,8 @@ VisuAuth is to Identity what **Hangfire is to background jobs**: it adds the das
 | Version | Scope | Status |
 |---|---|---|
 | **0.0.1-alpha** | Placeholder, name reserved | ✅ Released |
-| **0.1** | Admin UI + End-user UI + Multi-tenancy + Theming + Mobile | 🚧 In development |
-| **0.2** | Microsoft Entra ID adapter, TOTP, external login providers, audit log | 📋 Planned |
+| **0.1** | Admin UI + End-user UI + Multi-tenancy + Theming + Mobile | ✅ Released |
+| **0.2** | Microsoft Entra ID adapter, TOTP, external login providers, audit log | 🚧 In development |
 | **0.3** | Entra External ID adapter, profile / sessions management, bulk operations | 📋 Planned |
 | **1.0** | Production-ready, stable contracts | 📋 Planned |
 

@@ -1,17 +1,18 @@
 # PLAN.md — VisuAuth
 
-Living document. Tracks current state, the v0.1 backlog, and the immediate next step.
-Updated as PRs land. Long-term direction lives in `CLAUDE.md` section 13 (Roadmap).
+Living document. Tracks current state, the active milestone backlog, and the
+immediate next step. Updated as PRs land. Long-term direction lives in
+`CLAUDE.md` section 13 (Roadmap).
 
 ---
 
 ## Current status
 
-- **Version in development**: v0.1 (pre-alpha)
-- **Latest shipped on NuGet**: `VisuAuth 0.0.1-alpha` (placeholder, name reservation)
+- **Version in development**: v0.2 (Microsoft Entra ID adapter milestone)
+- **Latest shipped on NuGet**: [`VisuAuth 0.1.0`](https://www.nuget.org/packages/VisuAuth/0.1.0) — first feature release (admin UI, end-user pages, multi-tenancy, four theming layers, mobile JWT + WebView)
 - **Default branch**: `main` at <https://github.com/VisuAuth/visuauth>
 - **Build state**: green (`dotnet build src/VisuAuth.slnx -c Release` → 0 errors, 0 warnings)
-- **Test state**: green on `main` (split unit + integration projects; this branch adds more)
+- **Test state**: green on `main` (114 unit + 133 integration = 247 tests)
 
 ---
 
@@ -84,64 +85,51 @@ Updated as PRs land. Long-term direction lives in `CLAUDE.md` section 13 (Roadma
 
 ## In flight
 
-Nothing in flight. Every theming layer named in CLAUDE.md §8.4 is
-implemented; the v0.1 feature scope is complete. Next action is the
-0.1 release cut — see below.
+Nothing in flight. v0.1 shipped to NuGet on the `v0.1.0` tag and the
+GitHub Release is published. `<VersionPrefix>` is now `0.2.0` so the
+next merge to `main` will emit a `0.2.0-alpha.<run_number>` pre-release.
 
 ---
 
-## Next up — cut the 0.1 release
+## Next up — v0.2: Microsoft Entra ID adapter milestone
 
-The whole v0.1 backlog from CLAUDE.md §13 has landed. The remaining
-work is release prep:
+CLAUDE.md §13 names four items for v0.2:
 
-### Already prepared (no owner action needed)
+1. **Microsoft Entra ID adapter** — admin UI against the Microsoft Graph
+   API. `IUserStore` / `IRoleStore` adapter declares
+   `SupportsLocalLogin = false`; the end-user UI swaps the email/password
+   form for a "Sign in with Microsoft" button automatically (CLAUDE.md
+   §6 capability-driven UI). New package `VisuAuth.Entra` referencing
+   only `VisuAuth.Abstractions`. Must NOT leak into `VisuAuth.Identity`.
+2. **TOTP pages** — `/visuauth/two-factor/setup`,
+   `/visuauth/two-factor/verify`, recovery-code management. Lives in
+   `VisuAuth.EndUserUi`; depends on the Identity `UserManager` 2FA
+   APIs that already ship.
+3. **External login providers** — Google, Microsoft, Apple buttons on
+   the login page. Shaped via `IAuthenticationFlow.ExternalProviders`
+   so the UI iterates the registered schemes (no per-provider markup).
+4. **Audit log plugin** — opt-in package writing to a separate
+   `VisuAuthAuditLog` EF Core table (CLAUDE.md §2.5 "Optional
+   VisuAuth-specific tables…are explicit and documented"). Retention
+   policy + filter UI in admin.
 
-- `CHANGELOG.md` at the repo root, in
-  [Keep a Changelog](https://keepachangelog.com/) format. The `[0.1.0]`
-  section catalogues every shipped feature; future PRs append to
-  `[Unreleased]`.
-- `PackageReleaseNotes` centralised in `Directory.Build.props` so all
-  five packages link to the same CHANGELOG entry on the NuGet gallery.
-  The `VisuAuth.csproj` override that previously pointed to the commits
-  page is removed.
-- `<VersionPrefix>0.1.0</VersionPrefix>` already in
-  `Directory.Build.props` — no bump needed before tagging.
+No branches queued yet — each item lands as its own feature branch +
+PR per CLAUDE.md §11. Owner picks the order; the natural sequencing is
+**TOTP → external providers → audit log → Entra ID adapter** because
+the first three exercise the existing abstractions and the fourth is
+the big "does the capability flag system actually work" stress test.
 
-### Owner action — tag and ship
+---
 
-1. Sanity-check `CHANGELOG.md` and `README.md` one last time (the
-   stack table, the roadmap, the badge URLs).
-2. Land any final fixes on `main` so the release commit is clean.
-3. Tag and push:
-   ```bash
-   git tag v0.1.0
-   git push origin v0.1.0
-   ```
-4. The Release workflow at `.github/workflows/release.yml` detects
-   `refs/tags/v0.1.0`, builds `VisuAuth.0.1.0.nupkg` (no suffix), runs
-   unit + integration tests, and publishes to nuget.org via the
-   `NUGET_API_KEY` secret.
-5. After NuGet shows the new version as Latest, draft a GitHub Release
-   on the same tag using the `[0.1.0]` section of `CHANGELOG.md` as
-   the body.
-6. Once the release is live, open an `Unreleased`-only PR that bumps
-   `<VersionPrefix>` to `0.2.0` so pre-release builds off `main`
-   immediately label as `0.2.0-alpha.N` instead of squatting on the
-   shipped `0.1.0` line.
+## Recently shipped
 
-### Known follow-up before kicking the tag
+### v0.1.0 (tag `v0.1.0`, on NuGet)
 
-- Integration tests reuse the sample app's SQLite file
-  (`samples/Sample.WebApp/visuauth-sample.db`). Running the suite
-  twice in a row accumulates `api.register.*@example.com` users from
-  `AuthApiTests` and breaks
-  `MultiTenancyTests.GetUsers_WithoutTenantHeader_ReturnsAllTenants`
-  because the seeded `daniel.eloi@example.com` falls off page 1.
-  Fresh-clone CI is unaffected, but a local re-run after merging the
-  release branch will fail. Either reset the DB in CI before the
-  release run or land a fix (per-test-class temp DB, or `:memory:`
-  with a kept-open connection) before tagging.
+Owner cut the release at commit `3554d09`. CI pushed five nupkgs
+(`VisuAuth`, `VisuAuth.Abstractions`, `VisuAuth.Identity`,
+`VisuAuth.AdminUi`, `VisuAuth.EndUserUi`) to nuget.org. GitHub Release
+published with the highlights body. See `CHANGELOG.md` `[0.1.0]` for
+the full list.
 
 ---
 

@@ -13,7 +13,6 @@
     <Summary>Visual admin UI, multi-tenancy and themeable auth pages for ASP.NET Core Identity.</Summary>
     <PackageTags>visuauth;aspnetcore;identity;admin;multitenant;dashboard;htmx;authentication;authorization;ui</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageReleaseNotes>Pre-release builds publish on every merge to main. See https://github.com/VisuAuth/visuauth/commits for changes.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>

@@ -28,6 +28,14 @@
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <!--
+      A single PackageReleaseNotes line shared by every VisuAuth.* package.
+      We point at the CHANGELOG instead of inlining the notes so the NuGet
+      gallery and the source of truth never drift. The link survives both
+      pre-releases (off main) and stable tags because /blob/main/CHANGELOG.md
+      always renders the latest entries.
+    -->
+    <PackageReleaseNotes>See https://github.com/VisuAuth/visuauth/blob/main/CHANGELOG.md for release notes.</PackageReleaseNotes>
   </PropertyGroup>
 
   <PropertyGroup Label="Version">

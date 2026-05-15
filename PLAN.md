@@ -60,7 +60,8 @@ Updated as PRs land. Long-term direction lives in `CLAUDE.md` section 13 (Roadma
   - i18n pipeline: JSON-backed `IStringLocalizer<AdminSharedResources>` / `IStringLocalizer<EndUserSharedResources>` (provider: `My.Extensions.Localization.Json`), `en` + `pt-BR` translations, query / cookie / header culture resolution, `POST /visuauth/culture` switch endpoint with open-redirect guard, `<va-language-switcher />` tag helper in both layouts
   - htmx 2.0.4 shipped as an embedded static asset (`VisuAuth.AdminUi/wwwroot/htmx.min.js`); both layouts reference `/_content/VisuAuth.AdminUi/htmx.min.js` so air-gapped deployments work without an outbound CDN call
   - View / page override (theming layer 3) — drop a same-named `.cshtml` in `/Views/VisuAuth/` (root configurable via `VisuAuthViewOverrideOptions`) and Razor uses it instead of the package default; covers partials + layouts via `IViewLocationExpander` and full Razor Pages via `IPageRouteModelConvention` that demotes our routes so a consumer page at the same `@page` route wins
-  - Per-tenant theme (theming layer 4) — consumers implement `ITenantThemeResolver` and VisuAuth overlays the per-tenant `VisuAuthTheme` on top of the global one via `VisuAuthThemeMerger`; default registration is a no-op so single-tenant deployments keep the layer-2 fast path
+  - Per-tenant theme (theming layer 4a) — consumers implement `ITenantThemeResolver` and VisuAuth overlays the per-tenant `VisuAuthTheme` on top of the global one via `VisuAuthThemeMerger`; default registration is a no-op so single-tenant deployments keep the layer-2 fast path
+  - Per-tenant view overrides (theming layer 4b) — consumers implement `ITenantViewOverrideResolver` to map the current tenant id to an override root; the view-location expander prepends it ahead of the global override paths, and the resolved tenant id is part of Razor's view-location cache key so tenant A's swapped template never shadows tenant B's. Default `NoOpTenantViewOverrideResolver` returns `null` so single-tenant deployments pay nothing
 - `VisuAuth.EndUserUi`:
   - `/visuauth/login` and `/visuauth/logout` Razor Pages (email + password + remember-me, anti-forgery, redirect-back to `returnUrl`)
   - `/visuauth/register`, `/visuauth/forgot-password`, `/visuauth/reset-password`, `/visuauth/confirm-email` Razor Pages
@@ -83,59 +84,64 @@ Updated as PRs land. Long-term direction lives in `CLAUDE.md` section 13 (Roadma
 
 ## In flight
 
-### `feat/view-override-per-tenant`
-
-Pairs theming layer 3 (view override) with the per-tenant resolver
-pattern from layer 4. A consumer can drop a `_UsersTable.cshtml`
-under `/Views/VisuAuth/Tenants/acme/` and Razor will pick that file
-over the global `/Views/VisuAuth/_UsersTable.cshtml` when the
-current request is scoped to the `acme` tenant.
-
-- Contract: `ITenantViewOverrideResolver` with one **synchronous**
-  method `string? ResolveOverrideRoot(string? tenantId)`. Sync
-  because Razor's `IViewLocationExpander.PopulateValues` /
-  `ExpandViewLocations` are sync — no async escape hatch in the
-  view-engine pipeline. Per-tenant override roots are typically
-  static config so sync is the right shape anyway.
-- Default registration: `NoOpTenantViewOverrideResolver` (returns
-  `null`) — single-tenant deployments and consumers who never opt in
-  pay nothing.
-- Wiring: `VisuAuthViewLocationExpander` resolves the per-tenant
-  resolver + `ITenantContext` from `HttpContext.RequestServices`
-  (the only safe way to reach scoped services from a singleton
-  expander). When a tenant root resolves, the expander prepends
-  `{tenantRoot}/{0}.cshtml` and `{tenantRoot}/Shared/{0}.cshtml`
-  AHEAD of the global override paths and the package defaults.
-  Order: tenant override → global override → package defaults.
-- Cache key: `PopulateValues` writes both the global root and the
-  resolved tenant id into `context.Values`, so Razor's view-location
-  cache invalidates on either change. Otherwise tenant A's swapped
-  table would shadow tenant B's on the next request.
-- Sample app: `Sample.WebApp.Theming.SampleTenantViewOverrideResolver`
-  maps `acme` → `/Views/VisuAuth/Tenants/acme`. A demo
-  `_UsersTable.cshtml` lives there with a banner that proves the
-  per-tenant path is winning.
-
-**Out of scope** (deferred):
-
-- Per-tenant whole-page overrides — the `IPageRouteModelConvention`
-  that demotes our routes runs once at startup, not per request, so
-  it can't pick a different consumer page based on the current
-  tenant. Same-route-per-tenant page overrides need a custom
-  `EndpointSelectorPolicy` and are a separate change.
-- Per-tenant CSS files (drop-a-`.css`-per-tenant). Layer-4 theme
-  overrides cover the styling case; per-tenant `.cshtml` covers
-  the markup case. CSS-per-tenant is the third, larger axis.
+Nothing in flight. Every theming layer named in CLAUDE.md §8.4 is
+implemented; the v0.1 feature scope is complete. Next action is the
+0.1 release cut — see below.
 
 ---
 
-## Next up (ordered)
+## Next up — cut the 0.1 release
 
-With layer 4 in flight, every theming layer named in CLAUDE.md §8.4
-is implemented. The natural next milestone is cutting the **0.1**
-release — see CLAUDE.md §13. No specific branch is queued here yet
-because the release prep (changelog, tag, NuGet push gate) is owner
-work, not a standard feature PR.
+The whole v0.1 backlog from CLAUDE.md §13 has landed. The remaining
+work is release prep:
+
+### Already prepared (no owner action needed)
+
+- `CHANGELOG.md` at the repo root, in
+  [Keep a Changelog](https://keepachangelog.com/) format. The `[0.1.0]`
+  section catalogues every shipped feature; future PRs append to
+  `[Unreleased]`.
+- `PackageReleaseNotes` centralised in `Directory.Build.props` so all
+  five packages link to the same CHANGELOG entry on the NuGet gallery.
+  The `VisuAuth.csproj` override that previously pointed to the commits
+  page is removed.
+- `<VersionPrefix>0.1.0</VersionPrefix>` already in
+  `Directory.Build.props` — no bump needed before tagging.
+
+### Owner action — tag and ship
+
+1. Sanity-check `CHANGELOG.md` and `README.md` one last time (the
+   stack table, the roadmap, the badge URLs).
+2. Land any final fixes on `main` so the release commit is clean.
+3. Tag and push:
+   ```bash
+   git tag v0.1.0
+   git push origin v0.1.0
+   ```
+4. The Release workflow at `.github/workflows/release.yml` detects
+   `refs/tags/v0.1.0`, builds `VisuAuth.0.1.0.nupkg` (no suffix), runs
+   unit + integration tests, and publishes to nuget.org via the
+   `NUGET_API_KEY` secret.
+5. After NuGet shows the new version as Latest, draft a GitHub Release
+   on the same tag using the `[0.1.0]` section of `CHANGELOG.md` as
+   the body.
+6. Once the release is live, open an `Unreleased`-only PR that bumps
+   `<VersionPrefix>` to `0.2.0` so pre-release builds off `main`
+   immediately label as `0.2.0-alpha.N` instead of squatting on the
+   shipped `0.1.0` line.
+
+### Known follow-up before kicking the tag
+
+- Integration tests reuse the sample app's SQLite file
+  (`samples/Sample.WebApp/visuauth-sample.db`). Running the suite
+  twice in a row accumulates `api.register.*@example.com` users from
+  `AuthApiTests` and breaks
+  `MultiTenancyTests.GetUsers_WithoutTenantHeader_ReturnsAllTenants`
+  because the seeded `daniel.eloi@example.com` falls off page 1.
+  Fresh-clone CI is unaffected, but a local re-run after merging the
+  release branch will fail. Either reset the DB in CI before the
+  release run or land a fix (per-test-class temp DB, or `:memory:`
+  with a kept-open connection) before tagging.
 
 ---
 

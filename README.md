@@ -19,16 +19,26 @@ Drop-in admin dashboard, multi-tenancy, and themeable end-user auth pages — wi
 VisuAuth fills the gap that ASP.NET Core Identity leaves: it ships a complete admin UI for users/roles/claims, a multi-tenancy layer with per-tenant isolation, and themeable end-user authentication pages — all drop-in via two lines of code, the same way Hangfire ships its dashboard.
 
 ```csharp
-builder.Services.AddVisuAuth()
-    .UseAspNetIdentity<ApplicationUser>()
-    .EnableMultiTenant()
-    .AddAdminUi()
-    .AddEndUserUi();
+// Two-line drop-in — the form recommended for most consumers.
+builder.Services.AddVisuAuth<ApplicationUser>();
 
 app.MapVisuAuth();
 ```
 
-That's it. Navigate to `/visuauth/admin` for the dashboard, `/visuauth/login` for the login page.
+Need finer control? The same call has a fluent form so you can pick the
+surfaces you want:
+
+```csharp
+builder.Services.AddVisuAuth()
+    .UseAspNetIdentity<ApplicationUser>()
+    .AddAdminUi()
+    .AddEndUserUi();
+```
+
+Either way, navigate to `/visuauth/admin` for the dashboard and
+`/visuauth/login` for the login page. A complete sample, including the
+EF Core / Identity wiring this snippet leaves out, lives in
+[`samples/Sample.WebApp`](samples/Sample.WebApp).
 
 ## What it gives you
 
@@ -44,15 +54,17 @@ That's it. Navigate to `/visuauth/admin` for the dashboard, `/visuauth/login` fo
 - `/visuauth/register` — self-service signup (configurable)
 - `/visuauth/forgot-password` & `/visuauth/reset-password`
 - `/visuauth/confirm-email`
-- `/visuauth/two-factor`
-- `/visuauth/profile` — account self-management
 - `/visuauth/logout`
+- `/visuauth/two-factor` — *coming in v0.2*
+- `/visuauth/profile` — account self-management, *coming in v0.3*
 
 ### 🏢 Multi-tenancy
 - `TenantId` column on `AspNetUsers` (and friends)
 - Global query filter applied automatically
-- Tenant resolution via subdomain, header, or JWT claim
-- Per-tenant password policy, lockout, branding
+- Tenant resolution via HTTP header (`X-Tenant-Id`) or cookie set by the
+  admin sidebar switcher (subdomain and JWT-claim resolvers planned for v0.2)
+- Per-tenant branding via the theming layers below
+  (per-tenant password policy / lockout planned for v0.2)
 
 ### 🎨 Theming
 - **Layer 1:** Override CSS variables — colors, fonts, logo, radius
@@ -96,8 +108,8 @@ VisuAuth is to Identity what **Hangfire is to background jobs**: it adds the das
 |---|---|---|
 | **0.0.1-alpha** | Placeholder, name reserved | ✅ Released |
 | **0.1** | Admin UI + End-user UI + Multi-tenancy + Theming + Mobile | 🚧 In development |
-| **0.2** | Microsoft Entra ID adapter, TOTP, external providers, view override theming | 📋 Planned |
-| **0.3** | Entra External ID adapter, profile/sessions, audit log | 📋 Planned |
+| **0.2** | Microsoft Entra ID adapter, TOTP, external login providers, audit log | 📋 Planned |
+| **0.3** | Entra External ID adapter, profile / sessions management, bulk operations | 📋 Planned |
 | **1.0** | Production-ready, stable contracts | 📋 Planned |
 
 ## Repository structure
@@ -118,7 +130,86 @@ visuauth/
 
 ## Getting started
 
-> Real getting-started docs will land alongside v0.1. Until then, this README is the source of truth.
+VisuAuth assumes a project that already has ASP.NET Core Identity + EF Core
+configured. The reference setup lives in
+[`samples/Sample.WebApp`](samples/Sample.WebApp); the section below is the
+quickest path from an empty project to a working `/visuauth/admin`.
+
+### 1. Install
+
+```bash
+dotnet add package VisuAuth
+```
+
+That meta-package pulls in `VisuAuth.Abstractions`, `VisuAuth.Identity`,
+`VisuAuth.AdminUi`, and `VisuAuth.EndUserUi` as transitive dependencies.
+Need only a subset? Install the individual `VisuAuth.*` packages instead.
+
+### 2. Identity user, DbContext, migrations
+
+Define an Identity user and the DbContext that owns it. The single-tenant
+form is fine for v0.1 even if you plan to opt into multi-tenancy later —
+swap `IdentityUser` for `MultiTenantIdentityUser` and
+`IdentityDbContext<TUser>` for `MultiTenantIdentityDbContext<TUser>` when
+you do.
+
+```csharp
+public sealed class ApplicationUser : IdentityUser { }
+
+public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
+    : IdentityDbContext<ApplicationUser>(options);
+```
+
+Run `dotnet ef migrations add Initial && dotnet ef database update`
+(or your equivalent) to create the `AspNet*` tables. VisuAuth does not
+add tables of its own in v0.1.
+
+### 3. Wire VisuAuth in `Program.cs`
+
+```csharp
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using VisuAuth;
+
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlite(builder.Configuration.GetConnectionString("Default")));
+
+builder.Services
+    .AddIdentity<ApplicationUser, IdentityRole>()
+    .AddEntityFrameworkStores<AppDbContext>()
+    .AddDefaultTokenProviders();
+
+// Two-line drop-in — registers Identity adapter + admin UI + end-user UI.
+builder.Services.AddVisuAuth<ApplicationUser>();
+
+var app = builder.Build();
+
+app.UseStaticFiles();    // serves /_content/VisuAuth.AdminUi/visuauth.css etc.
+app.UseRouting();
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapVisuAuth();
+
+app.Run();
+```
+
+### 4. Try it
+
+- `/visuauth/admin` — the dashboard. Restrict it with your own
+  authorization policy (`[Authorize(Roles = "Admin")]` on a custom
+  layout filter, an endpoint convention, etc.) before going to
+  production — VisuAuth does not impose one in v0.1.
+- `/visuauth/login` — the public sign-in page.
+- `/visuauth/register`, `/visuauth/forgot-password`,
+  `/visuauth/reset-password`, `/visuauth/confirm-email`.
+
+For multi-tenancy, mobile JWT issuance, theming (CSS variables, programmatic
+`VisuAuthTheme`, view overrides, per-tenant resolvers), and the i18n
+pipeline, see
+[`samples/Sample.WebApp/Program.cs`](samples/Sample.WebApp/Program.cs) — it
+exercises every public surface.
 
 ## Building & packaging
 

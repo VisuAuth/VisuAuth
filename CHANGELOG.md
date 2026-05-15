@@ -25,6 +25,14 @@ Tracks the v0.1 milestone in `CLAUDE.md` §13.
 
 - `AddVisuAuth<TUser>()` and `MapVisuAuth()` extensions on the meta-package.
   Two lines in `Program.cs` mount the entire experience.
+- Fluent composition root for finer control:
+  `services.AddVisuAuth()` returns an `IVisuAuthBuilder` and the chain
+  methods `UseAspNetIdentity<TUser>()`,
+  `EnableMultiTenant(...)` / `EnableMultiTenant<TDbContext, TUser>(...)`
+  (the latter also wires the tenant catalogue store), `AddAdminUi()`,
+  and `AddEndUserUi()` let consumers opt into individual surfaces. The
+  one-liner `AddVisuAuth<TUser>()` delegates to the same chain
+  internally, so both forms produce an equivalent service graph.
 - `VisuAuth.Abstractions` contracts shaped for adapter plug-in:
   `IUserStore`, `IRoleStore`, `ITenantStore`, `IAuthenticationFlow`,
   `UserBackendCapabilities` (runtime adaptation flag bag), and the supporting

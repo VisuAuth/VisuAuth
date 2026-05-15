@@ -5,54 +5,76 @@ using Microsoft.Extensions.DependencyInjection;
 using VisuAuth.AdminUi.DependencyInjection;
 using VisuAuth.AdminUi.Localization;
 using VisuAuth.EndUserUi.DependencyInjection;
-using VisuAuth.Identity.DependencyInjection;
 
 namespace VisuAuth;
 
 /// <summary>
-/// Single-call entry point for consumers that want to pull every VisuAuth
-/// surface in (Identity adapter + admin UI + end-user UI). For finer control,
-/// reference the individual <c>VisuAuth.*</c> packages instead.
+/// Entry points for wiring VisuAuth into a host's <see cref="IServiceCollection"/>
+/// and request pipeline. Offers two flavours:
+///
+/// <list type="bullet">
+///   <item>
+///     <description>
+///     A fluent root, <see cref="AddVisuAuth(IServiceCollection)"/>, that
+///     returns an <see cref="IVisuAuthBuilder"/> for explicit composition
+///     (<c>.UseAspNetIdentity&lt;TUser&gt;().AddAdminUi().AddEndUserUi()</c>).
+///     </description>
+///   </item>
+///   <item>
+///     <description>
+///     One-liner overloads <see cref="AddVisuAuth{TUser}(IServiceCollection)"/>
+///     and <see cref="AddVisuAuth{TUser, TRole}(IServiceCollection)"/> that
+///     register the full stack in a single call — the drop-in promise from
+///     CLAUDE.md §2.1.
+///     </description>
+///   </item>
+/// </list>
 /// </summary>
 public static class VisuAuthBuilderExtensions
 {
     /// <summary>
-    /// Registers the full VisuAuth stack backed by the supplied Identity user
-    /// and role types.
+    /// Begins fluent composition of the VisuAuth stack. The returned builder
+    /// already has shared services (localization) registered; chain
+    /// <c>UseAspNetIdentity</c>, <c>EnableMultiTenant</c>, <c>AddAdminUi</c>,
+    /// and <c>AddEndUserUi</c> to opt into the rest.
     /// </summary>
-    /// <typeparam name="TUser">The Identity user type used by the consumer (e.g. <c>ApplicationUser</c>).</typeparam>
-    /// <typeparam name="TRole">The Identity role type used by the consumer (defaults to <see cref="IdentityRole"/>).</typeparam>
+    public static IVisuAuthBuilder AddVisuAuth(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        // Localization must register before the UI packages so the JSON
+        // factory wins over the default ResourceManager one that
+        // AddViewLocalization() pins via TryAdd.
+        services.AddVisuAuthLocalization();
+        return new VisuAuthBuilder(services);
+    }
+
+    /// <summary>
+    /// One-call install of the full VisuAuth stack using the supplied
+    /// Identity user and role types — the drop-in form recommended for most
+    /// consumers. Equivalent to
+    /// <c>services.AddVisuAuth().UseAspNetIdentity&lt;TUser, TRole&gt;().AddAdminUi().AddEndUserUi()</c>.
+    /// </summary>
+    /// <typeparam name="TUser">The Identity user type used by the consumer.</typeparam>
+    /// <typeparam name="TRole">The Identity role type used by the consumer.</typeparam>
     public static IServiceCollection AddVisuAuth<TUser, TRole>(this IServiceCollection services)
         where TUser : IdentityUser
         where TRole : IdentityRole, new()
     {
-        ArgumentNullException.ThrowIfNull(services);
-
-        services.AddVisuAuthIdentityAdapter<TUser, TRole>();
-        // Localization must register BEFORE the UI projects so the JSON
-        // factory wins over the default ResourceManager one that
-        // AddViewLocalization() would otherwise pin (it uses TryAdd, so
-        // first writer wins — and we want the JSON reader).
-        services.AddVisuAuthLocalization();
-        services.AddVisuAuthAdminUi();
-        services.AddVisuAuthEndUserUi();
+        services.AddVisuAuth()
+            .UseAspNetIdentity<TUser, TRole>()
+            .AddAdminUi()
+            .AddEndUserUi();
         return services;
     }
 
     /// <summary>
-    /// Registers the full VisuAuth stack backed by the supplied Identity user
-    /// type and the default <see cref="IdentityRole"/>.
+    /// One-call install of the full VisuAuth stack with the default
+    /// <see cref="IdentityRole"/>.
     /// </summary>
     public static IServiceCollection AddVisuAuth<TUser>(this IServiceCollection services)
         where TUser : IdentityUser
         => services.AddVisuAuth<TUser, IdentityRole>();
-
-    /// <summary>
-    /// Registers the full VisuAuth stack using the default <see cref="IdentityUser"/>
-    /// and <see cref="IdentityRole"/>.
-    /// </summary>
-    public static IServiceCollection AddVisuAuth(this IServiceCollection services)
-        => services.AddVisuAuth<IdentityUser, IdentityRole>();
 
     /// <summary>
     /// Maps both the admin dashboard (default prefix <c>/visuauth/admin</c>)

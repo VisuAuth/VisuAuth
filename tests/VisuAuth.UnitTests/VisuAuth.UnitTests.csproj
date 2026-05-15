@@ -26,6 +26,9 @@
     <ProjectReference Include="..\..\src\VisuAuth.Abstractions\VisuAuth.Abstractions.csproj" />
     <ProjectReference Include="..\..\src\VisuAuth.Identity\VisuAuth.Identity.csproj" />
     <ProjectReference Include="..\..\src\VisuAuth.AdminUi\VisuAuth.AdminUi.csproj" />
+    <!-- The meta-package hosts the fluent IVisuAuthBuilder surface and
+         transitively pulls VisuAuth.EndUserUi in. -->
+    <ProjectReference Include="..\..\src\VisuAuth\VisuAuth.csproj" />
   </ItemGroup>
 
   <!-- RequestLocalizationOptions, HttpContext, IAntiforgery etc. all live

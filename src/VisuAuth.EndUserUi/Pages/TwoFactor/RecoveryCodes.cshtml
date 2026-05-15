@@ -1,0 +1,101 @@
+@page "/visuauth/two-factor/recovery-codes"
+@model VisuAuth.EndUserUi.Pages.TwoFactor.RecoveryCodesModel
+@{
+    Layout = "_EndUserLayout";
+    ViewData["Title"] = Ls["TwoFactor.Recovery.PageTitle"].Value;
+}
+
+<h1 class="va-enduser-heading">@Ls["TwoFactor.Recovery.Heading"]</h1>
+
+@if (!Model.Capabilities.SupportsTwoFactor)
+{
+    <p class="va-enduser-subtitle">@Ls["TwoFactor.NotSupported"]</p>
+    <div class="va-enduser-footer">
+        <a href="/">@Ls["TwoFactor.BackToApp"]</a>
+    </div>
+}
+else if (!Model.IsEnabled)
+{
+    <p class="va-enduser-subtitle">@Ls["TwoFactor.Recovery.NotEnabled"]</p>
+    <div class="va-enduser-form">
+        <a href="/visuauth/two-factor/setup" class="va-btn va-btn-primary">@Ls["TwoFactor.Recovery.GoToSetup"]</a>
+    </div>
+    <div class="va-enduser-footer">
+        <a href="/">@Ls["TwoFactor.BackToApp"]</a>
+    </div>
+}
+else
+{
+    <p class="va-enduser-subtitle">@Ls["TwoFactor.Recovery.Subtitle"]</p>
+
+    @if (Model.SuccessMessage is { Length: > 0 } success)
+    {
+        <div class="va-alert va-alert-info" role="status">@success</div>
+    }
+    @if (Model.ErrorMessage is { Length: > 0 } error)
+    {
+        <div class="va-alert va-alert-danger" role="alert">@error</div>
+    }
+
+    @if (Model.RecoveryCodes.Count > 0)
+    {
+        <div class="va-alert va-alert-warning" role="alert">@Ls["TwoFactor.Recovery.OneTimeWarning"]</div>
+
+        <ul class="va-twofactor-codes" aria-label="@Ls["TwoFactor.Recovery.ListAria"]">
+            @foreach (var code in Model.RecoveryCodes)
+            {
+                <li>
+                    <div class="va-copy-wrap">
+                        <code class="va-temp-password" data-va-copy-source>@code</code>
+                        <button type="button"
+                                class="va-copy-btn"
+                                data-va-copy
+                                aria-label="@Ls["TwoFactor.Recovery.CopyAria"]"
+                                title="@Ls["TwoFactor.Recovery.CopyAria"]">
+                            <span class="va-copy-default">
+                                <svg class="va-copy-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+                                     fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"
+                                     aria-hidden="true">
+                                    <rect x="9" y="9" width="11" height="11" rx="2" />
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                </svg>
+                                <span>@Ls["TwoFactor.Recovery.CopyButton"]</span>
+                            </span>
+                            <span class="va-copy-success" aria-hidden="true">
+                                <svg class="va-copy-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+                                     fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                                    <polyline points="4 12 10 18 20 6" />
+                                </svg>
+                                <span>@Ls["TwoFactor.Recovery.CopiedButton"]</span>
+                            </span>
+                        </button>
+                    </div>
+                </li>
+            }
+        </ul>
+    }
+
+    <form method="post" asp-page-handler="Generate" class="va-enduser-form">
+        @Html.AntiForgeryToken()
+        <button type="submit" class="va-btn va-btn-secondary">
+            @if (Model.RecoveryCodes.Count > 0)
+            {
+                @Ls["TwoFactor.Recovery.RegenerateButton"]
+            }
+            else
+            {
+                @Ls["TwoFactor.Recovery.GenerateButton"]
+            }
+        </button>
+    </form>
+
+    <form method="post" asp-page-handler="Disable" class="va-enduser-form va-twofactor-disable">
+        @Html.AntiForgeryToken()
+        <button type="submit" class="va-btn va-btn-danger">@Ls["TwoFactor.Recovery.DisableButton"]</button>
+        <p class="va-muted va-twofactor-disable-hint">@Ls["TwoFactor.Recovery.DisableHint"]</p>
+    </form>
+
+    <div class="va-enduser-footer">
+        <a href="/">@Ls["TwoFactor.BackToApp"]</a>
+    </div>
+}

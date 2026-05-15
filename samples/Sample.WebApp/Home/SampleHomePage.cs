@@ -94,8 +94,44 @@ internal static class SampleHomePage
                 <li><a href="/visuauth/forgot-password"><code>/visuauth/forgot-password</code></a> &mdash; request a password reset (dev mode surfaces the reset link)</li>
                 <li><code>/visuauth/reset-password?email=&amp;token=</code> &mdash; reset landing (reached from the link above)</li>
                 <li><code>/visuauth/confirm-email?userId=&amp;token=</code> &mdash; email confirmation landing</li>
+                <li><a href="/visuauth/two-factor/setup"><code>/visuauth/two-factor/setup</code></a> &mdash; pair an authenticator app (auth required)</li>
+                <li><a href="/visuauth/two-factor/verify"><code>/visuauth/two-factor/verify</code></a> &mdash; TOTP / recovery-code challenge after a 2FA-required sign-in</li>
+                <li><a href="/visuauth/two-factor/recovery-codes"><code>/visuauth/two-factor/recovery-codes</code></a> &mdash; manage recovery codes / disable 2FA (auth required)</li>
                 <li><a href="/visuauth/logout"><code>/visuauth/logout</code></a> &mdash; sign-out endpoint (POST-only confirmation)</li>
               </ul>
+
+              <h2>Two-factor sandbox</h2>
+              <p>
+                <code>twofactor.demo@example.com</code> ships with 2FA pre-enabled
+                so the challenge page is reachable without first running setup.
+                Pair an authenticator app with the seeded shared key to get rotating
+                codes:
+              </p>
+              <ul>
+                <li>Account label: <code>twofactor.demo@example.com</code></li>
+                <li>Issuer: <code>VisuAuth.Sample</code></li>
+                <li>Shared key (Base32): <code>JBSW Y3DP EHPK 3PXP JBSW Y3DP EHPK 3PXP</code></li>
+              </ul>
+              <p>
+                Sign in as the 2FA demo user (<code>Pa$$w0rd!</code>) at
+                <a href="/visuauth/login"><code>/visuauth/login</code></a> &mdash; the
+                form will redirect to <code>/visuauth/two-factor/verify</code>. The
+                "Use a recovery code instead" disclosure accepts any of the seeded
+                recovery codes below (each one is one-shot; once used it stops working
+                until you re-seed by deleting <code>visuauth-sample.db</code>):
+              </p>
+              <ul>
+                <li><code>demo1-aaaaa</code></li>
+                <li><code>demo2-bbbbb</code></li>
+                <li><code>demo3-ccccc</code></li>
+              </ul>
+              <p>
+                <strong>If your authenticator app says the code is invalid</strong>,
+                check that your phone clock is in sync with this machine — TOTP
+                codes have a ~30 s validity window, so even a 90 s drift between
+                client and server makes every code wrong. Either fix the clock or
+                use one of the recovery codes above.
+              </p>
 
               <h2>Multi-tenancy</h2>
               <p>

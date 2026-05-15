@@ -38,6 +38,11 @@ public static class VisuAuthIdentityServiceCollectionExtensions
         services.AddScoped<IUserStore, AspNetIdentityUserStore<TUser>>();
         services.AddScoped<IRoleStore, AspNetIdentityRoleStore<TUser, TRole>>();
         services.AddScoped<IAuthenticationFlow, AspNetIdentitySignInFlow<TUser>>();
+        // Two-factor flow consumed by the /visuauth/two-factor/* end-user pages.
+        // Uses the same UserManager + SignInManager dependencies, so it slots in
+        // wherever the consumer already wired ASP.NET Core Identity.
+        services.AddOptions<TwoFactorIssuerOptions>();
+        services.AddScoped<ITwoFactorFlow, AspNetIdentityTwoFactorFlow<TUser>>();
 
         return services;
     }

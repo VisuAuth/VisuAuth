@@ -1,0 +1,120 @@
+@page "/visuauth/two-factor/setup"
+@model VisuAuth.EndUserUi.Pages.TwoFactor.SetupModel
+@{
+    Layout = "_EndUserLayout";
+    ViewData["Title"] = Ls["TwoFactor.Setup.PageTitle"].Value;
+}
+
+<h1 class="va-enduser-heading">@Ls["TwoFactor.Setup.Heading"]</h1>
+
+@if (!Model.Capabilities.SupportsTwoFactor)
+{
+    <p class="va-enduser-subtitle">@Ls["TwoFactor.NotSupported"]</p>
+    <div class="va-enduser-footer">
+        <a href="/">@Ls["TwoFactor.BackToApp"]</a>
+    </div>
+}
+else if (Model.IsEnabled)
+{
+    <p class="va-enduser-subtitle">@Ls["TwoFactor.Setup.AlreadyEnabled"]</p>
+
+    @if (Model.SuccessMessage is { Length: > 0 } success)
+    {
+        <div class="va-alert va-alert-info" role="status">@success</div>
+    }
+    @if (Model.ErrorMessage is { Length: > 0 } error)
+    {
+        <div class="va-alert va-alert-danger" role="alert">@error</div>
+    }
+
+    <div class="va-enduser-form">
+        <a href="/visuauth/two-factor/recovery-codes" class="va-btn va-btn-primary">@Ls["TwoFactor.Setup.ManageRecovery"]</a>
+    </div>
+    <div class="va-enduser-footer">
+        <a href="/">@Ls["TwoFactor.BackToApp"]</a>
+    </div>
+}
+else
+{
+    <p class="va-enduser-subtitle">@Ls["TwoFactor.Setup.Subtitle"]</p>
+
+    @if (Model.SuccessMessage is { Length: > 0 } success)
+    {
+        <div class="va-alert va-alert-info" role="status">@success</div>
+    }
+
+    @if (Model.Setup is { } setup)
+    {
+        <ol class="va-twofactor-steps">
+            <li>
+                <strong>@Ls["TwoFactor.Setup.Step1Heading"]</strong>
+                <p class="va-muted">@Ls["TwoFactor.Setup.Step1Body"]</p>
+            </li>
+            <li>
+                <strong>@Ls["TwoFactor.Setup.Step2Heading"]</strong>
+                <p class="va-muted">@Ls["TwoFactor.Setup.Step2Body"]</p>
+                @if (Model.QrCodeSvg is { Length: > 0 } svg)
+                {
+                    <div class="va-twofactor-qr"
+                         aria-label="@Ls["TwoFactor.Setup.QrAria"]"
+                         data-otpauth-uri="@(Model.Setup?.OtpAuthUri ?? string.Empty)">
+                        <div class="va-twofactor-qr-frame">
+                            @Html.Raw(svg)
+                        </div>
+                    </div>
+                }
+                <p class="va-muted">@Ls["TwoFactor.Setup.ManualKeyHint"]</p>
+                <code class="va-temp-password">@setup.FormattedKey</code>
+            </li>
+            <li id="va-twofactor-verify">
+                <strong>@Ls["TwoFactor.Setup.Step3Heading"]</strong>
+                <p class="va-muted">@Ls["TwoFactor.Setup.Step3Body"]</p>
+
+                @* Error renders right above the input — at the top of the
+                   page it scrolls out of view because the QR + manual key
+                   push the form below the fold. The #va-twofactor-verify
+                   anchor below also makes the page jump back to the form
+                   on a failed POST. *@
+                @if (Model.ErrorMessage is { Length: > 0 } error)
+                {
+                    <div class="va-alert va-alert-danger" role="alert">@error</div>
+                }
+
+                <form method="post"
+                      asp-page-handler="Verify"
+                      asp-fragment="va-twofactor-verify"
+                      class="va-enduser-form"
+                      autocomplete="off">
+                    @Html.AntiForgeryToken()
+                    <label class="va-field">
+                        <span class="va-field-label">@Ls["TwoFactor.Setup.CodeLabel"]</span>
+                        <input type="text"
+                               name="VerificationCode"
+                               value=""
+                               class="va-input"
+                               inputmode="numeric"
+                               pattern="[0-9 ]*"
+                               autocomplete="one-time-code"
+                               required
+                               autofocus />
+                    </label>
+
+                    <button type="submit" class="va-btn va-btn-primary">@Ls["TwoFactor.Setup.Submit"]</button>
+                </form>
+            </li>
+        </ol>
+
+        <form method="post" asp-page-handler="ResetKey" class="va-enduser-form va-twofactor-reset">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="va-btn va-btn-secondary">@Ls["TwoFactor.Setup.RotateKey"]</button>
+        </form>
+    }
+    else
+    {
+        <div class="va-alert va-alert-danger" role="alert">@Ls["TwoFactor.Setup.Error.NoKey"]</div>
+    }
+
+    <div class="va-enduser-footer">
+        <a href="/">@Ls["TwoFactor.BackToApp"]</a>
+    </div>
+}

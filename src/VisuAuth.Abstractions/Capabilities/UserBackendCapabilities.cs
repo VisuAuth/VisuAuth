@@ -25,6 +25,13 @@ public sealed record UserBackendCapabilities
     /// <summary>The admin can reset the two-factor configuration of a user.</summary>
     public bool SupportsTwoFactorReset { get; init; }
 
+    /// <summary>
+    /// The backend can manage TOTP authenticator setup, challenge, and recovery
+    /// codes for end users. Drives whether <c>/visuauth/two-factor/*</c> pages
+    /// surface controls and whether the layout shows the "Setup 2FA" link.
+    /// </summary>
+    public bool SupportsTwoFactor { get; init; }
+
     /// <summary>The admin can impersonate (log in as) another user.</summary>
     public bool SupportsImpersonation { get; init; }
 

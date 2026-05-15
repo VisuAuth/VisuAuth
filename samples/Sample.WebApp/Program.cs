@@ -105,6 +105,15 @@ builder.Services.Configure<VisuAuth.Abstractions.Authentication.EndUserUiOptions
     options.DevelopmentMode = true;
 });
 
+// TOTP issuer label embedded in the otpauth:// URI rendered as a QR on
+// /visuauth/two-factor/setup. Authenticator apps display this above the
+// account name; defaulting to the product name keeps multi-app rosters
+// readable when the user has many enrolments.
+builder.Services.Configure<VisuAuth.Identity.Authentication.TwoFactorIssuerOptions>(options =>
+{
+    options.Issuer = "VisuAuth.Sample";
+});
+
 // Mobile / native API channel: HS256 JWTs at /visuauth/api/auth. The signing
 // key below is committed for dev convenience — a real deployment loads it
 // from a secret store / Key Vault. 32+ UTF-8 bytes is mandatory for HS256.

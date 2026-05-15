@@ -1,0 +1,97 @@
+@page "/visuauth/two-factor/verify"
+@model VisuAuth.EndUserUi.Pages.TwoFactor.VerifyModel
+@{
+    Layout = "_EndUserLayout";
+    ViewData["Title"] = Ls["TwoFactor.Verify.PageTitle"].Value;
+}
+
+<h1 class="va-enduser-heading">@Ls["TwoFactor.Verify.Heading"]</h1>
+<p class="va-enduser-subtitle">@Ls["TwoFactor.Verify.Subtitle"]</p>
+
+@if (Model.GlobalError is { Length: > 0 } globalError)
+{
+    <div class="va-alert va-alert-danger" role="alert">@globalError</div>
+}
+
+@if (!Model.Capabilities.SupportsTwoFactor)
+{
+    <div class="va-enduser-footer">
+        <a href="/visuauth/login">@Ls["TwoFactor.Verify.BackToLogin"]</a>
+    </div>
+}
+else
+{
+    <form method="post" asp-page-handler="Authenticator" class="va-enduser-form" autocomplete="off">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
+        <input type="hidden" name="rememberMe" value="@Model.RememberMe.ToString().ToLowerInvariant()" />
+
+        @if (Model.AuthenticatorError is { Length: > 0 } authError)
+        {
+            <div class="va-alert va-alert-danger" role="alert">@authError</div>
+        }
+
+        <label class="va-field">
+            <span class="va-field-label">@Ls["TwoFactor.Verify.CodeLabel"]</span>
+            <input type="text"
+                   name="Form.Code"
+                   class="va-input"
+                   inputmode="numeric"
+                   pattern="[0-9 ]*"
+                   autocomplete="one-time-code"
+                   required
+                   autofocus />
+        </label>
+
+        <label class="va-checkbox">
+            <input type="checkbox" name="Form.RememberMachine" value="true" />
+            <span>@Ls["TwoFactor.Verify.RememberMachine"]</span>
+        </label>
+
+        <button type="submit" class="va-btn va-btn-primary">@Ls["TwoFactor.Verify.Submit"]</button>
+    </form>
+
+    @* Re-open the disclosure on a recovery error so the user sees the
+       form they used + the failure message. The two branches differ only
+       in the `open` attribute on <details>. *@
+    @if (Model.RecoveryDetailsOpen)
+    {
+        <details class="va-twofactor-recovery" open>
+            <summary>@Ls["TwoFactor.Verify.UseRecovery"]</summary>
+            <form method="post" asp-page-handler="Recovery" class="va-enduser-form" autocomplete="off">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
+                <input type="hidden" name="rememberMe" value="@Model.RememberMe.ToString().ToLowerInvariant()" />
+                @if (Model.RecoveryError is { Length: > 0 } recoveryError)
+                {
+                    <div class="va-alert va-alert-danger" role="alert">@recoveryError</div>
+                }
+                <label class="va-field">
+                    <span class="va-field-label">@Ls["TwoFactor.Verify.RecoveryLabel"]</span>
+                    <input type="text" name="Form.RecoveryCode" class="va-input" autocomplete="off" required />
+                </label>
+                <button type="submit" class="va-btn va-btn-secondary">@Ls["TwoFactor.Verify.RecoverySubmit"]</button>
+            </form>
+        </details>
+    }
+    else
+    {
+        <details class="va-twofactor-recovery">
+            <summary>@Ls["TwoFactor.Verify.UseRecovery"]</summary>
+            <form method="post" asp-page-handler="Recovery" class="va-enduser-form" autocomplete="off">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
+                <input type="hidden" name="rememberMe" value="@Model.RememberMe.ToString().ToLowerInvariant()" />
+                <label class="va-field">
+                    <span class="va-field-label">@Ls["TwoFactor.Verify.RecoveryLabel"]</span>
+                    <input type="text" name="Form.RecoveryCode" class="va-input" autocomplete="off" required />
+                </label>
+                <button type="submit" class="va-btn va-btn-secondary">@Ls["TwoFactor.Verify.RecoverySubmit"]</button>
+            </form>
+        </details>
+    }
+
+    <div class="va-enduser-footer">
+        <a href="/visuauth/login">@Ls["TwoFactor.Verify.BackToLogin"]</a>
+    </div>
+}

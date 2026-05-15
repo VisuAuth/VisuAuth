@@ -89,10 +89,11 @@ public sealed class LoginModel(
                 return await ResolveSuccessRedirectAsync(result.UserId, cancellationToken);
 
             case SignInOutcome.RequiresTwoFactor:
-                // Two-factor challenge page lands with the register/reset PR.
-                // For now surface a message so the admin knows what is happening.
-                ErrorMessage = _l["Login.Error.TwoFactor"].Value;
-                return Page();
+                // Hand the user off to the TOTP challenge page. The partial
+                // 2FA cookie stamped by SignInManager carries the user id, so
+                // we only need to forward the original returnUrl + remember-me
+                // preference for after the challenge succeeds.
+                return RedirectToTwoFactor(Form.RememberMe);
 
             case SignInOutcome.LockedOut:
                 ErrorMessage = _l["Login.Error.Locked"].Value;
@@ -143,6 +144,22 @@ public sealed class LoginModel(
         }
 
         return Redirect(SanitiseLocalReturnUrl(ReturnUrl));
+    }
+
+    private RedirectResult RedirectToTwoFactor(bool rememberMe)
+    {
+        var query = new List<string>();
+        if (!string.IsNullOrWhiteSpace(ReturnUrl) && Url.IsLocalUrl(ReturnUrl))
+        {
+            query.Add($"returnUrl={Uri.EscapeDataString(ReturnUrl)}");
+        }
+        // Forward the remember-me checkbox so the persistent flag survives the
+        // 2FA hop — without it the cookie always lands as session-scope after
+        // the challenge, regardless of what the user ticked on /login.
+        query.Add($"rememberMe={(rememberMe ? "true" : "false")}");
+
+        var path = "/visuauth/two-factor/verify";
+        return Redirect(query.Count == 0 ? path : $"{path}?{string.Join('&', query)}");
     }
 
     private string SanitiseLocalReturnUrl(string? returnUrl)

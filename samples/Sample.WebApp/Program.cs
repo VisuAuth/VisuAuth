@@ -14,9 +14,30 @@ var builder = WebApplication.CreateBuilder(args);
 // SQLite database file lives next to the binaries — zero setup for the sample.
 var dbPath = Path.Combine(builder.Environment.ContentRootPath, "visuauth-sample.db");
 
-// Drop-in: one call wires the Identity adapter, the admin UI, and the
-// end-user UI.
-builder.Services.AddVisuAuth<ApplicationUser>();
+// Fluent composition (CLAUDE.md §2.1, §7). The sample exercises the
+// chain form so the README example is verifiably real:
+//
+//   AddVisuAuth()                            → returns IVisuAuthBuilder
+//     .UseAspNetIdentity<ApplicationUser>()  → wires user / role stores
+//     .EnableMultiTenant<…>(…)               → tenant resolver + catalogue
+//     .AddAdminUi()                          → /visuauth/admin Razor Pages
+//     .AddEndUserUi();                       → /visuauth/login etc + JWT
+//
+// The one-liner `services.AddVisuAuth<ApplicationUser>()` is the drop-in
+// shortcut and produces an equivalent service graph; consumers who only
+// want a subset (e.g. EndUserUi without AdminUi) reach for this chain.
+builder.Services.AddVisuAuth()
+    .UseAspNetIdentity<ApplicationUser>()
+    // Opt into multi-tenancy. Without this the sample is single-tenant —
+    // every other VisuAuth feature works the same. The generic overload
+    // also wires the tenant catalogue store at /visuauth/admin/tenants.
+    .EnableMultiTenant<AppDbContext, ApplicationUser>(options =>
+    {
+        options.HeaderName = "X-Tenant-Id";
+        options.CookieName = "va-tenant";
+    })
+    .AddAdminUi()
+    .AddEndUserUi();
 
 // Programmatic theme override (CLAUDE.md §8.4 layer 2). The preset list
 // lives in Sample.WebApp.Theming.SampleThemes — swap the method group
@@ -107,15 +128,6 @@ builder.Services.Configure<VisuAuth.Abstractions.Authentication.WebViewCallbackO
 {
     options.AllowedSchemes.Add("visuauth-sample");
     options.ShowPreviewPage = true;
-});
-
-// Opt into multi-tenancy. Without this the sample is single-tenant — every
-// other VisuAuth feature works the same. The generic overload also wires the
-// tenant catalogue store at /visuauth/admin/tenants.
-builder.Services.EnableVisuAuthTenancy<AppDbContext, ApplicationUser>(options =>
-{
-    options.HeaderName = "X-Tenant-Id";
-    options.CookieName = "va-tenant";
 });
 
 builder.Services.AddDbContext<AppDbContext>((sp, options) =>

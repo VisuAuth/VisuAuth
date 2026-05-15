@@ -12,7 +12,26 @@ Each release groups changes across the five sibling packages (`VisuAuth`,
 
 ## [Unreleased]
 
-Nothing yet — the next pre-release will populate this section.
+Working toward [`0.2.0`](#020--planned). `<VersionPrefix>` in
+`Directory.Build.props` is now `0.2.0`, so merges to `main` publish as
+`0.2.0-alpha.<run_number>` pre-releases until the next stable tag.
+
+## [0.2.0] — Planned
+
+Microsoft Entra ID adapter milestone. Tracks CLAUDE.md §13 row for v0.2.
+
+Working list:
+
+- TOTP pages (`/visuauth/two-factor/setup` and `/visuauth/two-factor/verify`)
+  plus recovery-code management.
+- External login providers (Google, Microsoft, Apple) on the login page,
+  driven by registered authentication schemes so the markup is provider-agnostic.
+- Audit log plugin — opt-in package writing to a separate
+  `VisuAuthAuditLog` EF Core table, with retention policy and admin filter UI.
+- Microsoft Entra ID adapter — new package `VisuAuth.Entra` against
+  `IUserStore` / `IRoleStore`, exercising the capability flag system
+  (`SupportsLocalLogin = false` swaps the login form for a "Sign in with
+  Microsoft" button at runtime).
 
 ## [0.1.0] — Admin UI, end-user pages, multi-tenancy, theming, mobile
 

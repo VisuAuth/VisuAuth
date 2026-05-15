@@ -13,15 +13,15 @@ namespace VisuAuth.IntegrationTests.Admin;
 /// detail page. Each test provisions its own throwaway user so it stays
 /// independent of the seeder's pre-assigned role data.
 /// </summary>
-public sealed class UserRoleAssignmentTests : IClassFixture<WebApplicationFactory<Program>>
+public sealed class UserRoleAssignmentTests : IClassFixture<VisuAuthTestFactory>
 {
     private static readonly Regex TokenRegex = new(
         "name=\"__RequestVerificationToken\"[^>]*?value=\"([^\"]+)\"",
         RegexOptions.Compiled);
 
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly VisuAuthTestFactory _factory;
 
-    public UserRoleAssignmentTests(WebApplicationFactory<Program> factory)
+    public UserRoleAssignmentTests(VisuAuthTestFactory factory)
     {
         _factory = factory;
     }

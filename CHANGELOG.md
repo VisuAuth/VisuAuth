@@ -25,6 +25,7 @@ Tracks the v0.1 milestone in `CLAUDE.md` §13.
 
 - `AddVisuAuth<TUser>()` and `MapVisuAuth()` extensions on the meta-package.
   Two lines in `Program.cs` mount the entire experience.
+
 - Fluent composition root for finer control:
   `services.AddVisuAuth()` returns an `IVisuAuthBuilder` and the chain
   methods `UseAspNetIdentity<TUser>()`,

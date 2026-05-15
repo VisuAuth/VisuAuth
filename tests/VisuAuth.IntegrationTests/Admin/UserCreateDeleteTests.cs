@@ -13,15 +13,15 @@ namespace VisuAuth.IntegrationTests.Admin;
 /// Integration tests for the create-user form and the delete action on the
 /// detail page.
 /// </summary>
-public sealed class UserCreateDeleteTests : IClassFixture<WebApplicationFactory<Program>>
+public sealed class UserCreateDeleteTests : IClassFixture<VisuAuthTestFactory>
 {
     private static readonly Regex TokenRegex = new(
         "name=\"__RequestVerificationToken\"[^>]*?value=\"([^\"]+)\"",
         RegexOptions.Compiled);
 
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly VisuAuthTestFactory _factory;
 
-    public UserCreateDeleteTests(WebApplicationFactory<Program> factory)
+    public UserCreateDeleteTests(VisuAuthTestFactory factory)
     {
         _factory = factory;
     }

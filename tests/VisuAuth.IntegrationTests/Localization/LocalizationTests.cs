@@ -12,8 +12,8 @@ namespace VisuAuth.IntegrationTests.Localization;
 /// the inline language switcher round-trips, and unknown cultures fall
 /// back instead of crashing.
 /// </summary>
-public sealed partial class LocalizationTests(WebApplicationFactory<Program> factory)
-    : IClassFixture<WebApplicationFactory<Program>>
+public sealed partial class LocalizationTests(VisuAuthTestFactory factory)
+    : IClassFixture<VisuAuthTestFactory>
 {
     [GeneratedRegex("name=\"__RequestVerificationToken\"[^>]*?value=\"([^\"]+)\"")]
     private static partial Regex TokenRegex();

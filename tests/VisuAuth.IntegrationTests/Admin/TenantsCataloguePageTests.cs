@@ -14,15 +14,15 @@ namespace VisuAuth.IntegrationTests.Admin;
 /// Integration tests for <c>/visuauth/admin/tenants</c> and the sidebar
 /// tenant switcher cookie handler.
 /// </summary>
-public sealed class TenantsCataloguePageTests : IClassFixture<WebApplicationFactory<Program>>
+public sealed class TenantsCataloguePageTests : IClassFixture<VisuAuthTestFactory>
 {
     private static readonly Regex TokenRegex = new(
         "name=\"__RequestVerificationToken\"[^>]*?value=\"([^\"]+)\"",
         RegexOptions.Compiled);
 
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly VisuAuthTestFactory _factory;
 
-    public TenantsCataloguePageTests(WebApplicationFactory<Program> factory)
+    public TenantsCataloguePageTests(VisuAuthTestFactory factory)
     {
         _factory = factory;
     }

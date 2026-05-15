@@ -12,8 +12,8 @@ namespace VisuAuth.IntegrationTests.Admin;
 /// distinct presets — flipping the sidebar tenant switcher cookie must
 /// re-skin the dashboard on the very next request.
 /// </summary>
-public sealed partial class TenantThemeResolverTests(WebApplicationFactory<Program> factory)
-    : IClassFixture<WebApplicationFactory<Program>>
+public sealed partial class TenantThemeResolverTests(VisuAuthTestFactory factory)
+    : IClassFixture<VisuAuthTestFactory>
 {
     [GeneratedRegex("name=\"__RequestVerificationToken\"[^>]*?value=\"([^\"]+)\"")]
     private static partial Regex TokenRegex();

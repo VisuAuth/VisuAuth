@@ -133,6 +133,36 @@ public sealed class TwoFactorRecoveryCodesTests : IClassFixture<VisuAuthTestFact
     }
 
     [Fact]
+    public async Task PostGenerate_WhenTwoFactorDisabled_ShowsNotEnabledErrorAndDoesNotProduceCodes()
+    {
+        // POST Generate without 2FA enabled exercises the "not enabled" guard
+        // on the page model AND the matching guard on the adapter — Sonar's
+        // coverage report flagged both as unreachable from the happy-path
+        // integration tests.
+        var user = await TwoFactorTestHelpers.CreateAdHocUserAsync(_factory, "recovery.disabled");
+
+        using var client = CreateClient();
+        await SignInWithoutTwoFactorAsync(client, user.Email!);
+
+        var token = await GetTokenAsync(client, "/visuauth/two-factor/recovery-codes");
+        var form = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["__RequestVerificationToken"] = token,
+        });
+
+        var response = await client.PostAsync(
+            new Uri("/visuauth/two-factor/recovery-codes?handler=Generate", UriKind.Relative),
+            form);
+        var body = await response.Content.ReadAsStringAsync();
+
+        response.IsSuccessStatusCode.Should().BeTrue("a guard rejection re-renders, not redirects");
+        body.Should().Contain("Two-factor authentication is not enabled yet",
+            "the page must surface the localized 'enable 2FA first' message before producing codes");
+        // The code-list section must NOT render — that's only for users with codes.
+        body.Should().NotContain("Save these codes now");
+    }
+
+    [Fact]
     public async Task PostDisable_AfterEnabled_ClearsTwoFactorAndRedirectsToSetup()
     {
         var user = await EnableTwoFactorOnAdHocUserAsync("recovery.disable");

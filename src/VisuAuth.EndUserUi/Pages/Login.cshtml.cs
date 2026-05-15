@@ -148,18 +148,22 @@ public sealed class LoginModel(
 
     private RedirectResult RedirectToTwoFactor(bool rememberMe)
     {
-        var query = new List<string>();
+        // remember-me always rides the 2FA hop, so the query string is never
+        // empty — keep the URL builder unconditional and skip the dead-code
+        // empty-list branch Sonar (rightly) flags.
+        var query = new List<string>(2)
+        {
+            // Forward the checkbox so the persistent flag survives the hop.
+            // Without it the cookie always lands as session-scope after the
+            // challenge, regardless of what the user ticked on /login.
+            $"rememberMe={(rememberMe ? "true" : "false")}",
+        };
         if (!string.IsNullOrWhiteSpace(ReturnUrl) && Url.IsLocalUrl(ReturnUrl))
         {
             query.Add($"returnUrl={Uri.EscapeDataString(ReturnUrl)}");
         }
-        // Forward the remember-me checkbox so the persistent flag survives the
-        // 2FA hop — without it the cookie always lands as session-scope after
-        // the challenge, regardless of what the user ticked on /login.
-        query.Add($"rememberMe={(rememberMe ? "true" : "false")}");
 
-        var path = "/visuauth/two-factor/verify";
-        return Redirect(query.Count == 0 ? path : $"{path}?{string.Join('&', query)}");
+        return Redirect($"/visuauth/two-factor/verify?{string.Join('&', query)}");
     }
 
     private string SanitiseLocalReturnUrl(string? returnUrl)

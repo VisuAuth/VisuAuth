@@ -120,7 +120,9 @@ public sealed class VerifyModel(
             case SignInOutcome.NotAllowed:
                 GlobalError = _l["TwoFactor.Verify.Error.NotAllowed"].Value;
                 return Page();
-            case SignInOutcome.InvalidCredentials:
+            // SignInOutcome.InvalidCredentials and any future outcome that
+            // does not warrant a dedicated message both fall to the generic
+            // "code invalid" / "recovery invalid" branch.
             default:
                 if (isRecovery)
                 {

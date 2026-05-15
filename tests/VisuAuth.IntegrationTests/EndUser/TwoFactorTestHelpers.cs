@@ -15,7 +15,7 @@ namespace VisuAuth.IntegrationTests.EndUser;
 /// live TOTP codes against the real authenticator key, and exposes a
 /// per-test antiforgery helper.
 /// </summary>
-internal static class TwoFactorTestHelpers
+internal static partial class TwoFactorTestHelpers
 {
     /// <summary>The seeded password every helper-created user gets.</summary>
     public const string DefaultPassword = "Pa$$w0rd!";
@@ -216,9 +216,10 @@ internal static class TwoFactorTestHelpers
             HttpStatusCode.OK);
     }
 
-    private static readonly Regex TokenRegex = new(
-        "name=\"__RequestVerificationToken\"[^>]*?value=\"([^\"]+)\"",
-        RegexOptions.Compiled);
+    private static readonly Regex TokenRegex = TokenRegexImpl();
+
+    [GeneratedRegex("name=\"__RequestVerificationToken\"[^>]*?value=\"([^\"]+)\"", RegexOptions.Compiled)]
+    private static partial Regex TokenRegexImpl();
 
     private static async Task<string> GetTokenAsync(HttpClient client, string url)
     {

@@ -30,7 +30,7 @@ else
 
     @if (Model.SuccessMessage is { Length: > 0 } success)
     {
-        <div class="va-alert va-alert-info" role="status">@success</div>
+        <output class="va-alert va-alert-info">@success</output>
     }
     @if (Model.ErrorMessage is { Length: > 0 } error)
     {

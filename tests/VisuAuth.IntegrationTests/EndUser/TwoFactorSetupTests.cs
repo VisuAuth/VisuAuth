@@ -12,18 +12,14 @@ namespace VisuAuth.IntegrationTests.EndUser;
 /// <summary>
 /// Integration tests for <c>/visuauth/two-factor/setup</c>.
 /// </summary>
-public sealed class TwoFactorSetupTests : IClassFixture<VisuAuthTestFactory>
+public sealed partial class TwoFactorSetupTests(VisuAuthTestFactory factory) : IClassFixture<VisuAuthTestFactory>
 {
-    private static readonly Regex TokenRegex = new(
-        "name=\"__RequestVerificationToken\"[^>]*?value=\"([^\"]+)\"",
-        RegexOptions.Compiled);
+    private static readonly Regex TokenRegex = TokenRegexImpl();
 
-    private readonly VisuAuthTestFactory _factory;
+    [GeneratedRegex("name=\"__RequestVerificationToken\"[^>]*?value=\"([^\"]+)\"", RegexOptions.Compiled)]
+    private static partial Regex TokenRegexImpl();
 
-    public TwoFactorSetupTests(VisuAuthTestFactory factory)
-    {
-        _factory = factory;
-    }
+    private readonly VisuAuthTestFactory _factory = factory;
 
     [Fact]
     public async Task GetSetup_AsAnonymousUser_RedirectsToVisuAuthLogin()

@@ -13,25 +13,22 @@ namespace VisuAuth.IntegrationTests.EndUser;
 /// Integration tests for <c>/visuauth/two-factor/recovery-codes</c> — the
 /// post-enable code-management page (also reachable directly to disable 2FA).
 /// </summary>
-public sealed class TwoFactorRecoveryCodesTests : IClassFixture<VisuAuthTestFactory>
+public sealed partial class TwoFactorRecoveryCodesTests(VisuAuthTestFactory factory) : IClassFixture<VisuAuthTestFactory>
 {
-    private static readonly Regex TokenRegex = new(
-        "name=\"__RequestVerificationToken\"[^>]*?value=\"([^\"]+)\"",
-        RegexOptions.Compiled);
+    private static readonly Regex TokenRegex = TokenRegexImpl();
+
+    [GeneratedRegex("name=\"__RequestVerificationToken\"[^>]*?value=\"([^\"]+)\"", RegexOptions.Compiled)]
+    private static partial Regex TokenRegexImpl();
 
     // Identity's default recovery shape is two groups of alphanumeric
     // characters separated by a hyphen, mixed case + digits. The list page
     // must render each one inside its own copy widget.
-    private static readonly Regex RecoveryCodeRegex = new(
-        @"<code class=""va-temp-password"" data-va-copy-source>([A-Za-z0-9]{4,})-([A-Za-z0-9]{4,})</code>",
-        RegexOptions.Compiled);
+    private static readonly Regex RecoveryCodeRegex = RecoveryCodeRegexImpl();
 
-    private readonly VisuAuthTestFactory _factory;
+    [GeneratedRegex(@"<code class=""va-temp-password"" data-va-copy-source>([A-Za-z0-9]{4,})-([A-Za-z0-9]{4,})</code>", RegexOptions.Compiled)]
+    private static partial Regex RecoveryCodeRegexImpl();
 
-    public TwoFactorRecoveryCodesTests(VisuAuthTestFactory factory)
-    {
-        _factory = factory;
-    }
+    private readonly VisuAuthTestFactory _factory = factory;
 
     [Fact]
     public async Task GetRecoveryCodes_AsAnonymousUser_RedirectsToVisuAuthLogin()

@@ -14,18 +14,14 @@ namespace VisuAuth.IntegrationTests.EndUser;
 /// <c>/visuauth/two-factor/verify</c>, including the redirect from
 /// <c>/visuauth/login</c> when the user has 2FA enabled.
 /// </summary>
-public sealed class TwoFactorChallengeTests : IClassFixture<VisuAuthTestFactory>
+public sealed partial class TwoFactorChallengeTests(VisuAuthTestFactory factory) : IClassFixture<VisuAuthTestFactory>
 {
-    private static readonly Regex TokenRegex = new(
-        "name=\"__RequestVerificationToken\"[^>]*?value=\"([^\"]+)\"",
-        RegexOptions.Compiled);
+    private static readonly Regex TokenRegex = TokenRegexImpl();
 
-    private readonly VisuAuthTestFactory _factory;
+    [GeneratedRegex("name=\"__RequestVerificationToken\"[^>]*?value=\"([^\"]+)\"", RegexOptions.Compiled)]
+    private static partial Regex TokenRegexImpl();
 
-    public TwoFactorChallengeTests(VisuAuthTestFactory factory)
-    {
-        _factory = factory;
-    }
+    private readonly VisuAuthTestFactory _factory = factory;
 
     [Fact]
     public async Task PostLogin_WithTwoFactorEnabledUser_RedirectsToVerifyPage()

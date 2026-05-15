@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using FluentAssertions;
 using VisuAuth.EndUserUi.TwoFactor;
 using Xunit;
@@ -10,9 +11,12 @@ namespace VisuAuth.UnitTests.EndUser.TwoFactor;
 /// it CSS scaling produces sub-pixel artefacts that authenticator camera
 /// apps refuse to scan.
 /// </summary>
-public sealed class QrCodeSvgRendererTests
+public sealed partial class QrCodeSvgRendererTests
 {
     private readonly QrCodeSvgRenderer _renderer = new();
+
+    [GeneratedRegex(@"width=""(\d+)""")]
+    private static partial Regex WidthAttributeRegex();
 
     [Fact]
     public void Render_WithEmptyContent_ReturnsEmptyString()
@@ -41,7 +45,8 @@ public sealed class QrCodeSvgRendererTests
     {
         var svg = _renderer.Render("otpauth://totp/Demo:alice@example.com?secret=JBSWY3DPEHPK3PXP&issuer=Demo");
 
-        var viewBoxOccurrences = System.Text.RegularExpressions.Regex.Count(svg, "viewBox=");
+        // Plain string substring count — Regex isn't needed for a literal.
+        var viewBoxOccurrences = (svg.Length - svg.Replace("viewBox=", string.Empty, StringComparison.Ordinal).Length) / "viewBox=".Length;
         viewBoxOccurrences.Should().Be(1, "the post-process must be idempotent");
     }
 
@@ -54,7 +59,7 @@ public sealed class QrCodeSvgRendererTests
         // tuned high enough.
         var svg = _renderer.Render("otpauth://totp/Demo:alice@example.com?secret=JBSWY3DPEHPK3PXP&issuer=Demo");
 
-        var match = System.Text.RegularExpressions.Regex.Match(svg, @"width=""(\d+)""");
+        var match = WidthAttributeRegex().Match(svg);
         match.Success.Should().BeTrue();
         var width = int.Parse(match.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture);
         width.Should().BeGreaterThan(256, "native pixel grid must exceed the page's max-width cap");

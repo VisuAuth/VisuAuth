@@ -22,14 +22,23 @@ namespace VisuAuth.EndUserUi.Pages;
 /// </remarks>
 public sealed class LoginModel(
     IAuthenticationFlow authentication,
+    IExternalLoginFlow externalLogin,
     IJwtIssuer jwtIssuer,
     IOptions<WebViewCallbackOptions> webViewOptions,
     IStringLocalizer<EndUserSharedResources> localizer) : PageModel
 {
     private readonly IAuthenticationFlow _authentication = authentication ?? throw new ArgumentNullException(nameof(authentication));
+    private readonly IExternalLoginFlow _externalLogin = externalLogin ?? throw new ArgumentNullException(nameof(externalLogin));
     private readonly IJwtIssuer _jwtIssuer = jwtIssuer ?? throw new ArgumentNullException(nameof(jwtIssuer));
     private readonly WebViewCallbackOptions _webViewOptions = webViewOptions?.Value ?? throw new ArgumentNullException(nameof(webViewOptions));
     private readonly IStringLocalizer<EndUserSharedResources> _l = localizer ?? throw new ArgumentNullException(nameof(localizer));
+
+    /// <summary>
+    /// External providers registered with the host (Google, Microsoft, etc.).
+    /// Empty when the consumer wired no provider — the cshtml then suppresses
+    /// the entire "or sign in with" section.
+    /// </summary>
+    public IReadOnlyList<ExternalProviderInfo> ExternalProviders { get; private set; } = [];
 
     [BindProperty]
     public LoginForm Form { get; set; } = new();
@@ -51,20 +60,44 @@ public sealed class LoginModel(
     /// </summary>
     public string? DeepLinkPreviewUrl { get; private set; }
 
-    public IActionResult OnGet()
+    public async Task<IActionResult> OnGetAsync(CancellationToken cancellationToken)
     {
         if (!Capabilities.SupportsLocalLogin)
         {
             // Backends without local sign-in (e.g. Entra) still render the
-            // page, but with a redirect-style message. A future PR adds the
-            // "sign in with Microsoft" button here.
+            // page, but with a redirect-style message. External-provider
+            // buttons below still render — they may be the only sign-in path.
             ErrorMessage = _l["Login.Error.LocalNotSupported"].Value;
         }
+        // Pull through any error message stashed by /external-login/callback
+        // when the OAuth round-trip succeeded against the provider but the
+        // local sign-in afterwards fell through (no email claim, locked-out
+        // user, identity-create failure, …). Without this, the user gets
+        // bounced back to /login silently and has no idea what went wrong.
+        if (TempData["ExternalLogin.Error"] is string externalError && !string.IsNullOrWhiteSpace(externalError))
+        {
+            ErrorMessage = externalError;
+        }
+        await LoadExternalProvidersAsync(cancellationToken);
         return Page();
+    }
+
+    private async Task LoadExternalProvidersAsync(CancellationToken cancellationToken)
+    {
+        if (!_externalLogin.Capabilities.SupportsExternalProviders)
+        {
+            return;
+        }
+        ExternalProviders = await _externalLogin.GetProvidersAsync(cancellationToken);
     }
 
     public async Task<IActionResult> OnPostAsync(CancellationToken cancellationToken)
     {
+        // Always re-load providers so a re-rendered failed login still shows
+        // the "or sign in with" buttons — otherwise users on a wrong-password
+        // attempt would see them disappear.
+        await LoadExternalProvidersAsync(cancellationToken);
+
         if (!Capabilities.SupportsLocalLogin)
         {
             ErrorMessage = _l["Login.Error.LocalNotSupported"].Value;

@@ -12,7 +12,7 @@ immediate next step. Updated as PRs land. Long-term direction lives in
 - **Latest shipped on NuGet**: [`VisuAuth 0.1.0`](https://www.nuget.org/packages/VisuAuth/0.1.0) — first feature release (admin UI, end-user pages, multi-tenancy, four theming layers, mobile JWT + WebView)
 - **Default branch**: `main` at <https://github.com/VisuAuth/visuauth>
 - **Build state**: green (`dotnet build src/VisuAuth.slnx -c Release` → 0 errors, 0 warnings)
-- **Test state**: green on `main` (132 unit + 149 integration = 281 tests)
+- **Test state**: green on `main` (165 unit + 152 integration = 317 tests after TOTP merge)
 
 ---
 
@@ -85,15 +85,20 @@ immediate next step. Updated as PRs land. Long-term direction lives in
 
 ## In flight
 
-- **TOTP pages** (`feat/two-factor-totp`) — first item from the v0.2
-  milestone below. Adds `/visuauth/two-factor/{setup,verify,recovery-codes}`
-  in `VisuAuth.EndUserUi`, an `ITwoFactorFlow` abstraction in
-  `VisuAuth.Abstractions` (with `UserBackendCapabilities.SupportsTwoFactor`),
-  the ASP.NET Identity adapter, and a deterministic
-  `twofactor.demo@example.com` seeded user so the challenge flow is
-  reachable from `/visuauth/login` out of the box. Pulls in QRCoder 1.6.0
-  as a new direct dependency of `VisuAuth.EndUserUi` (only the setup page
-  uses it).
+- **External login providers** (`feat/external-login-providers`) — third
+  item from the v0.2 milestone below (after TOTP). Adds
+  `/visuauth/external-login/{start,callback,confirm}` in `VisuAuth.EndUserUi`,
+  an `IExternalLoginFlow` abstraction in `VisuAuth.Abstractions` paired
+  with `ExternalLoginOptions.FirstTimeStrategy` (three strategies:
+  `AutoCreate` default, `AutoLinkByEmailOrConfirm`, `AlwaysConfirm`), and
+  the ASP.NET Identity adapter. The login page renders one
+  "Continue with {provider}" button per scheme registered with the host's
+  authentication pipeline; auto-suppresses when no provider is wired so
+  consumers who never call `AddGoogle()` / `AddMicrosoftAccount()` see no
+  visual change. Sample app wires Microsoft conditionally (only when
+  `Microsoft:ClientId` + `Microsoft:ClientSecret` are present in
+  configuration). External sign-in success reuses the WebView deep-link
+  path so mobile apps get a JWT identical to the password flow.
 
 ---
 
@@ -107,11 +112,9 @@ CLAUDE.md §13 names four items for v0.2:
    form for a "Sign in with Microsoft" button automatically (CLAUDE.md
    §6 capability-driven UI). New package `VisuAuth.Entra` referencing
    only `VisuAuth.Abstractions`. Must NOT leak into `VisuAuth.Identity`.
-2. **TOTP pages** — see "In flight" above. ✅ Shipping in
-   `feat/two-factor-totp`.
-3. **External login providers** — Google, Microsoft, Apple buttons on
-   the login page. Shaped via `IAuthenticationFlow.ExternalProviders`
-   so the UI iterates the registered schemes (no per-provider markup).
+2. **TOTP pages** — ✅ shipped in `feat/two-factor-totp` (PR #30).
+3. **External login providers** — see "In flight" above. ✅ Shipping in
+   `feat/external-login-providers`.
 4. **Audit log plugin** — opt-in package writing to a separate
    `VisuAuthAuditLog` EF Core table (CLAUDE.md §2.5 "Optional
    VisuAuth-specific tables…are explicit and documented"). Retention

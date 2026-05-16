@@ -50,6 +50,42 @@ Working toward [`0.2.0`](#020--planned). `<VersionPrefix>` in
   `data-otpauth-uri` attribute on the QR container — useful for desktop
   developers who want to copy the URI directly into a password manager
   or import it elsewhere without scanning.
+- External-login provider buttons on `/visuauth/login`
+  (`VisuAuth.EndUserUi`):
+  - One "Continue with {provider}" button per scheme registered via
+    ASP.NET Core's authentication pipeline (Google, Microsoft, Apple,
+    GitHub — anything that ships an OAuth handler). Renders below the
+    password form with an "or" divider; auto-suppresses when no provider
+    is wired so consumers who never call `AddGoogle()` / etc. see no
+    visual change.
+  - `/visuauth/external-login/start` POST-only kickoff that builds the
+    `ChallengeResult` for the selected scheme; rejects unknown schemes
+    silently to prevent provider probing.
+  - `/visuauth/external-login/callback` lands the OAuth redirect, applies
+    the configured first-time strategy, and signs the user in. Mirrors
+    the WebView deep-link path from `/visuauth/login`, so an external
+    sign-in with an allow-listed `returnUrl` mints a JWT and redirects
+    via the mobile fragment.
+  - `/visuauth/external-login/confirm` collects email + optional username
+    when the strategy needs explicit consent before account creation.
+- `ITwoFactorFlow`-style `IExternalLoginFlow` abstraction in
+  `VisuAuth.Abstractions` with `GetProvidersAsync` / `CompleteSignInAsync`
+  / `ConfirmAndCreateAsync`, plus DTOs (`ExternalProviderInfo`,
+  `ExternalSignInResult`, `ExternalLoginFirstTimeStrategy`).
+- `ExternalLoginOptions.FirstTimeStrategy` lets consumers pick between
+  three behaviours when an external identity has no linked local user:
+  - `AutoCreate` (default) — provisions a local user from the provider's
+    claims and signs in.
+  - `AutoLinkByEmailOrConfirm` — auto-links to an existing local user
+    when the provider's email matches; otherwise routes to `/confirm`.
+  - `AlwaysConfirm` — always shows `/confirm` regardless of email match.
+- `AspNetIdentityExternalLoginFlow<TUser>` in `VisuAuth.Identity`
+  implements all three strategies on top of the existing
+  `SignInManager<TUser>` external-login surface.
+- Sample app wires Microsoft conditionally — only when
+  `Microsoft:ClientId` + `Microsoft:ClientSecret` are present in
+  configuration (typically via `dotnet user-secrets`). The home page
+  documents the app-registration steps + which redirect URI to register.
 
 ### Fixed (in-flight before first 0.2 pre-release)
 

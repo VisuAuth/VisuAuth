@@ -29,6 +29,13 @@
     <PackageVersion Include="System.IdentityModel.Tokens.Jwt" Version="8.2.1" />
   </ItemGroup>
 
+  <ItemGroup Label="External providers (sample only)">
+    <!-- Used by Sample.WebApp to wire Microsoft external login conditionally
+         when the consumer fills in ClientId/ClientSecret. Not pulled in by
+         the VisuAuth packages themselves — adapter contracts stay agnostic. -->
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.MicrosoftAccount" Version="10.0.0" />
+  </ItemGroup>
+
   <ItemGroup Label="TOTP">
     <!-- QR-code generator (pure-managed, MIT) used by the end-user TOTP setup
          page to render the otpauth:// URI as an inline SVG. Picked over rolling

@@ -16,7 +16,9 @@
   "Login.Submit": "Entrar",
   "Login.Forgot": "Esqueceu a senha?",
   "Login.Register": "Criar conta",
-  "Login.ExternalOnly": "O login é delegado para um provedor de identidade externo. Um próximo PR conecta o botão 'Entrar com Microsoft' aqui.",
+  "Login.ExternalOnly": "Entre com um provedor de identidade externo abaixo.",
+  "Login.OrDivider": "ou",
+  "Login.ContinueWith": "Continuar com {0}",
   "Login.Error.LocalNotSupported": "Este backend não suporta login local.",
   "Login.Error.EmailPasswordRequired": "E-mail e senha são obrigatórios.",
   "Login.Error.TwoFactor": "Autenticação de dois fatores necessária.",
@@ -147,5 +149,17 @@
   "TwoFactor.Recovery.DisableHint": "Desabilitar a autenticação em dois fatores limpa sua chave do autenticador. Você pode reinscrever a qualquer momento na página de configuração.",
   "TwoFactor.Recovery.Error.NotEnabled": "A autenticação em dois fatores precisa estar habilitada antes de gerar códigos de recuperação.",
   "TwoFactor.Recovery.Error.GenerateFailed": "Falha ao gerar códigos de recuperação. Tente novamente.",
-  "TwoFactor.Recovery.Error.DisableFailed": "Falha ao desabilitar a autenticação em dois fatores."
+  "TwoFactor.Recovery.Error.DisableFailed": "Falha ao desabilitar a autenticação em dois fatores.",
+
+  "ExternalLogin.Confirm.PageTitle": "Confirmar sua conta — VisuAuth",
+  "ExternalLogin.Confirm.Heading": "Confirmar sua conta",
+  "ExternalLogin.Confirm.Subtitle": "Não conseguimos casar seu login com {0} a uma conta existente. Confirme seus dados abaixo para concluir o login.",
+  "ExternalLogin.Confirm.UserNameLabel": "Nome de usuário (opcional)",
+  "ExternalLogin.Confirm.Submit": "Criar conta e entrar",
+  "ExternalLogin.Confirm.BackToLogin": "Voltar para o login",
+  "ExternalLogin.Confirm.ErrorLead": "Não conseguimos concluir seu login.",
+  "ExternalLogin.Confirm.Error.EmailRequired": "O e-mail é obrigatório.",
+  "ExternalLogin.Error.NoSession": "Sua sessão de login externo expirou. Tente novamente pela página de login.",
+  "ExternalLogin.Error.RemoteError": "O provedor externo reportou um erro durante o login. Tente novamente ou escolha outro provedor.",
+  "ExternalLogin.Error.SignInFailed": "Não conseguimos te autenticar com esse provedor. Tente novamente ou use e-mail + senha."
 }

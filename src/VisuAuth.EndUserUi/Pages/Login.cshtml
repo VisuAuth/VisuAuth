@@ -61,10 +61,58 @@ else
             <button type="submit" class="va-btn va-btn-primary">@Ls["Login.Submit"]</button>
         </form>
 
+        @* External providers — capability-gated AND auto-suppressed when no
+           provider is registered, so consumers who don't wire any get an
+           identical layout to today's. The "or" divider only renders when
+           there's actually something to choose from. *@
+        @if (Model.ExternalProviders.Count > 0)
+        {
+            <div class="va-divider"><span>@Ls["Login.OrDivider"]</span></div>
+
+            <div class="va-external-providers">
+                @foreach (var provider in Model.ExternalProviders)
+                {
+                    <form method="post"
+                          asp-page="/ExternalLogin/Start"
+                          class="va-enduser-form"
+                          autocomplete="off">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="scheme" value="@provider.Scheme" />
+                        <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
+                        <button type="submit" class="va-btn va-btn-secondary va-btn-provider">
+                            @string.Format(System.Globalization.CultureInfo.CurrentUICulture, Ls["Login.ContinueWith"].Value, provider.DisplayName)
+                        </button>
+                    </form>
+                }
+            </div>
+        }
+
         <div class="va-enduser-footer">
             <a href="/visuauth/forgot-password">@Ls["Login.Forgot"]</a>
             &middot;
             <a href="/visuauth/register">@Ls["Login.Register"]</a>
+        </div>
+    }
+    else if (Model.ExternalProviders.Count > 0)
+    {
+        @* Backend without local login (e.g. future Entra adapter): still
+           offer external providers as the only sign-in path. *@
+        <p class="va-enduser-subtitle">@Ls["Login.ExternalOnly"]</p>
+        <div class="va-external-providers">
+            @foreach (var provider in Model.ExternalProviders)
+            {
+                <form method="post"
+                      asp-page="/ExternalLogin/Start"
+                      class="va-enduser-form"
+                      autocomplete="off">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="scheme" value="@provider.Scheme" />
+                    <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
+                    <button type="submit" class="va-btn va-btn-primary va-btn-provider">
+                        @string.Format(System.Globalization.CultureInfo.CurrentUICulture, Ls["Login.ContinueWith"].Value, provider.DisplayName)
+                    </button>
+                </form>
+            }
         </div>
     }
     else

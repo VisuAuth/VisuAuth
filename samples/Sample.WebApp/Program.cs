@@ -161,6 +161,53 @@ builder.Services
     .AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders();
 
+// External-login providers — wired conditionally so the sample runs out of
+// the box even without OAuth credentials.
+//
+// Config keys live under "ExternalProviders.<Provider>" — appsettings.json
+// ships empty placeholders so the shape is discoverable, but real values
+// come from any IConfiguration source. Recommended local path:
+//
+//   dotnet user-secrets set "ExternalProviders:Microsoft:ClientId"     "..."
+//   dotnet user-secrets set "ExternalProviders:Microsoft:ClientSecret" "..."
+//
+// user-secrets writes to %APPDATA%\Microsoft\UserSecrets\ — outside the
+// repo, never committed. See SampleHomePage.cs / `/` for the full
+// app-registration steps + redirect URIs to register at
+// https://entra.microsoft.com/.
+//
+// To add Google / Apple / GitHub etc., copy the block below + add a sibling
+// sub-object under ExternalProviders in appsettings.json. VisuAuth's
+// external-login pages pick up whatever schemes are registered here.
+//
+// NEVER hardcode secrets here — anything in this file ships in source
+// control and ends up in git history forever. The IConfiguration
+// indirection also makes production rotations / Key Vault swaps trivial.
+var externalProviders = builder.Configuration.GetSection("ExternalProviders");
+
+var microsoftClientId = externalProviders["Microsoft:ClientId"];
+var microsoftClientSecret = externalProviders["Microsoft:ClientSecret"];
+if (!string.IsNullOrWhiteSpace(microsoftClientId) && !string.IsNullOrWhiteSpace(microsoftClientSecret))
+{
+    builder.Services
+        .AddAuthentication()
+        .AddMicrosoftAccount(options =>
+        {
+            options.ClientId = microsoftClientId;
+            options.ClientSecret = microsoftClientSecret;
+        });
+}
+
+// First-time strategy for external sign-ins: defaults to AutoCreate (a fresh
+// local user is provisioned from the provider's claims). Swap to
+// AutoLinkByEmailOrConfirm or AlwaysConfirm if account creation needs human
+// input — see ExternalLoginOptions doc.
+builder.Services.Configure<VisuAuth.Abstractions.Authentication.ExternalLoginOptions>(options =>
+{
+    // This is the default, but set explicitly here for clarity. Change to AutoLinkByEmailOrConfirm or AlwaysConfirm to require user input on first-time external logins.
+    options.FirstTimeStrategy = VisuAuth.Abstractions.Authentication.ExternalLoginFirstTimeStrategy.AutoCreate; 
+});
+
 var app = builder.Build();
 
 await UserSeeder.SeedAsync(app.Services);

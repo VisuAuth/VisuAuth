@@ -15,6 +15,11 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+    <!-- Sample-only: powers the Microsoft external-login button when the
+         developer fills in ClientId/ClientSecret. The VisuAuth packages
+         themselves ship no provider deps — consumers add the ones they
+         actually wire (Google, Apple, etc.). -->
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.MicrosoftAccount" />
   </ItemGroup>
 
 </Project>

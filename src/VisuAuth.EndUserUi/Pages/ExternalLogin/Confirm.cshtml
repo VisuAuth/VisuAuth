@@ -1,0 +1,47 @@
+@page "/visuauth/external-login/confirm"
+@model VisuAuth.EndUserUi.Pages.ExternalLogin.ConfirmModel
+@{
+    Layout = "_EndUserLayout";
+    ViewData["Title"] = Ls["ExternalLogin.Confirm.PageTitle"].Value;
+}
+
+<h1 class="va-enduser-heading">@Ls["ExternalLogin.Confirm.Heading"]</h1>
+<p class="va-enduser-subtitle">
+    @string.Format(System.Globalization.CultureInfo.CurrentUICulture, Ls["ExternalLogin.Confirm.Subtitle"].Value, Model.ProviderDisplayName ?? string.Empty)
+</p>
+
+@{
+    var errorLead = Ls["ExternalLogin.Confirm.ErrorLead"].Value;
+}
+<va-form-errors errors="@Model.Errors" lead="@errorLead" />
+
+<form method="post" class="va-enduser-form" autocomplete="off">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
+
+    <label class="va-field">
+        <span class="va-field-label">@Ls["Common.LabelEmail"]</span>
+        <input type="email"
+               name="Form.Email"
+               value="@Model.Form.Email"
+               class="va-input"
+               autocomplete="email"
+               required
+               autofocus />
+    </label>
+
+    <label class="va-field">
+        <span class="va-field-label">@Ls["ExternalLogin.Confirm.UserNameLabel"]</span>
+        <input type="text"
+               name="Form.UserName"
+               value="@Model.Form.UserName"
+               class="va-input"
+               autocomplete="username" />
+    </label>
+
+    <button type="submit" class="va-btn va-btn-primary">@Ls["ExternalLogin.Confirm.Submit"]</button>
+</form>
+
+<div class="va-enduser-footer">
+    <a href="/visuauth/login">@Ls["ExternalLogin.Confirm.BackToLogin"]</a>
+</div>

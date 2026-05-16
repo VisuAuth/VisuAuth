@@ -97,7 +97,63 @@ internal static class SampleHomePage
                 <li><a href="/visuauth/two-factor/setup"><code>/visuauth/two-factor/setup</code></a> &mdash; pair an authenticator app (auth required)</li>
                 <li><a href="/visuauth/two-factor/verify"><code>/visuauth/two-factor/verify</code></a> &mdash; TOTP / recovery-code challenge after a 2FA-required sign-in</li>
                 <li><a href="/visuauth/two-factor/recovery-codes"><code>/visuauth/two-factor/recovery-codes</code></a> &mdash; manage recovery codes / disable 2FA (auth required)</li>
+                <li><code>/visuauth/external-login/start</code> &mdash; POST-only OAuth kickoff (one form per registered provider on /login)</li>
+                <li><code>/visuauth/external-login/callback</code> &mdash; OAuth landing target; signs in or hands off to /confirm</li>
+                <li><a href="/visuauth/external-login/confirm"><code>/visuauth/external-login/confirm</code></a> &mdash; new-account form (only used by the AutoLinkByEmailOrConfirm + AlwaysConfirm strategies)</li>
                 <li><a href="/visuauth/logout"><code>/visuauth/logout</code></a> &mdash; sign-out endpoint (POST-only confirmation)</li>
+              </ul>
+
+              <h2>External login providers</h2>
+              <p>
+                Buttons appear on <a href="/visuauth/login"><code>/visuauth/login</code></a>
+                automatically for every authentication scheme the host registers
+                (Google, Microsoft, Apple, …). The sample wires Microsoft
+                conditionally: it only registers when
+                <code>ExternalProviders.Microsoft.ClientId</code> +
+                <code>ExternalProviders.Microsoft.ClientSecret</code> are set
+                in any <code>IConfiguration</code> source (appsettings, env
+                vars, <strong>user-secrets</strong> &mdash; the recommended
+                local option since it stays out of git). The expected shape
+                ships as empty placeholders in
+                <code>samples/Sample.WebApp/appsettings.json</code>:
+              </p>
+              <pre style="background:#f1f5f9;padding:0.75rem;border-radius:0.5rem;overflow:auto;">"ExternalProviders": {
+                "Microsoft": {
+                  "ClientId":     "",
+                  "ClientSecret": ""
+                }
+                // add Google / Apple / GitHub here, then wire them in Program.cs
+              }</pre>
+              <p>To turn Microsoft on:</p>
+              <ol>
+                <li>Register an app at <a href="https://entra.microsoft.com/">entra.microsoft.com</a> &rarr; App registrations.</li>
+                <li>Under <em>Authentication</em>, add Web redirect URIs for <code>http://localhost:5239/signin-microsoft</code> AND <code>https://localhost:7239/signin-microsoft</code> (the http/https launch profiles &mdash; AddMicrosoftAccount default callback path).</li>
+                <li>Under <em>Certificates &amp; secrets</em>, generate a new client secret and copy the <strong>Value</strong> column (not the Secret ID GUID) immediately.</li>
+                <li>From <code>samples/Sample.WebApp</code>:
+                  <ul>
+                    <li><code>dotnet user-secrets set "ExternalProviders:Microsoft:ClientId" "&lt;your-client-id&gt;"</code></li>
+                    <li><code>dotnet user-secrets set "ExternalProviders:Microsoft:ClientSecret" "&lt;your-secret-value&gt;"</code></li>
+                  </ul>
+                </li>
+                <li>Restart the sample. The "Continue with Microsoft" button shows up below the password form.</li>
+              </ol>
+              <p>
+                The same keys can also live in <code>appsettings.Development.json</code>
+                (gitignored locally if you choose) or environment variables prefixed
+                like <code>ExternalProviders__Microsoft__ClientId</code> &mdash;
+                whatever is convenient for your environment. In production, lean
+                on a real secret store (Azure Key Vault, AWS Secrets Manager,
+                etc.) through ASP.NET Core's configuration providers.
+              </p>
+              <p>
+                The first-time strategy (<code>ExternalLoginOptions.FirstTimeStrategy</code>)
+                controls what happens when the provider's identity has no linked
+                local user. Three options:
+              </p>
+              <ul>
+                <li><code>AutoCreate</code> (sample default) &mdash; provisions a local user from the provider's claims and signs in. Frictionless.</li>
+                <li><code>AutoLinkByEmailOrConfirm</code> &mdash; if an existing user owns the provider's email, link automatically. Otherwise show <code>/external-login/confirm</code>.</li>
+                <li><code>AlwaysConfirm</code> &mdash; always show <code>/external-login/confirm</code>. Maximum control, max friction.</li>
               </ul>
 
               <h2>Two-factor sandbox</h2>

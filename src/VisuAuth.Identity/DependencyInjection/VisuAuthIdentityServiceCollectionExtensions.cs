@@ -44,6 +44,13 @@ public static class VisuAuthIdentityServiceCollectionExtensions
         services.AddOptions<TwoFactorIssuerOptions>();
         services.AddScoped<ITwoFactorFlow, AspNetIdentityTwoFactorFlow<TUser>>();
 
+        // External-login flow consumed by /visuauth/external-login/*.
+        // Auto-included whenever the consumer wires the Identity adapter — the
+        // pages themselves capability-gate on the registered provider list,
+        // so a deployment with no AddGoogle / AddMicrosoftAccount / AddApple
+        // registered renders no buttons and the surface is invisible.
+        services.AddScoped<IExternalLoginFlow, AspNetIdentityExternalLoginFlow<TUser>>();
+
         return services;
     }
 

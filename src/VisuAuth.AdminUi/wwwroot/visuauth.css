@@ -440,6 +440,16 @@ body {
     grid-column: span 2;
 }
 
+.va-inline-form:has(.va-edit-grid) {
+    display: block;
+}
+.va-edit-grid .va-field {
+    min-width: 0;
+}
+.va-edit-grid .va-input {
+    width: 100%;
+}
+
 @media (max-width: 720px) {
     .va-edit-grid {
         grid-template-columns: minmax(0, 1fr);

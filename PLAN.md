@@ -85,20 +85,42 @@ immediate next step. Updated as PRs land. Long-term direction lives in
 
 ## In flight
 
-- **External login providers** (`feat/external-login-providers`) — third
-  item from the v0.2 milestone below (after TOTP). Adds
-  `/visuauth/external-login/{start,callback,confirm}` in `VisuAuth.EndUserUi`,
-  an `IExternalLoginFlow` abstraction in `VisuAuth.Abstractions` paired
-  with `ExternalLoginOptions.FirstTimeStrategy` (three strategies:
-  `AutoCreate` default, `AutoLinkByEmailOrConfirm`, `AlwaysConfirm`), and
-  the ASP.NET Identity adapter. The login page renders one
-  "Continue with {provider}" button per scheme registered with the host's
-  authentication pipeline; auto-suppresses when no provider is wired so
-  consumers who never call `AddGoogle()` / `AddMicrosoftAccount()` see no
-  visual change. Sample app wires Microsoft conditionally (only when
-  `Microsoft:ClientId` + `Microsoft:ClientSecret` are present in
-  configuration). External sign-in success reuses the WebView deep-link
-  path so mobile apps get a JWT identical to the password flow.
+- **External login providers + admin config** (`feat/external-login-providers`)
+  — third item from the v0.2 milestone below (after TOTP). Adds:
+  - `/visuauth/external-login/{start,callback,confirm}` in
+    `VisuAuth.EndUserUi`, an `IExternalLoginFlow` abstraction in
+    `VisuAuth.Abstractions` paired with
+    `ExternalLoginOptions.FirstTimeStrategy` (three strategies:
+    `AutoCreate` default, `AutoLinkByEmailOrConfirm`, `AlwaysConfirm`).
+  - Provider buttons on `/visuauth/login` with brand SVG icons via the
+    new `<va-provider-icon>` tag helper (Microsoft / Google / Apple /
+    GitHub + generic fallback).
+  - `/visuauth/admin/external-providers` admin page with inline edit +
+    per-row enable/disable + bulk operations — credentials editable at
+    runtime without restart, secret encrypted at rest via
+    `IDataProtectionProvider`. Page lays out four buckets — **Active**
+    (wired + recognised), **Custom** (wired but outside the catalogue),
+    **Available** (catalogue ghost cards with "How to activate" snippet
+    for ~20 popular providers), and **Orphaned credentials** (DB rows
+    for schemes the host no longer wires, with a `Delete` cleanup
+    button). The new `IExternalProviderRegistry` is the source of truth
+    for "what's actually runnable"; `KnownProviderCatalog` in
+    `VisuAuth.AdminUi` supplies the discoverability layer.
+  - `IExternalProviderConfigStore` + EF entity in
+    `IVisuAuthMetadataDbContext` (new table
+    `VisuAuthExternalProviderConfigs`); per-tenant schema column ready
+    for Phase 1.5 runtime.
+  - Generic `DynamicExternalProviderOptionsConfigurator<TOptions>` that
+    overlays admin-edited credentials on top of static
+    `AddXxx(o => ...)` registrations; cache-invalidator wired so save
+    takes effect on the very next sign-in attempt.
+  - Sample wires all four providers (Microsoft / Google / GitHub / Apple)
+    with appsettings-or-placeholder defaults so the admin UI can fully
+    configure a fresh provider via the browser. Sample-only NuGet adds:
+    `Microsoft.AspNetCore.Authentication.Google`,
+    `AspNet.Security.OAuth.Apple`, `AspNet.Security.OAuth.GitHub`.
+  - Mobile/JWT path: external sign-in success reuses the WebView
+    deep-link path so mobile apps get a JWT identical to the password flow.
 
 ---
 

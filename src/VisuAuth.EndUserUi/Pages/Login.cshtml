@@ -80,7 +80,8 @@ else
                         <input type="hidden" name="scheme" value="@provider.Scheme" />
                         <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
                         <button type="submit" class="va-btn va-btn-secondary va-btn-provider">
-                            @string.Format(System.Globalization.CultureInfo.CurrentUICulture, Ls["Login.ContinueWith"].Value, provider.DisplayName)
+                            <va-provider-icon scheme="@provider.Scheme" />
+                            <span>@string.Format(System.Globalization.CultureInfo.CurrentUICulture, Ls["Login.ContinueWith"].Value, provider.DisplayName)</span>
                         </button>
                     </form>
                 }
@@ -109,7 +110,8 @@ else
                     <input type="hidden" name="scheme" value="@provider.Scheme" />
                     <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
                     <button type="submit" class="va-btn va-btn-primary va-btn-provider">
-                        @string.Format(System.Globalization.CultureInfo.CurrentUICulture, Ls["Login.ContinueWith"].Value, provider.DisplayName)
+                        <va-provider-icon scheme="@provider.Scheme" />
+                        <span>@string.Format(System.Globalization.CultureInfo.CurrentUICulture, Ls["Login.ContinueWith"].Value, provider.DisplayName)</span>
                     </button>
                 </form>
             }

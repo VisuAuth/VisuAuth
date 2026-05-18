@@ -1,0 +1,46 @@
+@model VisuAuth.AdminUi.ExternalProviders.KnownExternalProvider
+
+@{
+    var detailsId = $"va-ghost-snippet-{Model.Scheme.ToLowerInvariant()}";
+    // The wiring snippet is plaintext on purpose — admin operators will
+    // copy-paste it into Program.cs. Razor encoding handles HTML safety.
+    var snippet =
+        $"// Program.cs\n" +
+        $"// 1) NuGet:  dotnet add package {Model.NuGetPackageId}\n" +
+        $"\n" +
+        $"builder.Services.AddAuthentication()\n" +
+        $"    .{Model.AddExtensionMethod}(\"{Model.Scheme}\", o =>\n" +
+        $"    {{\n" +
+        $"        o.ClientId = \"<placeholder>\";\n" +
+        $"        o.ClientSecret = \"<placeholder>\";\n" +
+        $"    }});\n" +
+        $"\n" +
+        $"// 2) Let the admin UI override ClientId/Secret at runtime:\n" +
+        $"builder.Services.AddVisuAuthDynamicExternalProviderOptions<{Model.OptionsTypeName}>(\"{Model.Scheme}\");";
+}
+
+<article class="va-ghost-card" data-scheme="@Model.Scheme">
+    <header class="va-ghost-card-header">
+        <va-provider-icon scheme="@Model.Scheme" />
+        <div>
+            <strong>@Model.DisplayName</strong>
+            <div class="va-muted" style="font-size:0.8rem;">@Model.Category</div>
+        </div>
+        <span class="va-badge va-ghost-badge" title="@Ls["ExternalProviders.Ghost.NotWiredTooltip"].Value">
+            @Ls["ExternalProviders.Ghost.NotWired"]
+        </span>
+    </header>
+    <details class="va-ghost-details" id="@detailsId">
+        <summary>@Ls["ExternalProviders.Ghost.HowToActivate"]</summary>
+        <p class="va-muted" style="margin:0.5rem 0;">
+            @Ls["ExternalProviders.Ghost.Package"]: <code>@Model.NuGetPackageId</code>
+        </p>
+        <pre class="va-code-snippet"><code>@snippet</code></pre>
+        @if (Model.DocsUrl is { Length: > 0 } docs)
+        {
+            <a href="@docs" target="_blank" rel="noopener noreferrer" class="va-btn va-btn-ghost va-btn-small">
+                @Ls["ExternalProviders.Ghost.OpenDocs"] ↗
+            </a>
+        }
+    </details>
+</article>

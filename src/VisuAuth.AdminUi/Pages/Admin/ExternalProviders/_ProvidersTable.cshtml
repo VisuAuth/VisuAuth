@@ -1,0 +1,158 @@
+@model VisuAuth.AdminUi.Pages.Admin.ExternalProviders.IndexModel
+
+@if (Model.ActionErrors.Count > 0)
+{
+    <div class="va-alert va-alert-danger" role="alert">
+        <strong>@Ls["ExternalProviders.ActionFailed"]</strong>
+        <ul>
+            @foreach (var err in Model.ActionErrors)
+            {
+                <li>@err</li>
+            }
+        </ul>
+    </div>
+}
+else if (Model.ActionMessage is { Length: > 0 } msg)
+{
+    <output class="va-alert va-alert-success">@msg</output>
+}
+
+@if (Model.ConfigurableCount > 0)
+{
+    <section class="va-card va-detail-card">
+        <div class="va-detail-card-header" style="display:flex;justify-content:space-between;align-items:center;">
+            <h2>@Ls["ExternalProviders.BulkHeading"]</h2>
+            <div class="va-row-actions">
+                <form method="post"
+                      hx-post="/visuauth/admin/external-providers?handler=BulkEnable"
+                      hx-target="#va-external-providers"
+                      hx-swap="innerHTML">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="va-btn va-btn-primary va-btn-small">@Ls["ExternalProviders.BulkEnable"]</button>
+                </form>
+                <form method="post"
+                      hx-post="/visuauth/admin/external-providers?handler=BulkDisable"
+                      hx-target="#va-external-providers"
+                      hx-swap="innerHTML">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="va-btn va-btn-ghost va-btn-small">@Ls["ExternalProviders.BulkDisable"]</button>
+                </form>
+            </div>
+        </div>
+        <p class="va-muted" style="margin:0;padding:0.5rem 1rem 1rem;">@Ls["ExternalProviders.BulkHint"]</p>
+    </section>
+}
+
+@if (Model.ActiveProviders.Count + Model.CustomProviders.Count == 0)
+{
+    <section class="va-card">
+        <div class="va-empty">
+            <p>@Ls["ExternalProviders.Empty"]</p>
+        </div>
+    </section>
+}
+else
+{
+    <section class="va-card">
+        <div class="va-section-heading">
+            <h2>@Ls["ExternalProviders.Section.Active"]</h2>
+            <span class="va-muted">@Ls["ExternalProviders.Section.ActiveHint"]</span>
+        </div>
+        <table class="va-table">
+            <thead>
+                <tr>
+                    <th>@Ls["ExternalProviders.Col.Provider"]</th>
+                    <th>@Ls["ExternalProviders.Col.ClientId"]</th>
+                    <th>@Ls["ExternalProviders.Col.Secret"]</th>
+                    <th>@Ls["ExternalProviders.Col.Status"]</th>
+                    <th>@Ls["ExternalProviders.Col.UpdatedAt"]</th>
+                    <th class="va-col-actions">@Ls["Common.Actions"]</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var row in Model.ActiveProviders)
+                {
+                    <partial name="_ConfigurableRow" model="Model"
+                             view-data='@(new ViewDataDictionary(ViewData) { ["Row"] = row, ["IsCustom"] = false })' />
+                }
+                @foreach (var row in Model.CustomProviders)
+                {
+                    <partial name="_ConfigurableRow" model="Model"
+                             view-data='@(new ViewDataDictionary(ViewData) { ["Row"] = row, ["IsCustom"] = true })' />
+                }
+            </tbody>
+        </table>
+    </section>
+}
+
+@if (Model.AvailableProviders.Count > 0)
+{
+    <section class="va-card">
+        <div class="va-section-heading">
+            <h2>@Ls["ExternalProviders.Section.Available"] <span class="va-muted" style="font-weight:400;font-size:0.95rem;">(@Model.AvailableProviders.Count)</span></h2>
+            <span class="va-muted">@Ls["ExternalProviders.Section.AvailableHint"]</span>
+        </div>
+        <div class="va-ghost-grid">
+            @foreach (var ghost in Model.AvailableProviders)
+            {
+                <partial name="_GhostCard" model="ghost" />
+            }
+        </div>
+    </section>
+}
+
+@if (Model.OrphanProviders.Count > 0)
+{
+    <section class="va-card va-alert-danger" style="padding:1rem;">
+        <div class="va-section-heading">
+            <h2>@Ls["ExternalProviders.Section.Orphan"] <span class="va-muted" style="font-weight:400;font-size:0.95rem;">(@Model.OrphanProviders.Count)</span></h2>
+            <span class="va-muted">@Ls["ExternalProviders.Section.OrphanHint"]</span>
+        </div>
+        <table class="va-table">
+            <thead>
+                <tr>
+                    <th>@Ls["ExternalProviders.Col.Provider"]</th>
+                    <th>@Ls["ExternalProviders.Col.ClientId"]</th>
+                    <th>@Ls["ExternalProviders.Col.UpdatedAt"]</th>
+                    <th class="va-col-actions">@Ls["Common.Actions"]</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var row in Model.OrphanProviders)
+                {
+                    <tr>
+                        <td>
+                            <div style="display:flex;align-items:center;gap:0.5rem;">
+                                <va-provider-icon scheme="@row.Scheme" />
+                                <div>
+                                    <strong>@row.DisplayName</strong>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            @if (row.Config is { ClientId: { Length: > 0 } cid })
+                            {
+                                <code class="va-tenant-id">@cid</code>
+                            }
+                            else
+                            {
+                                <span class="va-muted">@Ls["ExternalProviders.NotConfigured"]</span>
+                            }
+                        </td>
+                        <td><span class="va-muted">@row.Config!.UpdatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span></td>
+                        <td class="va-col-actions">
+                            <form method="post"
+                                  hx-post="@($"/visuauth/admin/external-providers?handler=DeleteOrphan&scheme={row.Scheme}")"
+                                  hx-target="#va-external-providers"
+                                  hx-swap="innerHTML"
+                                  hx-confirm="@Ls["ExternalProviders.Orphan.DeleteConfirm", row.Scheme].Value">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="va-btn va-btn-ghost va-btn-small">@Ls["Common.Delete"]</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </section>
+}

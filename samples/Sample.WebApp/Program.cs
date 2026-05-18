@@ -7,6 +7,7 @@ using VisuAuth;
 using VisuAuth.AdminUi.Localization;
 using VisuAuth.AdminUi.Theming;
 using VisuAuth.Identity.Authentication;
+using VisuAuth.Identity.DependencyInjection;
 using VisuAuth.Identity.MultiTenancy;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -173,29 +174,85 @@ builder.Services
 //
 // user-secrets writes to %APPDATA%\Microsoft\UserSecrets\ — outside the
 // repo, never committed. See SampleHomePage.cs / `/` for the full
-// app-registration steps + redirect URIs to register at
-// https://entra.microsoft.com/.
-//
-// To add Google / Apple / GitHub etc., copy the block below + add a sibling
-// sub-object under ExternalProviders in appsettings.json. VisuAuth's
-// external-login pages pick up whatever schemes are registered here.
+// per-provider app-registration steps + redirect URIs to register.
 //
 // NEVER hardcode secrets here — anything in this file ships in source
 // control and ends up in git history forever. The IConfiguration
 // indirection also makes production rotations / Key Vault swaps trivial.
+//
+// To add another provider: add a sibling sub-object under
+// ExternalProviders in appsettings.json + call AddXxx below the same way.
+// VisuAuth's external-login pages pick up whatever schemes are registered.
+// All 4 schemes are ALWAYS registered with whatever appsettings /
+// user-secrets carries (empty when unset) so the dynamic overlay from
+// the admin UI can drive them at runtime — even when configuration has
+// nothing yet. Without this pre-reg the admin couldn't enable a provider
+// from scratch without a code change.
+//
+// Validate-safety: VisuAuth's DynamicExternalProviderOptionsConfigurator
+// drops a non-empty sentinel into options.ClientId/Secret at the end of
+// its Configure pipeline if neither source supplied a value, so
+// OAuthOptions.Validate (which throws on empty) doesn't bring the login
+// page down before any admin sees it. The snapshot still records the
+// genuine pre-overlay state, so the admin UI's "from code" badge only
+// lights up when the consumer actually filled something in.
 var externalProviders = builder.Configuration.GetSection("ExternalProviders");
+var authenticationBuilder = builder.Services.AddAuthentication();
 
-var microsoftClientId = externalProviders["Microsoft:ClientId"];
-var microsoftClientSecret = externalProviders["Microsoft:ClientSecret"];
-if (!string.IsNullOrWhiteSpace(microsoftClientId) && !string.IsNullOrWhiteSpace(microsoftClientSecret))
+RegisterScheme("Microsoft", (id, secret) =>
+    authenticationBuilder.AddMicrosoftAccount(o =>
+    {
+        o.ClientId = id;
+        o.ClientSecret = secret;
+    }));
+
+RegisterScheme("Google", (id, secret) =>
+    authenticationBuilder.AddGoogle(o =>
+    {
+        o.ClientId = id;
+        o.ClientSecret = secret;
+    }));
+
+RegisterScheme("GitHub", (id, secret) =>
+    authenticationBuilder.AddGitHub(o =>
+    {
+        o.ClientId = id;
+        o.ClientSecret = secret;
+    }));
+
+RegisterScheme("Apple", (id, secret) =>
+    authenticationBuilder.AddApple(o =>
+    {
+        o.ClientId = id;
+        // Apple uses a private-key JWT instead of a static client secret
+        // for production. For dev/test the generated client secret string
+        // works as-is; for real deployments swap to options.GenerateClientSecret
+        // with a .p8 key. See the AspNet.Security.OAuth.Apple docs.
+        o.ClientSecret = secret;
+    }));
+
+// Per-scheme dynamic option overlay — reads admin-edited credentials from
+// the EF-backed store and overrides the static defaults above at request
+// time. The cache invalidator (also registered here) is what lets the
+// admin save take effect without an app restart.
+builder.Services.AddVisuAuthExternalProviderConfigStore();
+builder.Services.AddVisuAuthDynamicExternalProviderOptions<Microsoft.AspNetCore.Authentication.MicrosoftAccount.MicrosoftAccountOptions>("Microsoft");
+builder.Services.AddVisuAuthDynamicExternalProviderOptions<Microsoft.AspNetCore.Authentication.Google.GoogleOptions>("Google");
+builder.Services.AddVisuAuthDynamicExternalProviderOptions<AspNet.Security.OAuth.GitHub.GitHubAuthenticationOptions>("GitHub");
+builder.Services.AddVisuAuthDynamicExternalProviderOptions<AspNet.Security.OAuth.Apple.AppleAuthenticationOptions>("Apple");
+
+void RegisterScheme(string providerName, Action<string, string> register)
 {
-    builder.Services
-        .AddAuthentication()
-        .AddMicrosoftAccount(options =>
-        {
-            options.ClientId = microsoftClientId;
-            options.ClientSecret = microsoftClientSecret;
-        });
+    // appsettings / user-secrets value when present; empty otherwise.
+    // VisuAuth's DynamicExternalProviderOptionsConfigurator drops a sentinel
+    // into ClientId/Secret at the end of its Configure pipeline if neither
+    // the static path nor the DB overlay supplied a value, so
+    // OAuthOptions.Validate stays happy without us shipping a placeholder
+    // string through the snapshot (which would light up "from code" badges
+    // for providers nobody actually configured).
+    var id = externalProviders[$"{providerName}:ClientId"] ?? string.Empty;
+    var secret = externalProviders[$"{providerName}:ClientSecret"] ?? string.Empty;
+    register(id, secret);
 }
 
 // First-time strategy for external sign-ins: defaults to AutoCreate (a fresh

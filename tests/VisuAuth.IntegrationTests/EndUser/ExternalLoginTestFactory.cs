@@ -65,6 +65,13 @@ public sealed class ExternalLoginTestFactory : WebApplicationFactory<Program>
             // middleware into the existing pipeline instead of replacing
             // Program.cs's whole pipeline (which mounts Razor Pages).
             services.AddTransient<IStartupFilter, TestExternalSignInStartupFilter>();
+
+            // The sample's UserSeeder only seeds rows for the 4 production
+            // schemes (Microsoft, Google, GitHub, Apple). TestProvider needs
+            // its own seed so the GetProvidersAsync filter (which gates on
+            // `IsEnabled && non-empty ClientId in DB`) lets the test scheme
+            // surface as a button + a valid Challenge target.
+            services.AddTransient<IStartupFilter, SeedTestProviderConfigStartupFilter>();
         });
     }
 
@@ -106,6 +113,41 @@ public sealed class ExternalLoginTestFactory : WebApplicationFactory<Program>
     {
         protected override Task<AuthenticateResult> HandleAuthenticateAsync()
             => Task.FromResult(AuthenticateResult.NoResult());
+    }
+
+    /// <summary>
+    /// Seeds a <c>TestProvider</c> row into the EF-backed config store at
+    /// startup so the <see cref="VisuAuth.Identity.Authentication.AspNetIdentityExternalLoginFlow{TUser}.GetProvidersAsync"/>
+    /// filter (which only surfaces enabled-and-populated schemes) lets the
+    /// fake provider show up as a button + a valid Challenge target.
+    /// </summary>
+    private sealed class SeedTestProviderConfigStartupFilter : IStartupFilter
+    {
+        public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next)
+            => app =>
+            {
+                using var scope = app.ApplicationServices.CreateScope();
+                var store = scope.ServiceProvider.GetService<VisuAuth.Abstractions.Authentication.IExternalProviderConfigStore>();
+                if (store is not null)
+                {
+                    // Sync-over-async at startup is acceptable — single one-shot
+                    // call before requests start serving. Use SaveAsync (not
+                    // EnsureSchemeAsync) so the secret is populated too —
+                    // GetProvidersAsync now requires BOTH ClientId and Secret
+                    // to be present somewhere (DB or static snapshot), and
+                    // the TestProvider scheme isn't wired through the dynamic
+                    // options layer so the snapshot stays empty for it.
+                    store.SaveAsync(new VisuAuth.Abstractions.Authentication.SaveExternalProviderConfigCommand
+                    {
+                        Scheme = TestProviderScheme,
+                        DisplayName = TestProviderDisplayName,
+                        ClientId = "test-provider-client-id",
+                        PlainTextClientSecret = "test-provider-client-secret",
+                        IsEnabled = true,
+                    }).GetAwaiter().GetResult();
+                }
+                next(app);
+            };
     }
 
     /// <summary>

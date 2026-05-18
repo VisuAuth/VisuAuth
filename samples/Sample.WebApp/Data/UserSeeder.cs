@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using VisuAuth.Abstractions.Authentication;
 using VisuAuth.Identity.MultiTenancy;
 
 namespace Sample.WebApp.Data;
@@ -177,6 +179,58 @@ public static class UserSeeder
         }
 
         await SeedTwoFactorAsync(userManager);
+        await SeedExternalProviderConfigsAsync(scope.ServiceProvider, cancellationToken);
+    }
+
+    /// <summary>
+    /// Idempotently inserts a row in <c>VisuAuthExternalProviderConfigs</c>
+    /// for every scheme the host registered through
+    /// <c>AddVisuAuthDynamicExternalProviderOptions&lt;TOptions&gt;</c>. The
+    /// seeded row pulls ClientId from appsettings / user-secrets when
+    /// present so a working appsettings setup keeps rendering its button
+    /// immediately after the admin store goes live. EncryptedClientSecret
+    /// stays null on first seed — the admin must re-enter the secret via
+    /// the UI to enable the dynamic overlay (or keep using the
+    /// appsettings-bound static options, which still override when the row
+    /// is missing).
+    /// </summary>
+    /// <remarks>
+    /// Reads the registry instead of hardcoding the list — adding a new
+    /// provider in Program.cs (one <c>RegisterScheme</c> call) automatically
+    /// surfaces a seeded row here without a second edit.
+    /// </remarks>
+    private static async Task SeedExternalProviderConfigsAsync(IServiceProvider services, CancellationToken cancellationToken)
+    {
+        var store = services.GetService<IExternalProviderConfigStore>();
+        var registry = services.GetService<IExternalProviderRegistry>();
+        if (store is null || registry is null)
+        {
+            // Consumer never wired AddVisuAuthExternalProviderConfigStore /
+            // AddVisuAuthDynamicExternalProviderOptions — nothing to seed.
+            // (Tests use this path to skip the EF table.)
+            return;
+        }
+        var configuration = services.GetRequiredService<IConfiguration>();
+        var section = configuration.GetSection("ExternalProviders");
+
+        foreach (var reg in registry.Registrations)
+        {
+            var defaultClientId = section[$"{reg.Scheme}:ClientId"];
+            var defaultSecret = section[$"{reg.Scheme}:ClientSecret"];
+            // Enable the row out of the gate when BOTH ClientId and Secret
+            // are already in configuration — the appsettings-bound static
+            // options will carry the secret until the admin replaces them
+            // via the UI.
+            var defaultEnabled = !string.IsNullOrWhiteSpace(defaultClientId)
+                                 && !string.IsNullOrWhiteSpace(defaultSecret);
+            await store.EnsureSchemeAsync(
+                reg.Scheme,
+                reg.Scheme,
+                tenantId: null,
+                defaultClientId: defaultClientId,
+                defaultIsEnabled: defaultEnabled,
+                cancellationToken: cancellationToken);
+        }
     }
 
     /// <summary>

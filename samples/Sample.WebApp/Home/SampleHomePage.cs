@@ -118,32 +118,74 @@ internal static class SampleHomePage
                 <code>samples/Sample.WebApp/appsettings.json</code>:
               </p>
               <pre style="background:#f1f5f9;padding:0.75rem;border-radius:0.5rem;overflow:auto;">"ExternalProviders": {
-                "Microsoft": {
-                  "ClientId":     "",
-                  "ClientSecret": ""
-                }
-                // add Google / Apple / GitHub here, then wire them in Program.cs
+                "Microsoft": { "ClientId": "", "ClientSecret": "" },
+                "Google":    { "ClientId": "", "ClientSecret": "" },
+                "Apple":     { "ClientId": "", "ClientSecret": "" },
+                "GitHub":    { "ClientId": "", "ClientSecret": "" }
               }</pre>
-              <p>To turn Microsoft on:</p>
-              <ol>
-                <li>Register an app at <a href="https://entra.microsoft.com/">entra.microsoft.com</a> &rarr; App registrations.</li>
-                <li>Under <em>Authentication</em>, add Web redirect URIs for <code>http://localhost:5239/signin-microsoft</code> AND <code>https://localhost:7239/signin-microsoft</code> (the http/https launch profiles &mdash; AddMicrosoftAccount default callback path).</li>
-                <li>Under <em>Certificates &amp; secrets</em>, generate a new client secret and copy the <strong>Value</strong> column (not the Secret ID GUID) immediately.</li>
-                <li>From <code>samples/Sample.WebApp</code>:
-                  <ul>
-                    <li><code>dotnet user-secrets set "ExternalProviders:Microsoft:ClientId" "&lt;your-client-id&gt;"</code></li>
-                    <li><code>dotnet user-secrets set "ExternalProviders:Microsoft:ClientSecret" "&lt;your-secret-value&gt;"</code></li>
-                  </ul>
-                </li>
-                <li>Restart the sample. The "Continue with Microsoft" button shows up below the password form.</li>
-              </ol>
               <p>
-                The same keys can also live in <code>appsettings.Development.json</code>
-                (gitignored locally if you choose) or environment variables prefixed
-                like <code>ExternalProviders__Microsoft__ClientId</code> &mdash;
-                whatever is convenient for your environment. In production, lean
-                on a real secret store (Azure Key Vault, AWS Secrets Manager,
-                etc.) through ASP.NET Core's configuration providers.
+                Four providers ship pre-wired in <code>Program.cs</code> via a
+                shared <code>ConfigureIfPresent</code> helper. Each one stays
+                inert until its <code>ClientId</code>/<code>ClientSecret</code>
+                are populated &mdash; flip them on individually as needed.
+              </p>
+              <table style="border-collapse:collapse;width:100%;margin:0.75rem 0;">
+                <thead>
+                  <tr style="background:#f1f5f9;text-align:left;">
+                    <th style="padding:0.4rem 0.6rem;border:1px solid #e2e8f0;">Provider</th>
+                    <th style="padding:0.4rem 0.6rem;border:1px solid #e2e8f0;">Register app</th>
+                    <th style="padding:0.4rem 0.6rem;border:1px solid #e2e8f0;">Default callback path</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td style="padding:0.4rem 0.6rem;border:1px solid #e2e8f0;"><strong>Microsoft</strong></td>
+                    <td style="padding:0.4rem 0.6rem;border:1px solid #e2e8f0;"><a href="https://entra.microsoft.com/">entra.microsoft.com</a> &rarr; App registrations</td>
+                    <td style="padding:0.4rem 0.6rem;border:1px solid #e2e8f0;"><code>/signin-microsoft</code></td>
+                  </tr>
+                  <tr>
+                    <td style="padding:0.4rem 0.6rem;border:1px solid #e2e8f0;"><strong>Google</strong></td>
+                    <td style="padding:0.4rem 0.6rem;border:1px solid #e2e8f0;"><a href="https://console.cloud.google.com/apis/credentials">console.cloud.google.com</a> &rarr; APIs &amp; Services &rarr; Credentials &rarr; OAuth 2.0</td>
+                    <td style="padding:0.4rem 0.6rem;border:1px solid #e2e8f0;"><code>/signin-google</code></td>
+                  </tr>
+                  <tr>
+                    <td style="padding:0.4rem 0.6rem;border:1px solid #e2e8f0;"><strong>Apple</strong></td>
+                    <td style="padding:0.4rem 0.6rem;border:1px solid #e2e8f0;"><a href="https://developer.apple.com/account/resources/identifiers/list/serviceId">developer.apple.com</a> &rarr; Services ID (paid Apple Developer required)</td>
+                    <td style="padding:0.4rem 0.6rem;border:1px solid #e2e8f0;"><code>/signin-apple</code></td>
+                  </tr>
+                  <tr>
+                    <td style="padding:0.4rem 0.6rem;border:1px solid #e2e8f0;"><strong>GitHub</strong></td>
+                    <td style="padding:0.4rem 0.6rem;border:1px solid #e2e8f0;"><a href="https://github.com/settings/developers">github.com/settings/developers</a> &rarr; OAuth Apps &rarr; New</td>
+                    <td style="padding:0.4rem 0.6rem;border:1px solid #e2e8f0;"><code>/signin-github</code></td>
+                  </tr>
+                </tbody>
+              </table>
+              <p>
+                For each provider you actually want to enable, register the
+                app at the URL above and add BOTH redirect URIs (the http +
+                https launch profiles): <code>http://localhost:5239/signin-{provider}</code>
+                and <code>https://localhost:7239/signin-{provider}</code>.
+                Then drop the ClientId / ClientSecret into user-secrets:
+              </p>
+              <pre style="background:#f1f5f9;padding:0.75rem;border-radius:0.5rem;overflow:auto;">cd samples/Sample.WebApp
+              dotnet user-secrets set "ExternalProviders:Microsoft:ClientId"     "&lt;value&gt;"
+              dotnet user-secrets set "ExternalProviders:Microsoft:ClientSecret" "&lt;value&gt;"
+              # repeat for Google / Apple / GitHub as needed</pre>
+              <p>
+                The keys also work via <code>appsettings.Development.json</code>
+                (gitignored if you choose) or environment variables prefixed
+                like <code>ExternalProviders__Google__ClientId</code> &mdash;
+                whatever fits the environment. In production, lean on a real
+                secret store (Azure Key Vault, AWS Secrets Manager, etc.)
+                through ASP.NET Core's configuration providers.
+              </p>
+              <p>
+                Apple's "client secret" is actually a private-key JWT in
+                production. The sample wires the simple <code>options.ClientSecret</code>
+                string for parity; for real Apple deployments use
+                <code>options.GenerateClientSecret</code> with a <code>.p8</code>
+                key per the
+                <a href="https://github.com/aspnet-contrib/AspNet.Security.OAuth.Providers/blob/dev/docs/apple.md">AspNet.Security.OAuth.Apple docs</a>.
               </p>
               <p>
                 The first-time strategy (<code>ExternalLoginOptions.FirstTimeStrategy</code>)

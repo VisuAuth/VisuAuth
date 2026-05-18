@@ -16,13 +16,33 @@ namespace VisuAuth.Identity.Authentication;
 /// <typeparam name="TUser">The Identity user type used by the consumer.</typeparam>
 public sealed class AspNetIdentityExternalLoginFlow<TUser>(
     SignInManager<TUser> signInManager,
-    UserManager<TUser> userManager) : IExternalLoginFlow
+    UserManager<TUser> userManager,
+    IExternalProviderConfigStore? configStore = null,
+    IExternalProviderStaticConfigSnapshot? staticConfigSnapshot = null) : IExternalLoginFlow
     where TUser : IdentityUser
 {
     private readonly SignInManager<TUser> _signInManager =
         signInManager ?? throw new ArgumentNullException(nameof(signInManager));
     private readonly UserManager<TUser> _userManager =
         userManager ?? throw new ArgumentNullException(nameof(userManager));
+    /// <summary>
+    /// Optional — when registered (via <c>AddVisuAuthExternalProviderConfigStore</c>),
+    /// the provider list returned by <see cref="GetProvidersAsync"/> is
+    /// filtered to admin-enabled rows. Without the store the flow falls
+    /// back to "all registered schemes" — backward-compatible with
+    /// consumers who never opt into the admin UI.
+    /// </summary>
+    private readonly IExternalProviderConfigStore? _configStore = configStore;
+    /// <summary>
+    /// Optional — exposes the credentials a scheme arrived with before our
+    /// overlay (i.e. from appsettings / user-secrets / Program.cs lambdas).
+    /// <see cref="GetProvidersAsync"/> consults this so a scheme stays
+    /// visible on /visuauth/login when the secret lives in code and only
+    /// the ClientId was edited via the admin UI — without it the button
+    /// would silently disappear even though the login flow itself would
+    /// have worked.
+    /// </summary>
+    private readonly IExternalProviderStaticConfigSnapshot? _staticConfigSnapshot = staticConfigSnapshot;
 
     /// <inheritdoc />
     public UserBackendCapabilities Capabilities { get; } = new()
@@ -38,13 +58,52 @@ public sealed class AspNetIdentityExternalLoginFlow<TUser>(
         cancellationToken.ThrowIfCancellationRequested();
 
         var schemes = await _signInManager.GetExternalAuthenticationSchemesAsync();
-        return schemes
+        var providers = schemes
             .Select(s => new ExternalProviderInfo
             {
                 Scheme = s.Name,
                 DisplayName = string.IsNullOrEmpty(s.DisplayName) ? s.Name : s.DisplayName,
-            })
-            .ToArray();
+            });
+
+        if (_configStore is null)
+        {
+            return providers.ToArray();
+        }
+
+        // When the admin store IS wired, decide per scheme whether the
+        // button should render. The rule mirrors what the OAuth handler
+        // will actually see at request time, which is the UNION of DB
+        // overlay and static (appsettings / user-secrets / Program.cs
+        // lambda):
+        //   * IsEnabled (DB row missing = treated as enabled, legacy)
+        //   * AND ClientId present in DB OR static snapshot
+        //   * AND ClientSecret present in DB OR static snapshot
+        // Missing both ClientId and Secret → hidden, because clicking the
+        // button would land the user on a 500 from the handler.
+        var configs = await _configStore.ListAsync(tenantId: null, cancellationToken);
+        var configsBySchema = configs.ToDictionary(c => c.Scheme, StringComparer.Ordinal);
+
+        var live = providers.Where(p =>
+        {
+            configsBySchema.TryGetValue(p.Scheme, out var dbConfig);
+            var staticView = _staticConfigSnapshot?.GetForScheme(p.Scheme);
+
+            // No DB row at all → legacy enabled. Admin gets to opt out
+            // explicitly by saving a row with IsEnabled=false.
+            var isEnabled = dbConfig?.IsEnabled ?? true;
+            if (!isEnabled)
+            {
+                return false;
+            }
+
+            var hasClientId = !string.IsNullOrWhiteSpace(dbConfig?.ClientId)
+                              || staticView is { ClientId.Length: > 0 };
+            var hasSecret = (dbConfig?.HasClientSecret == true)
+                            || (staticView?.HasClientSecret == true);
+            return hasClientId && hasSecret;
+        });
+
+        return live.ToArray();
     }
 
     /// <inheritdoc />

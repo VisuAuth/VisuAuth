@@ -30,6 +30,10 @@ public abstract class MultiTenantIdentityDbContext<TUser> : IdentityDbContext<TU
     public DbSet<VisuAuthTenant> VisuAuthTenants => Set<VisuAuthTenant>();
 
     /// <inheritdoc />
+    public DbSet<VisuAuthExternalProviderConfig> VisuAuthExternalProviderConfigs
+        => Set<VisuAuthExternalProviderConfig>();
+
+    /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -46,6 +50,7 @@ public abstract class MultiTenantIdentityDbContext<TUser> : IdentityDbContext<TU
                 || u.TenantId == _tenantContext.CurrentTenantId);
 
         ConfigureVisuAuthTenant(builder);
+        ConfigureVisuAuthExternalProviderConfig(builder);
     }
 
     internal static void ConfigureVisuAuthTenant(ModelBuilder builder)
@@ -56,6 +61,27 @@ public abstract class MultiTenantIdentityDbContext<TUser> : IdentityDbContext<TU
             entity.HasKey(t => t.Id);
             entity.Property(t => t.Id).HasMaxLength(64).IsRequired();
             entity.Property(t => t.DisplayName).HasMaxLength(256).IsRequired();
+        });
+    }
+
+    internal static void ConfigureVisuAuthExternalProviderConfig(ModelBuilder builder)
+    {
+        builder.Entity<VisuAuthExternalProviderConfig>(entity =>
+        {
+            entity.ToTable("VisuAuthExternalProviderConfigs");
+            // Synthetic GUID PK because EF Core refuses NULL key components
+            // and TenantId is nullable for the global-config case. The real
+            // uniqueness invariant (one row per (scheme, tenant)) lives in
+            // the unique index below.
+            entity.HasKey(c => c.Id);
+            entity.Property(c => c.Id).ValueGeneratedNever();
+            entity.HasIndex(c => new { c.Scheme, c.TenantId }).IsUnique();
+            entity.Property(c => c.Scheme).HasMaxLength(64).IsRequired();
+            entity.Property(c => c.TenantId).HasMaxLength(64);
+            entity.Property(c => c.DisplayName).HasMaxLength(128).IsRequired();
+            entity.Property(c => c.ClientId).HasMaxLength(256);
+            // No length cap on EncryptedClientSecret — DataProtection
+            // ciphertext can grow large depending on the protector chain.
         });
     }
 }
@@ -84,6 +110,10 @@ public abstract class MultiTenantIdentityDbContext<TUser, TRole>
     public DbSet<VisuAuthTenant> VisuAuthTenants => Set<VisuAuthTenant>();
 
     /// <inheritdoc />
+    public DbSet<VisuAuthExternalProviderConfig> VisuAuthExternalProviderConfigs
+        => Set<VisuAuthExternalProviderConfig>();
+
+    /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -97,5 +127,6 @@ public abstract class MultiTenantIdentityDbContext<TUser, TRole>
                 || u.TenantId == _tenantContext.CurrentTenantId);
 
         MultiTenantIdentityDbContext<TUser>.ConfigureVisuAuthTenant(builder);
+        MultiTenantIdentityDbContext<TUser>.ConfigureVisuAuthExternalProviderConfig(builder);
     }
 }

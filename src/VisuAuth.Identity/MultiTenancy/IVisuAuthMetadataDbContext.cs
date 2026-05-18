@@ -21,6 +21,14 @@ public interface IVisuAuthMetadataDbContext
 {
     DbSet<VisuAuthTenant> VisuAuthTenants { get; }
 
+    /// <summary>
+    /// External-provider credentials managed by the admin UI
+    /// (<c>/visuauth/admin/external-providers</c>). The
+    /// <c>EncryptedClientSecret</c> column carries DataProtection
+    /// ciphertext — never read directly, go through the store.
+    /// </summary>
+    DbSet<VisuAuthExternalProviderConfig> VisuAuthExternalProviderConfigs { get; }
+
     /// <summary>Save pending changes for the metadata tables.</summary>
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

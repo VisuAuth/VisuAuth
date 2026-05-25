@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using VisuAuth.Identity.Auditing;
 
 namespace VisuAuth.Identity.MultiTenancy;
 
@@ -28,6 +29,15 @@ public interface IVisuAuthMetadataDbContext
     /// ciphertext — never read directly, go through the store.
     /// </summary>
     DbSet<VisuAuthExternalProviderConfig> VisuAuthExternalProviderConfigs { get; }
+
+    /// <summary>
+    /// Audit log entries persisted by the opt-in audit plugin. Always
+    /// present in the schema so consumer migrations stay consistent across
+    /// deployments; rows are only written when the consumer calls
+    /// <c>AddVisuAuthAuditLog</c>. Indexed on Timestamp DESC for the admin
+    /// page's default ordering.
+    /// </summary>
+    DbSet<VisuAuthAuditLogEntry> VisuAuthAuditLog { get; }
 
     /// <summary>Save pending changes for the metadata tables.</summary>
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

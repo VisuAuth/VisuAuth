@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using VisuAuth.Abstractions.Tenancy;
+using VisuAuth.Identity.Auditing;
 
 namespace VisuAuth.Identity.MultiTenancy;
 
@@ -34,6 +35,10 @@ public abstract class MultiTenantIdentityDbContext<TUser> : IdentityDbContext<TU
         => Set<VisuAuthExternalProviderConfig>();
 
     /// <inheritdoc />
+    public DbSet<VisuAuthAuditLogEntry> VisuAuthAuditLog
+        => Set<VisuAuthAuditLogEntry>();
+
+    /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -51,6 +56,7 @@ public abstract class MultiTenantIdentityDbContext<TUser> : IdentityDbContext<TU
 
         ConfigureVisuAuthTenant(builder);
         ConfigureVisuAuthExternalProviderConfig(builder);
+        ConfigureVisuAuthAuditLog(builder);
     }
 
     internal static void ConfigureVisuAuthTenant(ModelBuilder builder)
@@ -84,6 +90,49 @@ public abstract class MultiTenantIdentityDbContext<TUser> : IdentityDbContext<TU
             // ciphertext can grow large depending on the protector chain.
         });
     }
+
+    internal static void ConfigureVisuAuthAuditLog(ModelBuilder builder)
+    {
+        builder.Entity<VisuAuthAuditLogEntry>(entity =>
+        {
+            entity.ToTable("VisuAuthAuditLog");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedNever();
+
+            // Conservative column widths so the table indexes well on
+            // SQLite / SQL Server / PostgreSQL without per-provider tuning.
+            entity.Property(e => e.Action).HasMaxLength(64).IsRequired();
+            entity.Property(e => e.TargetType).HasMaxLength(64).IsRequired();
+            entity.Property(e => e.TargetId).HasMaxLength(256);
+            entity.Property(e => e.TargetLabel).HasMaxLength(256);
+            entity.Property(e => e.FailureReason).HasMaxLength(1024);
+            entity.Property(e => e.ActorUserId).HasMaxLength(64);
+            entity.Property(e => e.ActorEmail).HasMaxLength(256);
+            entity.Property(e => e.ActorIpAddress).HasMaxLength(64);
+            entity.Property(e => e.ActorUserAgent).HasMaxLength(512);
+            entity.Property(e => e.TenantId).HasMaxLength(64);
+            // PayloadJson is intentionally uncapped — payloads are small
+            // by convention but providers may grow them; let the DB pick.
+
+            // SQLite (and a couple of other providers) refuse to ORDER BY
+            // DateTimeOffset. Convert to UTC DateTime on persistence so the
+            // admin page's "newest first" sort works across providers. The
+            // round-trip is loss-free because the writer always supplies
+            // UTC values via TimeProvider.GetUtcNow().
+            entity.Property(e => e.Timestamp)
+                .HasConversion(
+                    v => v.UtcDateTime,
+                    v => new DateTimeOffset(v, TimeSpan.Zero));
+
+            // Indexes mirror the admin page's access patterns. Composite
+            // (Timestamp DESC, Id) keeps deterministic ordering when many
+            // events share a tick.
+            entity.HasIndex(e => e.Timestamp);
+            entity.HasIndex(e => e.ActorUserId);
+            entity.HasIndex(e => e.TargetId);
+            entity.HasIndex(e => e.Action);
+        });
+    }
 }
 
 /// <summary>
@@ -114,6 +163,10 @@ public abstract class MultiTenantIdentityDbContext<TUser, TRole>
         => Set<VisuAuthExternalProviderConfig>();
 
     /// <inheritdoc />
+    public DbSet<VisuAuthAuditLogEntry> VisuAuthAuditLog
+        => Set<VisuAuthAuditLogEntry>();
+
+    /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -128,5 +181,6 @@ public abstract class MultiTenantIdentityDbContext<TUser, TRole>
 
         MultiTenantIdentityDbContext<TUser>.ConfigureVisuAuthTenant(builder);
         MultiTenantIdentityDbContext<TUser>.ConfigureVisuAuthExternalProviderConfig(builder);
+        MultiTenantIdentityDbContext<TUser>.ConfigureVisuAuthAuditLog(builder);
     }
 }

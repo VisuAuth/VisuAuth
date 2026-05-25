@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Localization;
+using VisuAuth.Abstractions.Auditing;
 using VisuAuth.Abstractions.Authentication;
 using VisuAuth.Abstractions.Tenancy;
 
@@ -23,10 +24,12 @@ namespace VisuAuth.EndUserUi.Pages.ExternalLogin;
 public sealed class ConfirmModel(
     IExternalLoginFlow externalLogin,
     ITenantContext tenantContext,
+    IAuditWriter auditWriter,
     IStringLocalizer<EndUserSharedResources> localizer) : PageModel
 {
     private readonly IExternalLoginFlow _externalLogin = externalLogin ?? throw new ArgumentNullException(nameof(externalLogin));
     private readonly ITenantContext _tenantContext = tenantContext ?? throw new ArgumentNullException(nameof(tenantContext));
+    private readonly IAuditWriter _audit = auditWriter ?? throw new ArgumentNullException(nameof(auditWriter));
     private readonly IStringLocalizer<EndUserSharedResources> _l = localizer ?? throw new ArgumentNullException(nameof(localizer));
 
     [BindProperty]
@@ -76,8 +79,9 @@ public sealed class ConfirmModel(
             ? _tenantContext.CurrentTenantId
             : null;
 
+        var attemptedEmail = Form.Email.Trim();
         var result = await _externalLogin.ConfirmAndCreateAsync(
-            Form.Email.Trim(),
+            attemptedEmail,
             string.IsNullOrWhiteSpace(Form.UserName) ? null : Form.UserName.Trim(),
             tenantId,
             cancellationToken);
@@ -85,10 +89,32 @@ public sealed class ConfirmModel(
         switch (result.Outcome)
         {
             case ExternalSignInOutcome.Success:
+                await _audit.WriteAsync(new AuditEvent
+                {
+                    Action = AuditActions.ExternalLoginAutoCreated,
+                    TargetType = AuditTargetTypes.User,
+                    TargetId = result.UserId,
+                    TargetLabel = attemptedEmail,
+                    Outcome = AuditOutcome.Success,
+                    Payload = new Dictionary<string, string?>
+                    {
+                        ["provider"] = info.Provider,
+                        ["strategy"] = "ConfirmAndCreate",
+                    },
+                }, cancellationToken);
                 return Redirect(SanitiseLocalReturnUrl(ReturnUrl));
 
             case ExternalSignInOutcome.NoExternalSession:
                 Errors = [_l["ExternalLogin.Error.NoSession"].Value];
+                await _audit.WriteAsync(new AuditEvent
+                {
+                    Action = AuditActions.ExternalLoginFailed,
+                    TargetType = AuditTargetTypes.ExternalLogin,
+                    TargetLabel = attemptedEmail,
+                    Outcome = AuditOutcome.Failure,
+                    FailureReason = "No external session",
+                    Payload = new Dictionary<string, string?> { ["provider"] = info.Provider },
+                }, cancellationToken);
                 return Page();
 
             // ExternalSignInOutcome.Failed and any future outcome both
@@ -97,6 +123,15 @@ public sealed class ConfirmModel(
                 Errors = result.Errors.Count > 0
                     ? result.Errors
                     : [_l["ExternalLogin.Error.SignInFailed"].Value];
+                await _audit.WriteAsync(new AuditEvent
+                {
+                    Action = AuditActions.ExternalLoginFailed,
+                    TargetType = AuditTargetTypes.ExternalLogin,
+                    TargetLabel = attemptedEmail,
+                    Outcome = AuditOutcome.Failure,
+                    FailureReason = string.Join("; ", Errors),
+                    Payload = new Dictionary<string, string?> { ["provider"] = info.Provider },
+                }, cancellationToken);
                 return Page();
         }
     }

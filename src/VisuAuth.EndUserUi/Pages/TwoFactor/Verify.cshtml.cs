@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Localization;
+using VisuAuth.Abstractions.Auditing;
 using VisuAuth.Abstractions.Authentication;
 using VisuAuth.Abstractions.Capabilities;
 using SignInResult = VisuAuth.Abstractions.Authentication.SignInResult;
@@ -21,9 +22,11 @@ namespace VisuAuth.EndUserUi.Pages.TwoFactor;
 /// </remarks>
 public sealed class VerifyModel(
     ITwoFactorFlow twoFactor,
+    IAuditWriter auditWriter,
     IStringLocalizer<EndUserSharedResources> localizer) : PageModel
 {
     private readonly ITwoFactorFlow _twoFactor = twoFactor ?? throw new ArgumentNullException(nameof(twoFactor));
+    private readonly IAuditWriter _audit = auditWriter ?? throw new ArgumentNullException(nameof(auditWriter));
     private readonly IStringLocalizer<EndUserSharedResources> _l = localizer ?? throw new ArgumentNullException(nameof(localizer));
 
     [BindProperty]
@@ -86,6 +89,7 @@ public sealed class VerifyModel(
             Form.RememberMachine,
             cancellationToken);
 
+        await EmitAuditAsync(result, isRecovery: false, cancellationToken);
         return HandleSignInResult(result, isRecovery: false);
     }
 
@@ -105,7 +109,50 @@ public sealed class VerifyModel(
         }
 
         var result = await _twoFactor.TwoFactorRecoveryCodeSignInAsync(Form.RecoveryCode, cancellationToken);
+        await EmitAuditAsync(result, isRecovery: true, cancellationToken);
         return HandleSignInResult(result, isRecovery: true);
+    }
+
+    /// <summary>
+    /// Centralised audit emission so both forms (authenticator + recovery)
+    /// share the same outcome→action mapping. Recovery success uses a
+    /// dedicated code so the admin page can spot "user used a recovery code
+    /// — they should regenerate the set" patterns.
+    /// </summary>
+    private async Task EmitAuditAsync(SignInResult result, bool isRecovery, CancellationToken cancellationToken)
+    {
+        string action;
+        AuditOutcome outcome;
+        string? failureReason = null;
+        switch (result.Outcome)
+        {
+            case SignInOutcome.Success:
+                action = isRecovery
+                    ? AuditActions.TwoFactorRecoveryCodeUsed
+                    : AuditActions.TwoFactorChallengePassed;
+                outcome = AuditOutcome.Success;
+                break;
+            case SignInOutcome.LockedOut:
+                action = AuditActions.TwoFactorChallengeFailed;
+                outcome = AuditOutcome.Failure;
+                failureReason = "Account locked out";
+                break;
+            default:
+                action = AuditActions.TwoFactorChallengeFailed;
+                outcome = AuditOutcome.Failure;
+                failureReason = isRecovery ? "Invalid recovery code" : "Invalid TOTP code";
+                break;
+        }
+
+        await _audit.WriteAsync(new AuditEvent
+        {
+            Action = action,
+            TargetType = AuditTargetTypes.User,
+            TargetId = result.UserId,
+            Outcome = outcome,
+            FailureReason = failureReason,
+            Payload = isRecovery ? new Dictionary<string, string?> { ["method"] = "recovery" } : null,
+        }, cancellationToken);
     }
 
     private IActionResult HandleSignInResult(SignInResult result, bool isRecovery)

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Localization;
+using VisuAuth.Abstractions.Auditing;
 using VisuAuth.Abstractions.Authentication;
 using VisuAuth.Abstractions.Capabilities;
 
@@ -21,12 +22,14 @@ namespace VisuAuth.EndUserUi.Pages.TwoFactor;
 [Authorize]
 public sealed class RecoveryCodesModel(
     ITwoFactorFlow twoFactor,
+    IAuditWriter auditWriter,
     IStringLocalizer<EndUserSharedResources> localizer) : PageModel
 {
     /// <summary>How many recovery codes the page produces per generation.</summary>
     public const int CodeCount = 10;
 
     private readonly ITwoFactorFlow _twoFactor = twoFactor ?? throw new ArgumentNullException(nameof(twoFactor));
+    private readonly IAuditWriter _audit = auditWriter ?? throw new ArgumentNullException(nameof(auditWriter));
     private readonly IStringLocalizer<EndUserSharedResources> _l = localizer ?? throw new ArgumentNullException(nameof(localizer));
 
     public UserBackendCapabilities Capabilities => _twoFactor.Capabilities;
@@ -96,10 +99,26 @@ public sealed class RecoveryCodesModel(
         if (RecoveryCodes.Count == 0 && ErrorMessage is null)
         {
             ErrorMessage = _l["TwoFactor.Recovery.Error.GenerateFailed"].Value;
+            await _audit.WriteAsync(new AuditEvent
+            {
+                Action = AuditActions.TwoFactorRecoveryCodesRegenerated,
+                TargetType = AuditTargetTypes.User,
+                TargetId = userId,
+                Outcome = AuditOutcome.Failure,
+                FailureReason = ErrorMessage,
+            }, cancellationToken);
         }
         else if (RecoveryCodes.Count > 0)
         {
             SuccessMessage = _l["TwoFactor.Recovery.RegeneratedNotice"].Value;
+            await _audit.WriteAsync(new AuditEvent
+            {
+                Action = AuditActions.TwoFactorRecoveryCodesRegenerated,
+                TargetType = AuditTargetTypes.User,
+                TargetId = userId,
+                Outcome = AuditOutcome.Success,
+                Payload = new Dictionary<string, string?> { ["codeCount"] = RecoveryCodes.Count.ToString(System.Globalization.CultureInfo.InvariantCulture) },
+            }, cancellationToken);
         }
         return Page();
     }
@@ -123,8 +142,26 @@ public sealed class RecoveryCodesModel(
         {
             ErrorMessage = result.Error ?? _l["TwoFactor.Recovery.Error.DisableFailed"].Value;
             IsEnabled = await _twoFactor.IsTwoFactorEnabledAsync(userId, cancellationToken);
+
+            await _audit.WriteAsync(new AuditEvent
+            {
+                Action = AuditActions.TwoFactorDisabledBySelf,
+                TargetType = AuditTargetTypes.User,
+                TargetId = userId,
+                Outcome = AuditOutcome.Failure,
+                FailureReason = result.Error,
+            }, cancellationToken);
+
             return Page();
         }
+
+        await _audit.WriteAsync(new AuditEvent
+        {
+            Action = AuditActions.TwoFactorDisabledBySelf,
+            TargetType = AuditTargetTypes.User,
+            TargetId = userId,
+            Outcome = AuditOutcome.Success,
+        }, cancellationToken);
 
         // Land back on /setup so the user sees the QR-pairing flow again
         // and is gently prompted to re-enroll if they ever want it back.

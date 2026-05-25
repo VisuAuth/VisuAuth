@@ -636,6 +636,21 @@ body {
     text-decoration: underline;
 }
 
+/* Visually-hidden but accessible-tree visible. Used by form controls
+ * whose label exists for screen readers but doesn't fit the inline
+ * filter row visually (audit-log filters, etc). */
+.va-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
 .va-detail-card .va-table {
     border-top: 1px solid var(--visuauth-border);
 }

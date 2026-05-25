@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Localization;
+using VisuAuth.Abstractions.Auditing;
 using VisuAuth.Abstractions.Authentication;
+using VisuAuth.Abstractions.Common;
 using VisuAuth.AdminUi.ExternalProviders;
 
 namespace VisuAuth.AdminUi.Pages.Admin.ExternalProviders;
@@ -29,6 +31,7 @@ public sealed class IndexModel(
     IExternalProviderRegistry registry,
     IExternalProviderOptionsCacheInvalidator cacheInvalidator,
     IExternalProviderStaticConfigSnapshot staticSnapshot,
+    IAuditWriter auditWriter,
     IStringLocalizer<AdminSharedResources> localizer) : PageModel
 {
     // Shared localizer key — used by every handler that needs to bail out
@@ -40,6 +43,7 @@ public sealed class IndexModel(
     private readonly IExternalProviderRegistry _registry = registry ?? throw new ArgumentNullException(nameof(registry));
     private readonly IExternalProviderOptionsCacheInvalidator _cacheInvalidator = cacheInvalidator ?? throw new ArgumentNullException(nameof(cacheInvalidator));
     private readonly IExternalProviderStaticConfigSnapshot _staticSnapshot = staticSnapshot ?? throw new ArgumentNullException(nameof(staticSnapshot));
+    private readonly IAuditWriter _audit = auditWriter ?? throw new ArgumentNullException(nameof(auditWriter));
     private readonly IStringLocalizer<AdminSharedResources> _l = localizer ?? throw new ArgumentNullException(nameof(localizer));
 
     [BindProperty]
@@ -96,6 +100,39 @@ public sealed class IndexModel(
 
     public async Task<IActionResult> OnPostSaveAsync(string? scheme, CancellationToken cancellationToken)
     {
+        var guard = await GuardSaveAsync(scheme, cancellationToken);
+        if (guard is not null)
+        {
+            return guard;
+        }
+
+        var existing = await _configStore.GetAsync(scheme!, tenantId: null, cancellationToken);
+        var catalogue = KnownProviderCatalog.Find(scheme!);
+        var displayName = catalogue?.DisplayName ?? existing?.DisplayName ?? scheme!;
+        var secretToSave = ResolveSecretToSave();
+
+        var result = await _configStore.SaveAsync(new SaveExternalProviderConfigCommand
+        {
+            Scheme = scheme!,
+            DisplayName = displayName,
+            TenantId = null,
+            ClientId = string.IsNullOrWhiteSpace(EditFields.ClientId) ? null : EditFields.ClientId.Trim(),
+            PlainTextClientSecret = secretToSave,
+            IsEnabled = EditFields.IsEnabled,
+        }, cancellationToken);
+
+        await ApplySaveOutcomeAsync(scheme!, displayName, secretToSave, result, cancellationToken);
+
+        await LoadAsync(cancellationToken);
+        return RenderResult();
+    }
+
+    /// <summary>
+    /// Early-bail checks for the save handler. Returns the IActionResult
+    /// to render, or null when the input is fit to hit the store.
+    /// </summary>
+    private async Task<IActionResult?> GuardSaveAsync(string? scheme, CancellationToken cancellationToken)
+    {
         if (string.IsNullOrWhiteSpace(scheme))
         {
             ActionErrors = [_l[MissingSchemeKey].Value];
@@ -108,58 +145,80 @@ public sealed class IndexModel(
             await LoadAsync(cancellationToken);
             return RenderResult();
         }
+        return null;
+    }
 
-        // DisplayName for the row: prefer the catalogue entry, fall back to
-        // the existing DB row, fall back to the scheme itself so a custom
-        // provider with no metadata still renders something readable.
-        var existing = await _configStore.GetAsync(scheme, tenantId: null, cancellationToken);
-        var catalogue = KnownProviderCatalog.Find(scheme);
-        var displayName = catalogue?.DisplayName ?? existing?.DisplayName ?? scheme;
-
-        // PlainTextClientSecret == null => preserve existing ciphertext.
-        // PlainTextClientSecret == "" => admin explicitly cleared the secret.
-        // Otherwise => encrypt + replace.
+    /// <summary>
+    /// Encryption rule used by Save:
+    /// — non-empty plaintext  → encrypt and replace.
+    /// — empty + Clear ticked → drop the stored secret entirely.
+    /// — empty + no Clear     → preserve whatever ciphertext was stored.
+    /// </summary>
+    private string? ResolveSecretToSave()
+    {
         var rawSecret = EditFields.ClientSecret;
-        string? secretToSave;
         if (!string.IsNullOrEmpty(rawSecret))
         {
-            secretToSave = rawSecret;
+            return rawSecret;
         }
-        else if (EditFields.ClearClientSecret)
+        if (EditFields.ClearClientSecret)
         {
-            secretToSave = string.Empty;
+            return string.Empty;
         }
-        else
-        {
-            secretToSave = null;
-        }
+        return null;
+    }
 
-        var result = await _configStore.SaveAsync(new SaveExternalProviderConfigCommand
-        {
-            Scheme = scheme,
-            DisplayName = displayName,
-            TenantId = null,
-            ClientId = string.IsNullOrWhiteSpace(EditFields.ClientId) ? null : EditFields.ClientId.Trim(),
-            PlainTextClientSecret = secretToSave,
-            IsEnabled = EditFields.IsEnabled,
-        }, cancellationToken);
-
+    /// <summary>
+    /// Mutates page state (errors / message / EditingScheme) AND emits the
+    /// matching audit event. Kept out of OnPostSaveAsync so that method
+    /// stays under the cognitive-complexity budget.
+    /// </summary>
+    private async Task ApplySaveOutcomeAsync(
+        string scheme,
+        string displayName,
+        string? secretToSave,
+        UserResult result,
+        CancellationToken cancellationToken)
+    {
         if (!result.IsSuccess)
         {
             EditingScheme = scheme;
             ActionErrors = result.ValidationErrors.Count > 0
                 ? result.ValidationErrors
                 : [result.Error ?? _l["ExternalProviders.Error.SaveFailed"].Value];
-        }
-        else
-        {
-            _cacheInvalidator.Invalidate(scheme);
-            ActionMessage = _l["ExternalProviders.Action.Saved", scheme].Value;
-            EditFields = new EditForm();
+
+            await _audit.WriteAsync(new AuditEvent
+            {
+                Action = AuditActions.ExternalProviderSaved,
+                TargetType = AuditTargetTypes.ExternalProvider,
+                TargetId = scheme,
+                TargetLabel = displayName,
+                Outcome = AuditOutcome.Failure,
+                FailureReason = result.Error ?? string.Join("; ", result.ValidationErrors),
+            }, cancellationToken);
+            return;
         }
 
-        await LoadAsync(cancellationToken);
-        return RenderResult();
+        _cacheInvalidator.Invalidate(scheme);
+        ActionMessage = _l["ExternalProviders.Action.Saved", scheme].Value;
+
+        await _audit.WriteAsync(new AuditEvent
+        {
+            Action = AuditActions.ExternalProviderSaved,
+            TargetType = AuditTargetTypes.ExternalProvider,
+            TargetId = scheme,
+            TargetLabel = displayName,
+            Outcome = AuditOutcome.Success,
+            Payload = new Dictionary<string, string?>
+            {
+                // Never log the secret itself — just whether one was provided.
+                ["clientIdSet"] = !string.IsNullOrWhiteSpace(EditFields.ClientId) ? "true" : "false",
+                ["clientSecretChanged"] = secretToSave is null ? "false" : "true",
+                ["isEnabled"] = EditFields.IsEnabled ? "true" : "false",
+            },
+        }, cancellationToken);
+
+        EditFields = new EditForm();
     }
 
     public Task<IActionResult> OnPostToggleEnabledAsync(string? scheme, bool isEnabled, CancellationToken cancellationToken)
@@ -169,6 +228,14 @@ public sealed class IndexModel(
     {
         await BulkSetEnabledAsync(true, cancellationToken);
         ActionMessage = _l["ExternalProviders.Action.BulkEnabled"].Value;
+
+        await _audit.WriteAsync(new AuditEvent
+        {
+            Action = AuditActions.ExternalProviderBulkEnabled,
+            TargetType = AuditTargetTypes.ExternalProvider,
+            Outcome = AuditOutcome.Success,
+        }, cancellationToken);
+
         await LoadAsync(cancellationToken);
         return RenderResult();
     }
@@ -177,6 +244,14 @@ public sealed class IndexModel(
     {
         await BulkSetEnabledAsync(false, cancellationToken);
         ActionMessage = _l["ExternalProviders.Action.BulkDisabled"].Value;
+
+        await _audit.WriteAsync(new AuditEvent
+        {
+            Action = AuditActions.ExternalProviderBulkDisabled,
+            TargetType = AuditTargetTypes.ExternalProvider,
+            Outcome = AuditOutcome.Success,
+        }, cancellationToken);
+
         await LoadAsync(cancellationToken);
         return RenderResult();
     }
@@ -199,11 +274,28 @@ public sealed class IndexModel(
         if (!result.IsSuccess)
         {
             ActionErrors = [result.Error ?? _l["ExternalProviders.Error.DeleteFailed"].Value];
+
+            await _audit.WriteAsync(new AuditEvent
+            {
+                Action = AuditActions.ExternalProviderOrphanDeleted,
+                TargetType = AuditTargetTypes.ExternalProvider,
+                TargetId = scheme,
+                Outcome = AuditOutcome.Failure,
+                FailureReason = result.Error,
+            }, cancellationToken);
         }
         else
         {
             _cacheInvalidator.Invalidate(scheme);
             ActionMessage = _l["ExternalProviders.Action.OrphanDeleted", scheme].Value;
+
+            await _audit.WriteAsync(new AuditEvent
+            {
+                Action = AuditActions.ExternalProviderOrphanDeleted,
+                TargetType = AuditTargetTypes.ExternalProvider,
+                TargetId = scheme,
+                Outcome = AuditOutcome.Success,
+            }, cancellationToken);
         }
         await LoadAsync(cancellationToken);
         return RenderResult();
@@ -218,9 +310,21 @@ public sealed class IndexModel(
             return RenderResult();
         }
         var result = await _configStore.SetEnabledAsync(scheme, tenantId: null, isEnabled, cancellationToken);
+        var toggleAction = isEnabled
+            ? AuditActions.ExternalProviderEnabled
+            : AuditActions.ExternalProviderDisabled;
         if (!result.IsSuccess)
         {
             ActionErrors = [result.Error ?? _l["ExternalProviders.Error.SaveFailed"].Value];
+
+            await _audit.WriteAsync(new AuditEvent
+            {
+                Action = toggleAction,
+                TargetType = AuditTargetTypes.ExternalProvider,
+                TargetId = scheme,
+                Outcome = AuditOutcome.Failure,
+                FailureReason = result.Error,
+            }, cancellationToken);
         }
         else
         {
@@ -228,6 +332,14 @@ public sealed class IndexModel(
             ActionMessage = isEnabled
                 ? _l["ExternalProviders.Action.Enabled", scheme].Value
                 : _l["ExternalProviders.Action.Disabled", scheme].Value;
+
+            await _audit.WriteAsync(new AuditEvent
+            {
+                Action = toggleAction,
+                TargetType = AuditTargetTypes.ExternalProvider,
+                TargetId = scheme,
+                Outcome = AuditOutcome.Success,
+            }, cancellationToken);
         }
         await LoadAsync(cancellationToken);
         return RenderResult();

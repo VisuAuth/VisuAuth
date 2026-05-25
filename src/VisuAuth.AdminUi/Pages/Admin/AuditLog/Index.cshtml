@@ -1,0 +1,226 @@
+@page "/visuauth/admin/audit-log"
+@model VisuAuth.AdminUi.Pages.Admin.AuditLog.IndexModel
+@{
+    ViewData["Title"] = Ls["AuditLog.PageTitle"].Value;
+}
+
+<div class="va-page-header">
+    <h1>@Ls["AuditLog.Title"] <span class="va-muted" style="font-weight:400;font-size:1rem;">(@Model.Result.Total)</span></h1>
+</div>
+<p class="va-muted" style="margin-top:-0.5rem;">@Ls["AuditLog.Subtitle"]</p>
+
+@if (!Model.IsAuditEnabled)
+{
+    <section class="va-card">
+        <div class="va-empty">
+            <p><strong>@Ls["AuditLog.NotEnabled.Heading"]</strong></p>
+            <p>@Ls["AuditLog.NotEnabled.Body"]</p>
+            <pre class="va-code-snippet"><code>builder.Services.AddVisuAuthAuditLog();
+// or
+builder.Services.AddVisuAuthAuditLog(opts =&gt; opts.RetentionDays = 180);</code></pre>
+        </div>
+    </section>
+    return;
+}
+
+<form id="va-audit-filter"
+      method="get"
+      action="/visuauth/admin/audit-log"
+      class="va-filters">
+    <input type="search"
+           class="va-search va-input"
+           name="q"
+           value="@Model.ActorSearch"
+           placeholder="@Ls["AuditLog.Filter.ActorPlaceholder"]"
+           autocomplete="off" />
+
+    @* Sonar Web:S7927 wants each form control's accessible name to also be
+       a visible label, not just aria-label. The label-text is hidden
+       visually with .va-sr-only but exposed to AT and to the accessibility
+       tree, so screen readers and Sonar's checker both see it. *@
+    <label class="va-sr-only" for="va-audit-filter-action">@Ls["AuditLog.Filter.ActionAria"]</label>
+    <select id="va-audit-filter-action" name="action" class="va-input va-filter-select">
+        <option value="">@Ls["AuditLog.Filter.ActionAny"]</option>
+        @foreach (var action in Model.AvailableActions)
+        {
+            <option value="@action" selected="@(string.Equals(action, Model.ActionFilter, StringComparison.Ordinal) ? "selected" : null)">@action</option>
+        }
+    </select>
+
+    <label class="va-sr-only" for="va-audit-filter-outcome">@Ls["AuditLog.Filter.OutcomeAria"]</label>
+    <select id="va-audit-filter-outcome" name="outcome" class="va-input va-filter-select">
+        <option value="">@Ls["AuditLog.Filter.OutcomeAny"]</option>
+        <option value="success" selected="@(Model.OutcomeFilter == "success" ? "selected" : null)">@Ls["AuditLog.Filter.OutcomeSuccess"]</option>
+        <option value="failure" selected="@(Model.OutcomeFilter == "failure" ? "selected" : null)">@Ls["AuditLog.Filter.OutcomeFailure"]</option>
+    </select>
+
+    <label class="va-sr-only" for="va-audit-filter-from">@Ls["AuditLog.Filter.FromAria"]</label>
+    <input id="va-audit-filter-from" type="date" name="from" value="@(Model.From?.ToString("yyyy-MM-dd"))" class="va-input va-filter-select" />
+    <label class="va-sr-only" for="va-audit-filter-to">@Ls["AuditLog.Filter.ToAria"]</label>
+    <input id="va-audit-filter-to" type="date" name="to" value="@(Model.To?.ToString("yyyy-MM-dd"))" class="va-input va-filter-select" />
+
+    @if (!string.IsNullOrEmpty(Model.TargetIdFilter))
+    {
+        <input type="hidden" name="targetId" value="@Model.TargetIdFilter" />
+        <span class="va-badge" title="@Ls["AuditLog.Filter.TargetActiveTitle"]">
+            target: <code>@Model.TargetIdFilter</code>
+            <a href="@RemoveTargetIdQuery()" class="va-muted" style="margin-left:0.4rem;text-decoration:none;" title="@Ls["AuditLog.Filter.ClearTargetTitle"]">✕</a>
+        </span>
+    }
+
+    <button type="submit" class="va-btn va-btn-primary va-btn-small">@Ls["AuditLog.Filter.Apply"]</button>
+    <a href="/visuauth/admin/audit-log" class="va-btn va-btn-ghost va-btn-small">@Ls["AuditLog.Filter.Clear"]</a>
+</form>
+
+<section class="va-card">
+    @if (Model.Result.Items.Count == 0)
+    {
+        <div class="va-empty">
+            <p>@Ls["AuditLog.Empty"]</p>
+        </div>
+    }
+    else
+    {
+        <table class="va-table">
+            <thead>
+                <tr>
+                    <th>@Ls["AuditLog.Col.When"]</th>
+                    <th>@Ls["AuditLog.Col.Actor"]</th>
+                    <th>@Ls["AuditLog.Col.Action"]</th>
+                    <th>@Ls["AuditLog.Col.Target"]</th>
+                    <th>@Ls["AuditLog.Col.Outcome"]</th>
+                    <th>@Ls["AuditLog.Col.Details"]</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var entry in Model.Result.Items)
+            {
+                <tr>
+                    <td>
+                        <span class="va-muted" title="@entry.Timestamp.ToString("O")">
+                            @entry.Timestamp.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")
+                        </span>
+                    </td>
+                    <td>
+                        @if (entry.ActorEmail is { Length: > 0 } actor)
+                        {
+                            <strong>@actor</strong>
+                        }
+                        else
+                        {
+                            <span class="va-muted">@Ls["AuditLog.AnonymousActor"]</span>
+                        }
+                        @if (entry.ActorIpAddress is { Length: > 0 } ip)
+                        {
+                            <div class="va-muted" style="font-size:0.8rem;"><code>@ip</code></div>
+                        }
+                    </td>
+                    <td><code class="va-tenant-id">@entry.Action</code></td>
+                    <td>
+                        @if (entry.TargetLabel is { Length: > 0 } lbl)
+                        {
+                            <span>@lbl</span>
+                        }
+                        else if (entry.TargetId is { Length: > 0 } tid)
+                        {
+                            <code class="va-tenant-id">@tid</code>
+                        }
+                        else
+                        {
+                            <span class="va-muted">@Ls["Common.Dash"]</span>
+                        }
+                        @if (entry.TargetId is { Length: > 0 } targetId)
+                        {
+                            <a href="@($"/visuauth/admin/audit-log?targetId={Uri.EscapeDataString(targetId)}")"
+                               class="va-muted"
+                               style="margin-left:0.4rem;font-size:0.8rem;"
+                               title="@Ls["AuditLog.Filter.FocusTargetTitle"]">⤴</a>
+                        }
+                    </td>
+                    <td>
+                        @if (entry.Outcome == VisuAuth.Abstractions.Auditing.AuditOutcome.Success)
+                        {
+                            <span class="va-badge va-success">@Ls["AuditLog.Filter.OutcomeSuccess"]</span>
+                        }
+                        else
+                        {
+                            <span class="va-badge va-danger">@Ls["AuditLog.Filter.OutcomeFailure"]</span>
+                        }
+                    </td>
+                    <td>
+                        @if (!string.IsNullOrWhiteSpace(entry.FailureReason) || !string.IsNullOrWhiteSpace(entry.PayloadJson))
+                        {
+                            <details>
+                                <summary class="va-muted">@Ls["AuditLog.Details.Expand"]</summary>
+                                @if (!string.IsNullOrWhiteSpace(entry.FailureReason))
+                                {
+                                    <p style="margin:0.5rem 0;"><strong>@Ls["AuditLog.Details.Reason"]:</strong> @entry.FailureReason</p>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(entry.PayloadJson))
+                                {
+                                    <pre class="va-code-snippet"><code>@entry.PayloadJson</code></pre>
+                                }
+                            </details>
+                        }
+                        else
+                        {
+                            <span class="va-muted">@Ls["Common.Dash"]</span>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+
+        @if (Model.Result.TotalPages > 1)
+        {
+            <div class="va-pagination">
+                @if (Model.Result.HasPrevious)
+                {
+                    <a href="@PageLink(Model.Result.Page - 1)">@Ls["Common.Previous"]</a>
+                }
+                else
+                {
+                    <span class="va-disabled">@Ls["Common.Previous"]</span>
+                }
+                <span class="va-muted">@string.Format(System.Globalization.CultureInfo.CurrentCulture, Ls["Common.PageNofTotal"].Value, Model.Result.Page, Model.Result.TotalPages)</span>
+                @if (Model.Result.HasNext)
+                {
+                    <a href="@PageLink(Model.Result.Page + 1)">@Ls["Common.Next"]</a>
+                }
+                else
+                {
+                    <span class="va-disabled">@Ls["Common.Next"]</span>
+                }
+            </div>
+        }
+    }
+</section>
+
+@functions {
+    private string PageLink(int page)
+    {
+        var qs = new List<string>();
+        if (!string.IsNullOrWhiteSpace(Model.ActorSearch)) qs.Add($"q={Uri.EscapeDataString(Model.ActorSearch)}");
+        if (!string.IsNullOrWhiteSpace(Model.ActionFilter)) qs.Add($"action={Uri.EscapeDataString(Model.ActionFilter)}");
+        if (!string.IsNullOrWhiteSpace(Model.TargetIdFilter)) qs.Add($"targetId={Uri.EscapeDataString(Model.TargetIdFilter)}");
+        if (!string.IsNullOrWhiteSpace(Model.OutcomeFilter)) qs.Add($"outcome={Model.OutcomeFilter}");
+        if (Model.From is { } f) qs.Add($"from={f:yyyy-MM-dd}");
+        if (Model.To is { } t) qs.Add($"to={t:yyyy-MM-dd}");
+        qs.Add($"page={page}");
+        return "/visuauth/admin/audit-log?" + string.Join('&', qs);
+    }
+
+    private string RemoveTargetIdQuery()
+    {
+        // Same as PageLink but with TargetId stripped — used by the ✕
+        // button next to the "target: ..." badge.
+        var qs = new List<string>();
+        if (!string.IsNullOrWhiteSpace(Model.ActorSearch)) qs.Add($"q={Uri.EscapeDataString(Model.ActorSearch)}");
+        if (!string.IsNullOrWhiteSpace(Model.ActionFilter)) qs.Add($"action={Uri.EscapeDataString(Model.ActionFilter)}");
+        if (!string.IsNullOrWhiteSpace(Model.OutcomeFilter)) qs.Add($"outcome={Model.OutcomeFilter}");
+        if (Model.From is { } f) qs.Add($"from={f:yyyy-MM-dd}");
+        if (Model.To is { } t) qs.Add($"to={t:yyyy-MM-dd}");
+        return qs.Count == 0 ? "/visuauth/admin/audit-log" : "/visuauth/admin/audit-log?" + string.Join('&', qs);
+    }
+}

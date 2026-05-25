@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Localization;
+using VisuAuth.Abstractions.Auditing;
 using VisuAuth.Abstractions.Capabilities;
 using VisuAuth.Abstractions.Roles;
 using VisuAuth.Abstractions.Users;
@@ -14,10 +15,12 @@ namespace VisuAuth.AdminUi.Pages.Admin.Users;
 public sealed class NewModel(
     IUserStore userStore,
     IRoleStore roleStore,
+    IAuditWriter auditWriter,
     IStringLocalizer<AdminSharedResources> localizer) : PageModel
 {
     private readonly IUserStore _userStore = userStore ?? throw new ArgumentNullException(nameof(userStore));
     private readonly IRoleStore _roleStore = roleStore ?? throw new ArgumentNullException(nameof(roleStore));
+    private readonly IAuditWriter _audit = auditWriter ?? throw new ArgumentNullException(nameof(auditWriter));
     private readonly IStringLocalizer<AdminSharedResources> _l = localizer ?? throw new ArgumentNullException(nameof(localizer));
 
     [BindProperty]
@@ -85,6 +88,16 @@ public sealed class NewModel(
             Errors = result.ValidationErrors.Count > 0
                 ? result.ValidationErrors
                 : [result.Error ?? _l["Users.Error.CreateFailed"].Value];
+
+            await _audit.WriteAsync(new AuditEvent
+            {
+                Action = AuditActions.UserCreated,
+                TargetType = AuditTargetTypes.User,
+                TargetLabel = command.Email,
+                Outcome = AuditOutcome.Failure,
+                FailureReason = result.Error ?? string.Join("; ", result.ValidationErrors),
+            }, cancellationToken);
+
             await LoadRolesAsync(cancellationToken);
             return Page();
         }
@@ -94,6 +107,20 @@ public sealed class NewModel(
         {
             GeneratedPassword = temp;
         }
+
+        await _audit.WriteAsync(new AuditEvent
+        {
+            Action = AuditActions.UserCreated,
+            TargetType = AuditTargetTypes.User,
+            TargetId = result.UserId,
+            TargetLabel = command.Email,
+            Outcome = AuditOutcome.Success,
+            Payload = new Dictionary<string, string?>
+            {
+                ["emailConfirmed"] = command.EmailConfirmed ? "true" : "false",
+                ["temporaryPasswordGenerated"] = GeneratedPassword is not null ? "true" : "false",
+            },
+        }, cancellationToken);
 
         // Assign roles after the user lands. A failure here leaves the user
         // in place — better to surface a partial-success message than to roll
@@ -111,6 +138,29 @@ public sealed class NewModel(
                 if (!assign.IsSuccess)
                 {
                     roleErrors.Add(assign.Error ?? _l["Users.Action.FailedAssignRole", role].Value);
+
+                    await _audit.WriteAsync(new AuditEvent
+                    {
+                        Action = AuditActions.RoleAssignedToUser,
+                        TargetType = AuditTargetTypes.User,
+                        TargetId = id,
+                        TargetLabel = command.Email,
+                        Outcome = AuditOutcome.Failure,
+                        FailureReason = assign.Error,
+                        Payload = new Dictionary<string, string?> { ["role"] = role },
+                    }, cancellationToken);
+                }
+                else
+                {
+                    await _audit.WriteAsync(new AuditEvent
+                    {
+                        Action = AuditActions.RoleAssignedToUser,
+                        TargetType = AuditTargetTypes.User,
+                        TargetId = id,
+                        TargetLabel = command.Email,
+                        Outcome = AuditOutcome.Success,
+                        Payload = new Dictionary<string, string?> { ["role"] = role },
+                    }, cancellationToken);
                 }
             }
             if (roleErrors.Count > 0)

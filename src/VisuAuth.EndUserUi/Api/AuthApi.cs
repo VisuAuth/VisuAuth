@@ -4,8 +4,10 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using VisuAuth.Abstractions.Auditing;
 using VisuAuth.Abstractions.Authentication;
 using VisuAuth.Abstractions.Tenancy;
+using VisuAuth.EndUserUi.Authentication;
 
 namespace VisuAuth.EndUserUi.Api;
 
@@ -41,6 +43,7 @@ public static class AuthApi
         LoginRequest request,
         IAuthenticationFlow authentication,
         IJwtIssuer issuer,
+        SignInAuditEmitter auditEmitter,
         CancellationToken cancellationToken)
     {
         if (request is null ||
@@ -50,27 +53,27 @@ public static class AuthApi
             return Results.BadRequest(new AuthErrorResponse("Email and password are required."));
         }
 
+        var attemptedEmail = request.Email.Trim();
         var result = await authentication.SignInWithPasswordAsync(
-            request.Email.Trim(),
+            attemptedEmail,
             request.Password,
             persistent: false,
             cancellationToken);
 
-        return result.Outcome switch
+        // Audit emission first — even the failure path is recorded so the
+        // admin log captures lockouts / failed attempts / 2FA hops.
+        await auditEmitter.EmitAsync(result, attemptedEmail, SignInChannel.Api, cancellationToken: cancellationToken);
+
+        // Success: emit a SECOND, more specific JWT-issued event before
+        // we hand off to the issuer. The first (LoginSucceeded) is the
+        // shared audit code; this one carries channel-specific intent so
+        // operators can spot "API logins minted JWTs" patterns.
+        if (result.Outcome == SignInOutcome.Success && result.UserId is { Length: > 0 } userId)
         {
-            SignInOutcome.Success when result.UserId is { Length: > 0 } id =>
-                await IssueOrUnauthorized(issuer, id, cancellationToken),
-            SignInOutcome.LockedOut =>
-                Results.Json(new AuthErrorResponse("Account is locked."), statusCode: StatusCodes.Status423Locked),
-            SignInOutcome.RequiresTwoFactor =>
-                Results.Json(new AuthErrorResponse("Two-factor authentication is required."), statusCode: StatusCodes.Status401Unauthorized),
-            SignInOutcome.NotAllowed =>
-                Results.Json(new AuthErrorResponse(result.Error ?? "Sign-in is not allowed for this account."), statusCode: StatusCodes.Status403Forbidden),
-            _ =>
-                // Generic 401 on invalid credentials / unknown email — never
-                // leak whether the email exists.
-                Results.Json(new AuthErrorResponse("Email or password is incorrect."), statusCode: StatusCodes.Status401Unauthorized),
-        };
+            return await IssueOrUnauthorized(issuer, userId, cancellationToken);
+        }
+
+        return SignInApiResponseMapper.MapFailure(result);
     }
 
     private static async Task<IResult> RegisterAsync(
@@ -78,6 +81,7 @@ public static class AuthApi
         IAuthenticationFlow authentication,
         ITenantContext tenantContext,
         IJwtIssuer issuer,
+        IAuditWriter audit,
         CancellationToken cancellationToken)
     {
         if (request is null ||
@@ -96,20 +100,40 @@ public static class AuthApi
 
         var tenantId = tenantContext.IsMultiTenancyEnabled ? tenantContext.CurrentTenantId : null;
 
+        var attemptedEmail = request.Email.Trim();
         var registerResult = await authentication.RegisterAsync(
-            request.Email.Trim(),
+            attemptedEmail,
             request.Password,
             tenantId,
             cancellationToken);
 
         if (!registerResult.IsSuccess)
         {
+            await audit.WriteAsync(new AuditEvent
+            {
+                Action = AuditActions.UserRegistered,
+                TargetType = AuditTargetTypes.User,
+                TargetLabel = attemptedEmail,
+                Outcome = AuditOutcome.Failure,
+                FailureReason = registerResult.Error ?? string.Join("; ", registerResult.ValidationErrors),
+                Payload = new Dictionary<string, string?> { [SignInAuditEmitter.ChannelPayloadKey] = "api" },
+            }, cancellationToken);
             return Results.Json(
                 new AuthErrorResponse(
                     registerResult.Error ?? "Failed to register.",
                     registerResult.ValidationErrors.Count > 0 ? registerResult.ValidationErrors : null),
                 statusCode: StatusCodes.Status400BadRequest);
         }
+
+        await audit.WriteAsync(new AuditEvent
+        {
+            Action = AuditActions.UserRegistered,
+            TargetType = AuditTargetTypes.User,
+            TargetId = registerResult.UserId,
+            TargetLabel = attemptedEmail,
+            Outcome = AuditOutcome.Success,
+            Payload = new Dictionary<string, string?> { [SignInAuditEmitter.ChannelPayloadKey] = "api" },
+        }, cancellationToken);
 
         return await IssueOrUnauthorized(issuer, registerResult.UserId!, cancellationToken);
     }

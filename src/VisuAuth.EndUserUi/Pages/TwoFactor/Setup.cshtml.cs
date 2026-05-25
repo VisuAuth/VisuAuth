@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Localization;
+using VisuAuth.Abstractions.Auditing;
 using VisuAuth.Abstractions.Authentication;
 using VisuAuth.Abstractions.Capabilities;
 using VisuAuth.EndUserUi.TwoFactor;
@@ -24,10 +25,12 @@ namespace VisuAuth.EndUserUi.Pages.TwoFactor;
 public sealed class SetupModel(
     ITwoFactorFlow twoFactor,
     IQrCodeSvgRenderer qrCodeRenderer,
+    IAuditWriter auditWriter,
     IStringLocalizer<EndUserSharedResources> localizer) : PageModel
 {
     private readonly ITwoFactorFlow _twoFactor = twoFactor ?? throw new ArgumentNullException(nameof(twoFactor));
     private readonly IQrCodeSvgRenderer _qrCodeRenderer = qrCodeRenderer ?? throw new ArgumentNullException(nameof(qrCodeRenderer));
+    private readonly IAuditWriter _audit = auditWriter ?? throw new ArgumentNullException(nameof(auditWriter));
     private readonly IStringLocalizer<EndUserSharedResources> _l = localizer ?? throw new ArgumentNullException(nameof(localizer));
 
     [BindProperty]
@@ -74,8 +77,26 @@ public sealed class SetupModel(
             // localized text. Always prefer the page's own message for the
             // canonical "wrong code" failure mode.
             ErrorMessage = _l["TwoFactor.Setup.Error.CodeInvalid"].Value;
+
+            await _audit.WriteAsync(new AuditEvent
+            {
+                Action = AuditActions.TwoFactorEnabled,
+                TargetType = AuditTargetTypes.User,
+                TargetId = userId,
+                Outcome = AuditOutcome.Failure,
+                FailureReason = "Invalid verification code",
+            }, cancellationToken);
+
             return await LoadAsync(cancellationToken);
         }
+
+        await _audit.WriteAsync(new AuditEvent
+        {
+            Action = AuditActions.TwoFactorEnabled,
+            TargetType = AuditTargetTypes.User,
+            TargetId = userId,
+            Outcome = AuditOutcome.Success,
+        }, cancellationToken);
 
         // Land on recovery codes immediately — generating them is the only
         // safe next step, otherwise a lost authenticator locks the user out.

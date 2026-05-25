@@ -16,6 +16,9 @@ publish/
 # Claude Code local-only settings (per-machine permissions / allow-list,
 # may contain tokens used in ad-hoc commands — must never be committed).
 .claude/settings.local.json
+# Worktree scratch dirs Claude Code may create while running sub-agents
+# in isolation — pure local working state, never meant for git.
+.claude/worktrees/
 
 # Tool output
 .dotnet/

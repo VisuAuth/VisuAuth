@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Options;
+using VisuAuth.Abstractions.Auditing;
 using VisuAuth.Abstractions.Authentication;
 using VisuAuth.Abstractions.Capabilities;
 using VisuAuth.Abstractions.Tenancy;
@@ -17,11 +18,13 @@ public sealed class RegisterModel(
     IAuthenticationFlow authentication,
     ITenantContext tenantContext,
     IOptions<EndUserUiOptions> options,
+    IAuditWriter auditWriter,
     IStringLocalizer<EndUserSharedResources> localizer) : PageModel
 {
     private readonly IAuthenticationFlow _authentication = authentication ?? throw new ArgumentNullException(nameof(authentication));
     private readonly ITenantContext _tenantContext = tenantContext ?? throw new ArgumentNullException(nameof(tenantContext));
     private readonly EndUserUiOptions _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
+    private readonly IAuditWriter _audit = auditWriter ?? throw new ArgumentNullException(nameof(auditWriter));
     private readonly IStringLocalizer<EndUserSharedResources> _l = localizer ?? throw new ArgumentNullException(nameof(localizer));
 
     [BindProperty]
@@ -79,8 +82,9 @@ public sealed class RegisterModel(
             ? _tenantContext.CurrentTenantId
             : null;
 
+        var attemptedEmail = Form.Email.Trim();
         var result = await _authentication.RegisterAsync(
-            Form.Email.Trim(),
+            attemptedEmail,
             Form.Password,
             tenantId,
             cancellationToken);
@@ -90,10 +94,29 @@ public sealed class RegisterModel(
             Errors = result.ValidationErrors.Count > 0
                 ? result.ValidationErrors
                 : [result.Error ?? _l["Register.Error.RegisterFailed"].Value];
+
+            await _audit.WriteAsync(new AuditEvent
+            {
+                Action = AuditActions.UserRegistered,
+                TargetType = AuditTargetTypes.User,
+                TargetLabel = attemptedEmail,
+                Outcome = AuditOutcome.Failure,
+                FailureReason = result.Error ?? string.Join("; ", result.ValidationErrors),
+            }, cancellationToken);
+
             return Page();
         }
 
         CreatedUserId = result.UserId;
+
+        await _audit.WriteAsync(new AuditEvent
+        {
+            Action = AuditActions.UserRegistered,
+            TargetType = AuditTargetTypes.User,
+            TargetId = result.UserId,
+            TargetLabel = attemptedEmail,
+            Outcome = AuditOutcome.Success,
+        }, cancellationToken);
 
         // Development mode surfaces a clickable confirmation link so the
         // sample app (and any local dev setup without an email sender) can

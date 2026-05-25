@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Localization;
+using VisuAuth.Abstractions.Auditing;
 using VisuAuth.Abstractions.Capabilities;
 using VisuAuth.Abstractions.Common;
 using VisuAuth.Abstractions.Roles;
@@ -17,10 +18,12 @@ namespace VisuAuth.AdminUi.Pages.Admin.Users;
 public sealed class DetailModel(
     IUserStore userStore,
     IRoleStore roleStore,
+    IAuditWriter auditWriter,
     IStringLocalizer<AdminSharedResources> localizer) : PageModel
 {
     private readonly IUserStore _userStore = userStore ?? throw new ArgumentNullException(nameof(userStore));
     private readonly IRoleStore _roleStore = roleStore ?? throw new ArgumentNullException(nameof(roleStore));
+    private readonly IAuditWriter _audit = auditWriter ?? throw new ArgumentNullException(nameof(auditWriter));
     private readonly IStringLocalizer<AdminSharedResources> _l = localizer ?? throw new ArgumentNullException(nameof(localizer));
 
     [BindProperty(SupportsGet = true, Name = "id")]
@@ -93,6 +96,17 @@ public sealed class DetailModel(
             ActionErrors = result.ValidationErrors.Count > 0
                 ? result.ValidationErrors
                 : [result.Error ?? _l["Users.Action.UpdateFailed"].Value];
+
+            await _audit.WriteAsync(new AuditEvent
+            {
+                Action = AuditActions.UserUpdated,
+                TargetType = AuditTargetTypes.User,
+                TargetId = Id,
+                TargetLabel = Detail.Email,
+                Outcome = AuditOutcome.Failure,
+                FailureReason = result.Error ?? string.Join("; ", result.ValidationErrors),
+            }, cancellationToken);
+
             // Reload to make sure the form repopulates with the canonical state.
             await LoadDetailAsync(cancellationToken);
             return Partial("_DetailContent", this);
@@ -100,6 +114,16 @@ public sealed class DetailModel(
 
         await LoadDetailAsync(cancellationToken);
         ActionMessage = _l["Users.Action.ProfileUpdated"].Value;
+
+        await _audit.WriteAsync(new AuditEvent
+        {
+            Action = AuditActions.UserUpdated,
+            TargetType = AuditTargetTypes.User,
+            TargetId = Id,
+            TargetLabel = Detail.Email,
+            Outcome = AuditOutcome.Success,
+        }, cancellationToken);
+
         return Partial("_DetailContent", this);
     }
 
@@ -107,18 +131,21 @@ public sealed class DetailModel(
         => ExecuteAsync(
             () => _userStore.SetEnabledAsync(Id, enabled: false, cancellationToken),
             success: _l["Users.Action.AccountLocked"].Value,
+            auditAction: AuditActions.UserLocked,
             cancellationToken);
 
     public Task<IActionResult> OnPostUnlockAsync(CancellationToken cancellationToken)
         => ExecuteAsync(
             () => _userStore.SetEnabledAsync(Id, enabled: true, cancellationToken),
             success: _l["Users.Action.AccountUnlocked"].Value,
+            auditAction: AuditActions.UserUnlocked,
             cancellationToken);
 
     public Task<IActionResult> OnPostResetPasswordAsync(CancellationToken cancellationToken)
         => ExecuteAsync(
             () => _userStore.ResetPasswordAsync(Id, cancellationToken),
             success: _l["Users.Action.TempPasswordGenerated"].Value,
+            auditAction: AuditActions.UserPasswordResetByAdmin,
             cancellationToken,
             onSuccess: r =>
             {
@@ -132,12 +159,14 @@ public sealed class DetailModel(
         => ExecuteAsync(
             () => _userStore.ResetTwoFactorAsync(Id, cancellationToken),
             success: _l["Users.Action.TwoFactorReset"].Value,
+            auditAction: AuditActions.UserTwoFactorResetByAdmin,
             cancellationToken);
 
     public Task<IActionResult> OnPostRevokeSessionsAsync(CancellationToken cancellationToken)
         => ExecuteAsync(
             () => _userStore.RevokeSessionsAsync(Id, cancellationToken),
             success: _l["Users.Action.SessionsRevoked"].Value,
+            auditAction: AuditActions.UserSessionsRevokedByAdmin,
             cancellationToken);
 
     public Task<IActionResult> OnPostAssignRoleAsync(string? roleName, CancellationToken cancellationToken)
@@ -150,7 +179,9 @@ public sealed class DetailModel(
         return ExecuteAsync(
             () => _roleStore.AssignRoleAsync(Id, trimmed, cancellationToken),
             success: _l["Users.Action.RoleAssigned", trimmed].Value,
-            cancellationToken);
+            auditAction: AuditActions.RoleAssignedToUser,
+            cancellationToken,
+            auditPayload: new Dictionary<string, string?> { ["role"] = trimmed });
     }
 
     public Task<IActionResult> OnPostRemoveRoleAsync(string? roleName, CancellationToken cancellationToken)
@@ -163,7 +194,9 @@ public sealed class DetailModel(
         return ExecuteAsync(
             () => _roleStore.RemoveRoleAsync(Id, trimmed, cancellationToken),
             success: _l["Users.Action.RoleRemoved", trimmed].Value,
-            cancellationToken);
+            auditAction: AuditActions.RoleRemovedFromUser,
+            cancellationToken,
+            auditPayload: new Dictionary<string, string?> { ["role"] = trimmed });
     }
 
     private async Task<IActionResult> InvalidRoleAsync(string message, CancellationToken cancellationToken)
@@ -184,6 +217,11 @@ public sealed class DetailModel(
             return NotFound();
         }
 
+        // Snapshot the email BEFORE delete so the audit row carries a
+        // human-readable label even though the user no longer exists.
+        var preDelete = await _userStore.GetDetailAsync(Id, cancellationToken);
+        var snapshottedEmail = preDelete?.Email;
+
         var result = await _userStore.DeleteAsync(Id, cancellationToken);
 
         // Failed delete keeps the admin on the detail page so they can read
@@ -201,8 +239,27 @@ public sealed class DetailModel(
                 ? result.ValidationErrors
                 : [result.Error ?? _l["Users.Action.DeleteFailed"].Value];
 
+            await _audit.WriteAsync(new AuditEvent
+            {
+                Action = AuditActions.UserDeleted,
+                TargetType = AuditTargetTypes.User,
+                TargetId = Id,
+                TargetLabel = snapshottedEmail,
+                Outcome = AuditOutcome.Failure,
+                FailureReason = result.Error ?? string.Join("; ", result.ValidationErrors),
+            }, cancellationToken);
+
             return Partial("_DetailContent", this);
         }
+
+        await _audit.WriteAsync(new AuditEvent
+        {
+            Action = AuditActions.UserDeleted,
+            TargetType = AuditTargetTypes.User,
+            TargetId = Id,
+            TargetLabel = snapshottedEmail,
+            Outcome = AuditOutcome.Success,
+        }, cancellationToken);
 
         return Redirect("/visuauth/admin/users");
     }
@@ -210,8 +267,10 @@ public sealed class DetailModel(
     private async Task<IActionResult> ExecuteAsync(
         Func<Task<UserResult>> action,
         string success,
+        string auditAction,
         CancellationToken cancellationToken,
-        Action<UserResult>? onSuccess = null)
+        Action<UserResult>? onSuccess = null,
+        IReadOnlyDictionary<string, string?>? auditPayload = null)
     {
         var loaded = await LoadDetailAsync(cancellationToken);
         if (loaded is null)
@@ -226,11 +285,32 @@ public sealed class DetailModel(
             ActionErrors = result.ValidationErrors.Count > 0
                 ? result.ValidationErrors
                 : [result.Error ?? _l["Users.Action.Generic"].Value];
+
+            await _audit.WriteAsync(new AuditEvent
+            {
+                Action = auditAction,
+                TargetType = AuditTargetTypes.User,
+                TargetId = Id,
+                TargetLabel = Detail.Email,
+                Outcome = AuditOutcome.Failure,
+                FailureReason = result.Error ?? string.Join("; ", result.ValidationErrors),
+                Payload = auditPayload,
+            }, cancellationToken);
         }
         else
         {
             ActionMessage = success;
             onSuccess?.Invoke(result);
+
+            await _audit.WriteAsync(new AuditEvent
+            {
+                Action = auditAction,
+                TargetType = AuditTargetTypes.User,
+                TargetId = Id,
+                TargetLabel = Detail.Email,
+                Outcome = AuditOutcome.Success,
+                Payload = auditPayload,
+            }, cancellationToken);
         }
 
         // Always reload — security stamp, lockout end, 2FA flag, etc. may have moved.

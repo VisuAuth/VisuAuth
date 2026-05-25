@@ -23,6 +23,27 @@ public interface IAuditReader
     /// scan; cached at the page model level if needed.
     /// </summary>
     Task<IReadOnlyList<string>> ListDistinctActionsAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Rolls up audit entries for a single action code into one bucket per
+    /// calendar day (UTC) inside an inclusive date range. Used by the admin
+    /// dashboard's "logins per day" chart and friends.
+    /// </summary>
+    /// <param name="action">
+    /// Exact action code to count (e.g. <c>AuditActions.LoginSucceeded</c>).
+    /// </param>
+    /// <param name="fromInclusive">Lower bound for <c>Timestamp</c> (inclusive).</param>
+    /// <param name="toInclusive">Upper bound for <c>Timestamp</c> (inclusive).</param>
+    /// <returns>
+    /// Days with at least one entry, ordered ascending by date. Days with
+    /// zero entries are omitted — the caller fills the gap if it needs a
+    /// dense series for a bar chart.
+    /// </returns>
+    Task<IReadOnlyList<DailyActionCount>> CountByDayAsync(
+        string action,
+        DateTimeOffset fromInclusive,
+        DateTimeOffset toInclusive,
+        CancellationToken cancellationToken = default);
 }
 
 /// <summary>

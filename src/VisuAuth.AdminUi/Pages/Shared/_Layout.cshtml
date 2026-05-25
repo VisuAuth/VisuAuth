@@ -43,9 +43,16 @@
             var path = Context.Request.Path.Value ?? string.Empty;
             string NavClass(string segment) =>
                 path.StartsWith(segment, StringComparison.OrdinalIgnoreCase) ? "va-active" : "";
+            // Dashboard sits at the admin root, so the StartsWith helper
+            // above would mark it active on every /admin/* path. Match
+            // exactly instead — trailing slash optional.
+            string DashboardNavClass() =>
+                string.Equals(path, "/visuauth/admin", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(path, "/visuauth/admin/", StringComparison.OrdinalIgnoreCase)
+                    ? "va-active" : "";
         }
         <aside class="va-sidebar">
-            <a class="va-brand" href="/visuauth/admin/users">VisuAuth</a>
+            <a class="va-brand" href="/visuauth/admin">VisuAuth</a>
             @if (TenantContext.IsMultiTenancyEnabled)
             {
                 @* asp-page + asp-page-handler engage the form tag helper so the
@@ -78,6 +85,7 @@
                 </form>
             }
             <nav class="va-nav">
+                <a href="/visuauth/admin" class="@DashboardNavClass()">@Ls["Sidebar.NavDashboard"]</a>
                 <a href="/visuauth/admin/users" class="@NavClass("/visuauth/admin/users")">@Ls["Sidebar.NavUsers"]</a>
                 <a href="/visuauth/admin/roles" class="@NavClass("/visuauth/admin/roles")">@Ls["Sidebar.NavRoles"]</a>
                 @if (TenantContext.IsMultiTenancyEnabled)

@@ -1097,3 +1097,270 @@ body {
         transition: none;
     }
 }
+
+/* ===========================================================================
+   Admin dashboard (/visuauth/admin) — KPI tiles, 7-day login bar chart,
+   system-health card, recent-activity list. Pure CSS, no chart library:
+   bar heights are driven by the --bar-height custom property the cshtml
+   sets per <li>. All new tokens fall back to existing --visuauth-* vars
+   so consumer themes (CLAUDE.md §8.4 layer 1+2) pick up the dashboard
+   automatically without extra opt-in.
+   =========================================================================== */
+
+.va-page-actions {
+    display: inline-flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.va-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 0.75rem;
+    margin: 1.25rem 0 1.5rem;
+}
+
+.va-kpi {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 1rem 1.1rem;
+    background: var(--visuauth-card-bg, #fff);
+    border: 1px solid var(--visuauth-border, #e2e6ed);
+    border-radius: 10px;
+    color: inherit;
+    text-decoration: none;
+    transition: border-color 0.15s ease, transform 0.05s ease;
+}
+
+.va-kpi:hover,
+.va-kpi:focus-visible {
+    border-color: var(--visuauth-primary, #4f46e5);
+    outline: none;
+}
+
+.va-kpi:active {
+    transform: translateY(1px);
+}
+
+.va-kpi-label {
+    font-size: 0.78rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--visuauth-muted, #6b7280);
+}
+
+.va-kpi-value {
+    font-size: 1.7rem;
+    font-weight: 600;
+    color: var(--visuauth-text, #111827);
+    font-variant-numeric: tabular-nums;
+}
+
+.va-kpi-warn .va-kpi-value { color: var(--visuauth-warning, #b45309); }
+.va-kpi-good .va-kpi-value { color: var(--visuauth-success, #047857); }
+
+.va-dashboard-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(220px, 1fr);
+    grid-template-areas:
+        "chart health"
+        "activity activity";
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+@media (max-width: 900px) {
+    .va-dashboard-grid {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+            "chart"
+            "health"
+            "activity";
+    }
+}
+
+.va-dashboard-chart    { grid-area: chart; }
+.va-dashboard-health   { grid-area: health; }
+.va-dashboard-activity { grid-area: activity; }
+
+.va-card-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin: 0 0 0.85rem;
+}
+
+.va-card-header h2 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.va-small  { font-size: 0.78rem; }
+.va-link   {
+    color: var(--visuauth-primary, #4f46e5);
+    text-decoration: none;
+}
+.va-link:hover { text-decoration: underline; }
+
+/* Bar chart: ordered list with one bar per day. --bar-height is the
+   server-rendered scale (0-100). The .va-bar-track is a fixed-height
+   shell so all bars share a baseline. */
+.va-bar-chart {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    align-items: end;
+    gap: 0.4rem;
+    height: 180px;
+}
+
+.va-bar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    height: 100%;
+    gap: 0.25rem;
+}
+
+.va-bar-value {
+    font-size: 0.7rem;
+    color: var(--visuauth-muted, #6b7280);
+    font-variant-numeric: tabular-nums;
+}
+
+.va-bar-track {
+    width: 100%;
+    max-width: 36px;
+    height: 100%;
+    display: flex;
+    align-items: flex-end;
+    background: var(--visuauth-bar-track, #f3f4f6);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.va-bar-fill {
+    width: 100%;
+    height: var(--bar-height, 0%);
+    background: var(--visuauth-primary, #4f46e5);
+    min-height: 2px;
+    transition: height 0.25s ease;
+}
+
+.va-bar-label {
+    font-size: 0.7rem;
+    color: var(--visuauth-muted, #6b7280);
+    font-variant-numeric: tabular-nums;
+}
+
+/* System health: definition list with right-aligned values. */
+.va-health-list {
+    margin: 0;
+    display: grid;
+    gap: 0.55rem;
+}
+
+.va-health-list > div {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.va-health-list dt {
+    font-size: 0.82rem;
+    color: var(--visuauth-muted, #6b7280);
+    font-weight: 500;
+}
+
+.va-health-list dd {
+    margin: 0;
+    text-align: right;
+    font-size: 0.82rem;
+}
+
+.va-health-list dd code {
+    font-family: var(--visuauth-mono, ui-monospace, SFMono-Regular, monospace);
+    font-size: 0.78rem;
+    background: var(--visuauth-code-bg, #f3f4f6);
+    padding: 0.1rem 0.35rem;
+    border-radius: 4px;
+}
+
+/* Pills: status badges used in the health card and activity feed. */
+.va-pill {
+    display: inline-block;
+    padding: 0.12rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.va-pill-success { background: var(--visuauth-success-soft, #d1fae5); color: var(--visuauth-success, #047857); }
+.va-pill-danger  { background: var(--visuauth-danger-soft, #fee2e2);  color: var(--visuauth-danger, #b91c1c); }
+.va-pill-muted   { background: var(--visuauth-muted-soft, #f3f4f6);   color: var(--visuauth-muted, #6b7280); }
+
+/* Recent activity list: compact row per audit entry, mostly text. */
+.va-activity-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.4rem;
+}
+
+.va-activity-item {
+    display: grid;
+    grid-template-columns: 4rem minmax(10rem, 1fr) auto minmax(10rem, 2fr);
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.45rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+}
+
+.va-activity-item:hover {
+    background: var(--visuauth-row-hover, #f9fafb);
+}
+
+@media (max-width: 700px) {
+    .va-activity-item {
+        grid-template-columns: 1fr auto;
+        grid-template-areas:
+            "action outcome"
+            "target target"
+            "when when";
+    }
+    .va-activity-when    { grid-area: when; }
+    .va-activity-action  { grid-area: action; }
+    .va-activity-outcome { grid-area: outcome; }
+    .va-activity-target  { grid-area: target; }
+}
+
+.va-activity-when {
+    font-variant-numeric: tabular-nums;
+    color: var(--visuauth-muted, #6b7280);
+    font-size: 0.78rem;
+}
+
+.va-activity-action {
+    font-weight: 500;
+    font-family: var(--visuauth-mono, ui-monospace, SFMono-Regular, monospace);
+    font-size: 0.78rem;
+}
+
+.va-activity-target {
+    color: var(--visuauth-text, #111827);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

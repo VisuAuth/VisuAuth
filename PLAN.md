@@ -85,6 +85,18 @@ immediate next step. Updated as PRs land. Long-term direction lives in
 
 ## In flight
 
+- **Admin dashboard landing page** (`feat/admin-dashboard`) — gives
+  `/visuauth/admin` an actual page instead of 404-then-/admin/users.
+  KPI tiles (Users / Locked / Pending confirm / 2FA / Roles / Tenants)
+  drill into the filtered list views; 7-day bar chart of successful
+  logins; system-health card (VisuAuth version, .NET runtime, audit /
+  multi-tenancy pills); recent-activity feed (last 10 audit events).
+  Tiles + sections are capability-aware so a future Entra adapter
+  (which will declare `SupportsLockout = false` etc.) doesn't render
+  meaningless "0 locked" KPIs. Counts reuse `IUserStore.ListAsync` so
+  no abstraction grows. New `IAuditReader.CountByDayAsync` powers the
+  chart.
+
 - **Audit log plugin** (`feat/audit-log`) — fourth item of the v0.2
   milestone. Opt-in trail recorded into a dedicated
   `VisuAuthAuditLog` table; activated by `AddVisuAuthAuditLog(opts)`.

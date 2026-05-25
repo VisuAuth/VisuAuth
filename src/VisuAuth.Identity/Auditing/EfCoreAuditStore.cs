@@ -161,6 +161,36 @@ public sealed class EfCoreAuditStore(
                 TaskContinuationOptions.OnlyOnRanToCompletion | TaskContinuationOptions.ExecuteSynchronously,
                 TaskScheduler.Default);
 
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<DailyActionCount>> CountByDayAsync(
+        string action,
+        DateTimeOffset fromInclusive,
+        DateTimeOffset toInclusive,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(action);
+
+        // Pull only the Timestamp column for matching rows. Grouping by
+        // .Date inside an IQueryable would translate fine on SQL Server
+        // but mis-translates under SQLite (datetime → text), so we let
+        // the DB do the filter and group in memory — at dashboard cardinalities
+        // (single action, narrow window) the row count is bounded enough
+        // for this to be fine.
+        var timestamps = await _db.VisuAuthAuditLog
+            .AsNoTracking()
+            .Where(e => e.Action == action
+                && e.Timestamp >= fromInclusive
+                && e.Timestamp <= toInclusive)
+            .Select(e => e.Timestamp)
+            .ToListAsync(cancellationToken);
+
+        return timestamps
+            .GroupBy(t => DateOnly.FromDateTime(t.UtcDateTime))
+            .Select(g => new DailyActionCount(g.Key, g.Count()))
+            .OrderBy(d => d.Day)
+            .ToList();
+    }
+
     /// <summary>
     /// Best-effort IP resolution: prefer the first X-Forwarded-For entry
     /// when present (proxies / load balancers), else the connection's

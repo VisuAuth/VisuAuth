@@ -197,17 +197,17 @@ public sealed partial class ExternalProvidersPageTests(VisuAuthTestFactory facto
 
         response.IsSuccessStatusCode.Should().BeTrue();
 
-        // The Sample wires Microsoft / Google / Apple / GitHub. The other 16
-        // catalogue entries must show up as ghost cards under the Available
-        // section with the install snippet.
+        // The Sample wires Microsoft / Google / Apple / GitHub / Facebook.
+        // The remaining ~15 catalogue entries must show up as ghost cards
+        // under the Available section with the install snippet.
         body.Should().Contain("Available providers", "the ghost-card section heading must render");
-        body.Should().Contain("Facebook", "Facebook is in the catalogue but not wired by the sample");
-        body.Should().Contain("Microsoft.AspNetCore.Authentication.Facebook",
-            "the install snippet must show the NuGet package for Facebook");
-        body.Should().Contain("AddFacebook",
+        body.Should().Contain("LinkedIn", "LinkedIn is in the catalogue but not wired by the sample");
+        body.Should().Contain("AspNet.Security.OAuth.LinkedIn",
+            "the install snippet must show the NuGet package for LinkedIn");
+        body.Should().Contain("AddLinkedIn",
             "the install snippet must show the fluent extension method");
-        body.Should().Contain("LinkedIn");
         body.Should().Contain("Discord");
+        body.Should().Contain("Slack");
         body.Should().Contain("How to activate", "the ghost-card details summary must render");
     }
 
@@ -219,17 +219,18 @@ public sealed partial class ExternalProvidersPageTests(VisuAuthTestFactory facto
         var form = new FormUrlEncodedContent(new Dictionary<string, string>
         {
             ["__RequestVerificationToken"] = token,
-            ["EditFields.ClientId"] = "facebook-id",
-            ["EditFields.ClientSecret"] = "facebook-secret",
+            ["EditFields.ClientId"] = "linkedin-id",
+            ["EditFields.ClientSecret"] = "linkedin-secret",
             ["EditFields.IsEnabled"] = "true",
         });
 
-        // Facebook is in the catalogue but the Sample does NOT call
-        // AddVisuAuthDynamicExternalProviderOptions<FacebookOptions> — saving
-        // here would dead-end (no handler, login button would never render).
-        // The page model must reject this rather than write into the void.
+        // LinkedIn is in the catalogue but the Sample does NOT call
+        // AddVisuAuthDynamicExternalProviderOptions<LinkedInAuthenticationOptions>
+        // — saving here would dead-end (no handler, login button would never
+        // render). The page model must reject this rather than write into the
+        // void.
         var response = await client.PostAsync(
-            new Uri("/visuauth/admin/external-providers?handler=Save&scheme=Facebook", UriKind.Relative),
+            new Uri("/visuauth/admin/external-providers?handler=Save&scheme=LinkedIn", UriKind.Relative),
             form);
         var body = await response.Content.ReadAsStringAsync();
 
@@ -240,7 +241,7 @@ public sealed partial class ExternalProvidersPageTests(VisuAuthTestFactory facto
         // No row created.
         using var scope = _factory.Services.CreateScope();
         var store = scope.ServiceProvider.GetRequiredService<IExternalProviderConfigStore>();
-        (await store.GetAsync("Facebook", tenantId: null)).Should().BeNull();
+        (await store.GetAsync("LinkedIn", tenantId: null)).Should().BeNull();
     }
 
     [Fact]

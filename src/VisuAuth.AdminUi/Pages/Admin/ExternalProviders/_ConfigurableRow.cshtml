@@ -42,6 +42,7 @@
     var secretDbTitle = hasStaticSecret ? tipDbOverridesCode : tipFromDb;
     var secretCodeTitle = hasDbSecret ? tipCodeOverriddenByDb : tipFromCode;
     var secretPresentAria = Ls["ExternalProviders.Secret.PresentAria"].Value;
+    var docsTooltip = Ls["ExternalProviders.Docs.OfficialDocsTooltip"].Value;
 }
 
 @{
@@ -73,6 +74,18 @@
                             <va-provider-icon scheme="@row.Scheme" />
                             @row.DisplayName
                         </strong>
+                        @if (row.Catalogue?.DocsUrl is { Length: > 0 } editDocsUrl)
+                        {
+                            <div class="va-docs-banner">
+                                @Ls["ExternalProviders.Docs.HowToCreate"]
+                                <a href="@editDocsUrl"
+                                   target="_blank"
+                                   rel="noopener noreferrer"
+                                   class="va-docs-link">
+                                    @row.DisplayName @Ls["ExternalProviders.Docs.OpenDocs"] ↗
+                                </a>
+                            </div>
+                        }
                     </div>
                     <label class="va-field">
                         <span class="va-field-label">@Ls["ExternalProviders.Col.ClientId"]</span>
@@ -134,6 +147,16 @@ else
                     @if (isCustom)
                     {
                         <span class="va-badge" style="margin-left:0.4rem;">@Ls["ExternalProviders.Custom.Badge"]</span>
+                    }
+                    @if (row.Catalogue?.DocsUrl is { Length: > 0 } viewDocsUrl)
+                    {
+                        <a href="@viewDocsUrl"
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           class="va-docs-link-inline"
+                           title="@docsTooltip">
+                            @Ls["ExternalProviders.Docs.OpenDocs"] ↗
+                        </a>
                     }
                 </div>
             </div>

@@ -602,6 +602,40 @@ body {
     color: var(--visuauth-muted);
 }
 
+/* Compact "docs ↗" inline link next to a provider's name on the Active
+ * row. Sized small + muted so it doesn't compete with the provider
+ * display name but stays one click away from the official setup page. */
+.va-docs-link-inline {
+    margin-left: 0.5rem;
+    font-size: 0.78rem;
+    color: var(--visuauth-primary);
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.va-docs-link-inline:hover {
+    text-decoration: underline;
+}
+
+/* Slightly larger banner shown inside the inline edit form — the moment
+ * the admin is about to paste credentials is exactly when they want the
+ * provider's docs handy. */
+.va-docs-banner {
+    margin-top: 0.4rem;
+    font-size: 0.85rem;
+    color: var(--visuauth-muted);
+}
+
+.va-docs-link {
+    color: var(--visuauth-primary);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.va-docs-link:hover {
+    text-decoration: underline;
+}
+
 .va-detail-card .va-table {
     border-top: 1px solid var(--visuauth-border);
 }

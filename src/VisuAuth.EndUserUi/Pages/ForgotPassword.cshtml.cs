@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Options;
+using VisuAuth.Abstractions.Auditing;
 using VisuAuth.Abstractions.Authentication;
 using VisuAuth.Abstractions.Capabilities;
 
@@ -16,10 +17,12 @@ namespace VisuAuth.EndUserUi.Pages;
 public sealed class ForgotPasswordModel(
     IAuthenticationFlow authentication,
     IOptions<EndUserUiOptions> options,
+    IAuditWriter auditWriter,
     IStringLocalizer<EndUserSharedResources> localizer) : PageModel
 {
     private readonly IAuthenticationFlow _authentication = authentication ?? throw new ArgumentNullException(nameof(authentication));
     private readonly EndUserUiOptions _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
+    private readonly IAuditWriter _audit = auditWriter ?? throw new ArgumentNullException(nameof(auditWriter));
     private readonly IStringLocalizer<EndUserSharedResources> _l = localizer ?? throw new ArgumentNullException(nameof(localizer));
 
     [BindProperty]
@@ -52,6 +55,18 @@ public sealed class ForgotPasswordModel(
         var result = await _authentication.RequestPasswordResetAsync(email, cancellationToken);
 
         Submitted = true;
+
+        // Audit even when result.IsSuccess is unset for unknown emails —
+        // a failed reset request still signals a user trying to recover
+        // access; it's useful in the audit log even with no target id.
+        await _audit.WriteAsync(new AuditEvent
+        {
+            Action = AuditActions.PasswordResetRequested,
+            TargetType = AuditTargetTypes.User,
+            TargetLabel = email,
+            Outcome = result.IsSuccess ? AuditOutcome.Success : AuditOutcome.Failure,
+            FailureReason = result.IsSuccess ? null : result.Error,
+        }, cancellationToken);
 
         // Surface the link only in dev mode, and only when the store
         // actually returned a token — unknown emails get `IsSuccess = true`

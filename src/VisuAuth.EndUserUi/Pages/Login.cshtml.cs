@@ -4,6 +4,10 @@ using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Options;
 using VisuAuth.Abstractions.Authentication;
 using VisuAuth.Abstractions.Capabilities;
+using VisuAuth.EndUserUi.Authentication;
+// SignInResult exists in both VisuAuth and Microsoft.AspNetCore.Mvc; alias
+// the VisuAuth one so ApplyResponseAsync's parameter type stays unambiguous.
+using SignInResult = VisuAuth.Abstractions.Authentication.SignInResult;
 
 namespace VisuAuth.EndUserUi.Pages;
 
@@ -25,12 +29,14 @@ public sealed class LoginModel(
     IExternalLoginFlow externalLogin,
     IJwtIssuer jwtIssuer,
     IOptions<WebViewCallbackOptions> webViewOptions,
+    SignInAuditEmitter auditEmitter,
     IStringLocalizer<EndUserSharedResources> localizer) : PageModel
 {
     private readonly IAuthenticationFlow _authentication = authentication ?? throw new ArgumentNullException(nameof(authentication));
     private readonly IExternalLoginFlow _externalLogin = externalLogin ?? throw new ArgumentNullException(nameof(externalLogin));
     private readonly IJwtIssuer _jwtIssuer = jwtIssuer ?? throw new ArgumentNullException(nameof(jwtIssuer));
     private readonly WebViewCallbackOptions _webViewOptions = webViewOptions?.Value ?? throw new ArgumentNullException(nameof(webViewOptions));
+    private readonly SignInAuditEmitter _auditEmitter = auditEmitter ?? throw new ArgumentNullException(nameof(auditEmitter));
     private readonly IStringLocalizer<EndUserSharedResources> _l = localizer ?? throw new ArgumentNullException(nameof(localizer));
 
     /// <summary>
@@ -98,53 +104,75 @@ public sealed class LoginModel(
         // attempt would see them disappear.
         await LoadExternalProvidersAsync(cancellationToken);
 
+        var guard = GuardLocalLoginInput();
+        if (guard is not null)
+        {
+            return guard;
+        }
+
+        var attemptedEmail = Form.Email!.Trim();
+        var result = await _authentication.SignInWithPasswordAsync(
+            attemptedEmail,
+            Form.Password!,
+            Form.RememberMe,
+            cancellationToken);
+
+        // Audit via the shared emitter — adds the rememberMe payload only
+        // on the Web channel since RememberMe is meaningless for API auth.
+        await _auditEmitter.EmitAsync(
+            result,
+            attemptedEmail,
+            SignInChannel.Web,
+            extraPayload: new Dictionary<string, string?>
+            {
+                ["rememberMe"] = Form.RememberMe ? "true" : "false",
+            },
+            cancellationToken: cancellationToken);
+
+        return await ApplyResponseAsync(SignInPageResponseMapper.Map(result), result, cancellationToken);
+    }
+
+    /// <summary>
+    /// Early-bail checks for the local-login form — adapter capability
+    /// flag + model validity. Returns the IActionResult to render, or null
+    /// when the input is fit to hit the sign-in flow.
+    /// </summary>
+    private PageResult? GuardLocalLoginInput()
+    {
         if (!Capabilities.SupportsLocalLogin)
         {
             ErrorMessage = _l["Login.Error.LocalNotSupported"].Value;
             return Page();
         }
-
         if (!ModelState.IsValid || string.IsNullOrWhiteSpace(Form.Email) || string.IsNullOrWhiteSpace(Form.Password))
         {
             ErrorMessage = _l["Login.Error.EmailPasswordRequired"].Value;
             return Page();
         }
+        return null;
+    }
 
-        var result = await _authentication.SignInWithPasswordAsync(
-            Form.Email.Trim(),
-            Form.Password,
-            Form.RememberMe,
-            cancellationToken);
-
-        switch (result.Outcome)
+    /// <summary>
+    /// Translates the response mapper's decision into the actual
+    /// IActionResult, setting ErrorMessage when the decision wants the
+    /// page re-rendered. The page model owns the navigation side-effects
+    /// (returnUrl resolution, two-factor URL build) because they need
+    /// LoginModel-specific state (ReturnUrl, Form.RememberMe).
+    /// </summary>
+    private async Task<IActionResult> ApplyResponseAsync(
+        SignInPageOutcome outcome,
+        SignInResult result,
+        CancellationToken cancellationToken)
+    {
+        switch (outcome.Decision)
         {
-            case SignInOutcome.Success:
+            case SignInPageDecision.RedirectSuccess:
                 return await ResolveSuccessRedirectAsync(result.UserId, cancellationToken);
-
-            case SignInOutcome.RequiresTwoFactor:
-                // Hand the user off to the TOTP challenge page. The partial
-                // 2FA cookie stamped by SignInManager carries the user id, so
-                // we only need to forward the original returnUrl + remember-me
-                // preference for after the challenge succeeds.
+            case SignInPageDecision.RedirectTwoFactor:
                 return RedirectToTwoFactor(Form.RememberMe);
-
-            case SignInOutcome.LockedOut:
-                ErrorMessage = _l["Login.Error.Locked"].Value;
-                return Page();
-
-            case SignInOutcome.NotAllowed:
-                ErrorMessage = result.Error ?? _l["Login.Error.NotAllowed"].Value;
-                return Page();
-
-            case SignInOutcome.RedirectToExternalProvider:
-                // External-provider redirect lands with the providers PR.
-                ErrorMessage = _l["Login.Error.ExternalRequired"].Value;
-                return Page();
-
-            case SignInOutcome.InvalidCredentials:
             default:
-                // Deliberately generic — do not leak whether the email exists.
-                ErrorMessage = _l["Login.Error.Invalid"].Value;
+                ErrorMessage = outcome.RawErrorMessage
+                    ?? (outcome.ErrorResourceKey is { Length: > 0 } key ? _l[key].Value : null);
                 return Page();
         }
     }

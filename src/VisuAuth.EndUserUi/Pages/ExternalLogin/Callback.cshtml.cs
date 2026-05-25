@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Options;
+using VisuAuth.Abstractions.Auditing;
 using VisuAuth.Abstractions.Authentication;
 using VisuAuth.Abstractions.Tenancy;
 
@@ -20,13 +21,18 @@ public sealed class CallbackModel(
     ITenantContext tenantContext,
     IOptions<ExternalLoginOptions> externalOptions,
     IOptions<WebViewCallbackOptions> webViewOptions,
+    IAuditWriter auditWriter,
     IStringLocalizer<EndUserSharedResources> localizer) : PageModel
 {
+    /// <summary>Audit payload key carrying the external auth scheme name.</summary>
+    private const string ProviderKey = "provider";
+
     private readonly IExternalLoginFlow _externalLogin = externalLogin ?? throw new ArgumentNullException(nameof(externalLogin));
     private readonly IJwtIssuer _jwtIssuer = jwtIssuer ?? throw new ArgumentNullException(nameof(jwtIssuer));
     private readonly ITenantContext _tenantContext = tenantContext ?? throw new ArgumentNullException(nameof(tenantContext));
     private readonly ExternalLoginOptions _externalOptions = externalOptions?.Value ?? throw new ArgumentNullException(nameof(externalOptions));
     private readonly WebViewCallbackOptions _webViewOptions = webViewOptions?.Value ?? throw new ArgumentNullException(nameof(webViewOptions));
+    private readonly IAuditWriter _audit = auditWriter ?? throw new ArgumentNullException(nameof(auditWriter));
     private readonly IStringLocalizer<EndUserSharedResources> _l = localizer ?? throw new ArgumentNullException(nameof(localizer));
 
     [BindProperty(SupportsGet = true, Name = "returnUrl")]
@@ -42,6 +48,14 @@ public sealed class CallbackModel(
             // Provider sent us back with an error (user cancelled, app
             // misconfigured, …). Surface it back on the login page so the
             // user can pick another option.
+            await _audit.WriteAsync(new AuditEvent
+            {
+                Action = AuditActions.ExternalLoginFailed,
+                TargetType = AuditTargetTypes.ExternalLogin,
+                Outcome = AuditOutcome.Failure,
+                FailureReason = RemoteError,
+                Payload = new Dictionary<string, string?> { ["source"] = "remoteError" },
+            }, cancellationToken);
             return RedirectToLoginWithError(_l["ExternalLogin.Error.RemoteError"].Value);
         }
 
@@ -52,6 +66,18 @@ public sealed class CallbackModel(
         switch (result.Outcome)
         {
             case ExternalSignInOutcome.Success:
+                await _audit.WriteAsync(new AuditEvent
+                {
+                    Action = AuditActions.ExternalLoginSucceeded,
+                    TargetType = AuditTargetTypes.User,
+                    TargetId = result.UserId,
+                    TargetLabel = result.PendingEmail,
+                    Outcome = AuditOutcome.Success,
+                    Payload = new Dictionary<string, string?>
+                    {
+                        [ProviderKey] = result.PendingProvider,
+                    },
+                }, cancellationToken);
                 return await ResolveSuccessRedirectAsync(result.UserId, cancellationToken);
 
             case ExternalSignInOutcome.RequiresConfirmation:
@@ -66,12 +92,38 @@ public sealed class CallbackModel(
                 return Redirect(confirmUrl);
 
             case ExternalSignInOutcome.NoExternalSession:
+                await _audit.WriteAsync(new AuditEvent
+                {
+                    Action = AuditActions.ExternalLoginFailed,
+                    TargetType = AuditTargetTypes.ExternalLogin,
+                    Outcome = AuditOutcome.Failure,
+                    FailureReason = "No external session",
+                }, cancellationToken);
                 return RedirectToLoginWithError(_l["ExternalLogin.Error.NoSession"].Value);
 
             case ExternalSignInOutcome.LockedOut:
+                await _audit.WriteAsync(new AuditEvent
+                {
+                    Action = AuditActions.LoginLockedOut,
+                    TargetType = AuditTargetTypes.User,
+                    TargetId = result.UserId,
+                    TargetLabel = result.PendingEmail,
+                    Outcome = AuditOutcome.Failure,
+                    Payload = new Dictionary<string, string?> { [ProviderKey] = result.PendingProvider },
+                }, cancellationToken);
                 return RedirectToLoginWithError(_l["Login.Error.Locked"].Value);
 
             case ExternalSignInOutcome.NotAllowed:
+                await _audit.WriteAsync(new AuditEvent
+                {
+                    Action = AuditActions.ExternalLoginFailed,
+                    TargetType = AuditTargetTypes.User,
+                    TargetId = result.UserId,
+                    TargetLabel = result.PendingEmail,
+                    Outcome = AuditOutcome.Failure,
+                    FailureReason = "Sign-in not allowed",
+                    Payload = new Dictionary<string, string?> { [ProviderKey] = result.PendingProvider },
+                }, cancellationToken);
                 return RedirectToLoginWithError(_l["Login.Error.NotAllowed"].Value);
 
             // ExternalSignInOutcome.Failed and any future outcome both fall
@@ -80,6 +132,14 @@ public sealed class CallbackModel(
                 var detail = result.Errors.Count > 0
                     ? string.Join("; ", result.Errors)
                     : _l["ExternalLogin.Error.SignInFailed"].Value;
+                await _audit.WriteAsync(new AuditEvent
+                {
+                    Action = AuditActions.ExternalLoginFailed,
+                    TargetType = AuditTargetTypes.ExternalLogin,
+                    Outcome = AuditOutcome.Failure,
+                    FailureReason = detail,
+                    Payload = new Dictionary<string, string?> { [ProviderKey] = result.PendingProvider },
+                }, cancellationToken);
                 return RedirectToLoginWithError(detail);
         }
     }

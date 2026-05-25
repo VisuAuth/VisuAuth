@@ -241,6 +241,12 @@ builder.Services.AddVisuAuthDynamicExternalProviderOptions<Microsoft.AspNetCore.
 builder.Services.AddVisuAuthDynamicExternalProviderOptions<AspNet.Security.OAuth.GitHub.GitHubAuthenticationOptions>("GitHub");
 builder.Services.AddVisuAuthDynamicExternalProviderOptions<AspNet.Security.OAuth.Apple.AppleAuthenticationOptions>("Apple");
 
+// Audit log plugin (opt-in). Without this call, the default NoOpAuditWriter
+// handles every IAuditWriter.WriteAsync at zero cost; with it,
+// EfCoreAuditStore kicks in and rows land in the VisuAuthAuditLog table.
+// Default RetentionDays = 90 — pass a lambda to override.
+builder.Services.AddVisuAuthAuditLog();
+
 void RegisterScheme(string providerName, Action<string, string> register)
 {
     // appsettings / user-secrets value when present; empty otherwise.

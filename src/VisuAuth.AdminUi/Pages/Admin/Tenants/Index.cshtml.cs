@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Options;
+using VisuAuth.Abstractions.Auditing;
 using VisuAuth.Abstractions.Tenancy;
 
 namespace VisuAuth.AdminUi.Pages.Admin.Tenants;
@@ -16,11 +17,13 @@ public sealed class IndexModel(
     ITenantStore tenantStore,
     ITenantContext tenantContext,
     IOptions<TenantOptions> tenantOptions,
+    IAuditWriter auditWriter,
     IStringLocalizer<AdminSharedResources> localizer) : PageModel
 {
     private readonly ITenantStore _tenantStore = tenantStore ?? throw new ArgumentNullException(nameof(tenantStore));
     private readonly ITenantContext _tenantContext = tenantContext ?? throw new ArgumentNullException(nameof(tenantContext));
     private readonly TenantOptions _options = tenantOptions?.Value ?? throw new ArgumentNullException(nameof(tenantOptions));
+    private readonly IAuditWriter _audit = auditWriter ?? throw new ArgumentNullException(nameof(auditWriter));
     private readonly IStringLocalizer<AdminSharedResources> _l = localizer ?? throw new ArgumentNullException(nameof(localizer));
 
     [BindProperty]
@@ -55,9 +58,12 @@ public sealed class IndexModel(
 
     public async Task<IActionResult> OnPostCreateAsync(CancellationToken cancellationToken)
     {
+        var requestedId = NewTenantId?.Trim() ?? string.Empty;
+        var requestedDisplayName = NewTenantDisplayName?.Trim();
+
         var result = await _tenantStore.CreateAsync(
-            NewTenantId?.Trim() ?? string.Empty,
-            NewTenantDisplayName?.Trim(),
+            requestedId,
+            requestedDisplayName,
             cancellationToken);
 
         if (!result.IsSuccess)
@@ -65,12 +71,31 @@ public sealed class IndexModel(
             ActionErrors = result.ValidationErrors.Count > 0
                 ? result.ValidationErrors
                 : [result.Error ?? _l["Tenants.Error.CreateFailed"].Value];
+
+            await _audit.WriteAsync(new AuditEvent
+            {
+                Action = AuditActions.TenantCreated,
+                TargetType = AuditTargetTypes.Tenant,
+                TargetId = requestedId,
+                TargetLabel = requestedDisplayName,
+                Outcome = AuditOutcome.Failure,
+                FailureReason = result.Error ?? string.Join("; ", result.ValidationErrors),
+            }, cancellationToken);
         }
         else
         {
-            ActionMessage = _l["Tenants.Action.Created", NewTenantId?.Trim() ?? string.Empty].Value;
+            ActionMessage = _l["Tenants.Action.Created", requestedId].Value;
             NewTenantId = null;
             NewTenantDisplayName = null;
+
+            await _audit.WriteAsync(new AuditEvent
+            {
+                Action = AuditActions.TenantCreated,
+                TargetType = AuditTargetTypes.Tenant,
+                TargetId = requestedId,
+                TargetLabel = requestedDisplayName ?? requestedId,
+                Outcome = AuditOutcome.Success,
+            }, cancellationToken);
         }
 
         await LoadAsync(cancellationToken);
@@ -116,11 +141,30 @@ public sealed class IndexModel(
             ActionErrors = result.ValidationErrors.Count > 0
                 ? result.ValidationErrors
                 : [result.Error ?? _l["Tenants.Error.RenameFailed"].Value];
+
+            await _audit.WriteAsync(new AuditEvent
+            {
+                Action = AuditActions.TenantRenamed,
+                TargetType = AuditTargetTypes.Tenant,
+                TargetId = id,
+                Outcome = AuditOutcome.Failure,
+                FailureReason = result.Error ?? string.Join("; ", result.ValidationErrors),
+                Payload = new Dictionary<string, string?> { ["newDisplayName"] = trimmed },
+            }, cancellationToken);
         }
         else
         {
             ActionMessage = _l["Tenants.Action.Renamed", id].Value;
             RenamedDisplayName = null;
+
+            await _audit.WriteAsync(new AuditEvent
+            {
+                Action = AuditActions.TenantRenamed,
+                TargetType = AuditTargetTypes.Tenant,
+                TargetId = id,
+                TargetLabel = trimmed,
+                Outcome = AuditOutcome.Success,
+            }, cancellationToken);
         }
 
         await LoadAsync(cancellationToken);
@@ -142,10 +186,27 @@ public sealed class IndexModel(
             ActionErrors = result.ValidationErrors.Count > 0
                 ? result.ValidationErrors
                 : [result.Error ?? _l["Tenants.Error.DeleteFailed"].Value];
+
+            await _audit.WriteAsync(new AuditEvent
+            {
+                Action = AuditActions.TenantDeleted,
+                TargetType = AuditTargetTypes.Tenant,
+                TargetId = id,
+                Outcome = AuditOutcome.Failure,
+                FailureReason = result.Error ?? string.Join("; ", result.ValidationErrors),
+            }, cancellationToken);
         }
         else
         {
             ActionMessage = _l["Tenants.Action.Deleted", id].Value;
+
+            await _audit.WriteAsync(new AuditEvent
+            {
+                Action = AuditActions.TenantDeleted,
+                TargetType = AuditTargetTypes.Tenant,
+                TargetId = id,
+                Outcome = AuditOutcome.Success,
+            }, cancellationToken);
         }
 
         await LoadAsync(cancellationToken);

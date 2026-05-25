@@ -18,6 +18,68 @@ Working toward [`0.2.0`](#020--planned). `<VersionPrefix>` in
 
 ### Added
 
+- **Audit log plugin** (`feat/audit-log`) — opt-in trail of every
+  sensitive admin and end-user action, surfaced at
+  `/visuauth/admin/audit-log`. Activates by adding
+  `builder.Services.AddVisuAuthAuditLog()` to `Program.cs`; until then,
+  `NoOpAuditWriter` accepts every call at zero cost so handler code
+  doesn't have to check whether the plugin is enabled.
+  - `IAuditWriter` / `IAuditReader` / `AuditEvent` /
+    `AuditFilter` / `AuditEntryView` in `VisuAuth.Abstractions`. The
+    write shape is intentionally small (Action / TargetType / TargetId /
+    TargetLabel / Outcome / FailureReason / Payload dict) — every other
+    field (actor user id + email, IP, user-agent, tenant id, timestamp)
+    is enriched by the writer from ambient state.
+  - `AuditActions` registry — 40+ stable PascalCase codes that the admin
+    page filters on and the i18n / future analytics can hang off
+    (UserLocked, RoleAssignedToUser, ExternalProviderSaved,
+    LoginSucceeded, LoginFailed, TwoFactorEnabled, etc).
+  - `EfCoreAuditStore` (`VisuAuth.Identity`) implements both Writer and
+    Reader against the new `VisuAuthAuditLog` table. JSON-serialises the
+    payload, snapshots IP / UA truncated to 512 chars, **never** throws
+    to the caller — auditing a side action must not break the primary
+    action.
+  - `AuditRetentionHostedService` runs once a day via
+    `TimeProvider`-driven `BackgroundService`; default 90-day retention
+    overridable via `AddVisuAuthAuditLog(opts => opts.RetentionDays = 365)`;
+    set 0 to keep forever.
+  - Capture wired in 26 page handlers: every admin mutation (users,
+    roles, tenants, external providers), every end-user self-service
+    surface (login success/failure/locked/2FA required, register, reset
+    password, email confirm, 2FA setup/verify/recovery code use/disable,
+    external login callback + confirm), and both JWT API endpoints.
+    Each emits success and failure events with action-specific payload
+    — secrets are never logged.
+  - Admin page at `/visuauth/admin/audit-log` with filters (actor email
+    search, action dropdown, outcome, date range, deep-linkable
+    targetId) and pagination. Renders an "audit plugin not enabled"
+    explainer with the wiring snippet when `IAuditReader` isn't in DI.
+  - Sample wires the plugin out of the box. New tests (255 unit + 173
+    integration) cover the EF store + retention + admin page + handler
+    capture end-to-end.
+- **Sign-in pipeline refactor** (`src/VisuAuth.EndUserUi/Authentication/`)
+  — extracted from the login switch that grew unmanageable once audit
+  emission landed. Five collaborators replace the inline branching in
+  `LoginModel.OnPostAsync` and `AuthApi.LoginAsync`:
+  - `SignInChannel` enum (`Web` / `Api`) tags every audit event so the
+    admin log can answer "where did this attempt come from?".
+  - `SignInAuditMapper` — pure table mapping `SignInOutcome` to the
+    audit triple (action / outcome / failure reason). Returning `null`
+    for `RedirectToExternalProvider` lets the emitter skip the write.
+  - `SignInAuditEmitter` (scoped service) consults the mapper, builds
+    the `AuditEvent` with channel + extra payload merged, and delegates
+    to `IAuditWriter` — so adding a new outcome means editing one table.
+  - `SignInApiResponseMapper` — pure table mapping non-Success
+    outcomes to `IResult` (`423 Locked`, `401`, `403 Forbidden`) for
+    the minimal-API channel.
+  - `SignInPageResponseMapper` — pure table mapping outcomes to a
+    `SignInPageOutcome` decision record (`RenderPage` /
+    `RedirectTwoFactor` / `RedirectSuccess`) the Razor page interprets
+    with localised error keys.
+  - Net effect: `AuthApi.LoginAsync` is now orchestration only (~15
+    lines) and `LoginModel.OnPostAsync` no longer mixes audit shape /
+    HTTP shape / redirect logic. The two response shapes (HTTP vs
+    page) stay separate; the audit shape is shared across channels.
 - TOTP pages for self-service two-factor authentication
   (`VisuAuth.EndUserUi`):
   - `/visuauth/two-factor/setup` — pair an authenticator app via inline

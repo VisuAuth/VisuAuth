@@ -51,6 +51,12 @@ public static class VisuAuthIdentityServiceCollectionExtensions
         // registered renders no buttons and the surface is invisible.
         services.AddScoped<IExternalLoginFlow, AspNetIdentityExternalLoginFlow<TUser>>();
 
+        // Always-on no-op audit writer. AddVisuAuthAuditLog() replaces this
+        // with the EF-backed writer + reader; until that happens, handler
+        // code that injects IAuditWriter and calls WriteAsync still compiles
+        // and runs without any "if the plugin is enabled" guards.
+        services.AddVisuAuthAuditWriterDefault();
+
         return services;
     }
 

@@ -85,6 +85,28 @@ immediate next step. Updated as PRs land. Long-term direction lives in
 
 ## In flight
 
+- **Audit log plugin** (`feat/audit-log`) — fourth item of the v0.2
+  milestone. Opt-in trail recorded into a dedicated
+  `VisuAuthAuditLog` table; activated by `AddVisuAuthAuditLog(opts)`.
+  Abstractions in `VisuAuth.Abstractions/Auditing/` (IAuditWriter +
+  IAuditReader + AuditEvent + AuditFilter + AuditEntryView +
+  AuditActions registry). EF-backed `EfCoreAuditStore` enriches each
+  event with actor (HttpContext.User), IP (X-Forwarded-For-aware),
+  user-agent (truncated), tenant id, and UTC timestamp via
+  `TimeProvider`. `AuditRetentionHostedService` purges entries older
+  than `RetentionDays` (default 90). Default `NoOpAuditWriter` keeps
+  the 26 instrumented handler call sites zero-cost when the plugin is
+  off. Admin surface at `/visuauth/admin/audit-log` with filters
+  (actor email search, action dropdown, outcome, date range,
+  deep-linkable targetId) and pagination. Sample wires the plugin out
+  of the box. The login switch that audit emission would have made
+  unmanageable was extracted into a five-class sign-in pipeline
+  (`SignInChannel`, `SignInAuditMapper`, `SignInAuditEmitter`,
+  `SignInApiResponseMapper`, `SignInPageResponseMapper`) so both the
+  Razor `LoginModel` and the minimal-API `AuthApi` orchestrate the
+  same shape — adding a new `SignInOutcome` now means editing three
+  table-driven mappers, not two switches.
+
 - **External login providers + admin config** (`feat/external-login-providers`)
   — third item from the v0.2 milestone below (after TOTP). Adds:
   - `/visuauth/external-login/{start,callback,confirm}` in

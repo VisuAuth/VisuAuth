@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using VisuAuth.Abstractions.Authentication;
 using VisuAuth.AdminUi.Theming;
 using VisuAuth.EndUserUi.Api;
+using VisuAuth.EndUserUi.Authentication;
 using VisuAuth.EndUserUi.TwoFactor;
 
 namespace VisuAuth.EndUserUi.DependencyInjection;
@@ -49,6 +50,14 @@ public static class VisuAuthEndUserUiServiceCollectionExtensions
         // a consumer swap the implementation (e.g. PNG output) without
         // having to suppress the default registration first.
         services.TryAddSingleton<IQrCodeSvgRenderer, QrCodeSvgRenderer>();
+
+        // Sign-in flow collaborators (Option C refactor) — the emitter is
+        // scoped because IAuditWriter is scoped. The two response mappers
+        // are pure functions (`static Map(...)`) called directly via the
+        // type — no DI registration needed for them. Consumed by both the
+        // Razor login page and the minimal-API JWT login endpoint so the
+        // audit shape + HTTP/page responses stay consistent across channels.
+        services.TryAddScoped<SignInAuditEmitter>();
 
         // ASP.NET Identity defaults the cookie LoginPath to "/Account/Login"
         // — which 404s when the consumer relies on VisuAuth's pages instead.

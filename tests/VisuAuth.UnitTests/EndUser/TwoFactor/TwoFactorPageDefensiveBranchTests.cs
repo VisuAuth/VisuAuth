@@ -101,7 +101,7 @@ public sealed class TwoFactorPageDefensiveBranchTests
         var twoFactor = new Mock<ITwoFactorFlow>(MockBehavior.Strict);
         twoFactor.SetupGet(f => f.Capabilities).Returns(SupportedCapabilities());
         var localizer = StubLocalizer();
-        var page = new VerifyModel(twoFactor.Object, localizer)
+        var page = new VerifyModel(twoFactor.Object, NoOpAudit(), localizer)
         {
             Form = new VerifyModel.ChallengeForm { Code = "   " },
         };
@@ -119,7 +119,7 @@ public sealed class TwoFactorPageDefensiveBranchTests
         var twoFactor = new Mock<ITwoFactorFlow>(MockBehavior.Strict);
         twoFactor.SetupGet(f => f.Capabilities).Returns(SupportedCapabilities());
         var localizer = StubLocalizer();
-        var page = new VerifyModel(twoFactor.Object, localizer)
+        var page = new VerifyModel(twoFactor.Object, NoOpAudit(), localizer)
         {
             Form = new VerifyModel.ChallengeForm { RecoveryCode = "" },
         };
@@ -170,22 +170,30 @@ public sealed class TwoFactorPageDefensiveBranchTests
         flow.SetupGet(f => f.Capabilities).Returns(caps);
         localizer = StubLocalizer();
         var renderer = new Mock<IQrCodeSvgRenderer>().Object;
-        return new SetupModel(flow.Object, renderer, localizer);
+        return new SetupModel(flow.Object, renderer, NoOpAudit(), localizer);
     }
 
     private static VerifyModel BuildVerify(UserBackendCapabilities caps)
     {
         var flow = new Mock<ITwoFactorFlow>();
         flow.SetupGet(f => f.Capabilities).Returns(caps);
-        return new VerifyModel(flow.Object, StubLocalizer());
+        return new VerifyModel(flow.Object, NoOpAudit(), StubLocalizer());
     }
 
     private static RecoveryCodesModel BuildRecoveryCodes(UserBackendCapabilities caps)
     {
         var flow = new Mock<ITwoFactorFlow>();
         flow.SetupGet(f => f.Capabilities).Returns(caps);
-        return new RecoveryCodesModel(flow.Object, StubLocalizer());
+        return new RecoveryCodesModel(flow.Object, NoOpAudit(), StubLocalizer());
     }
+
+    /// <summary>
+    /// These defensive-branch tests don't care about audit emission — return
+    /// a Mock&lt;IAuditWriter&gt; that quietly swallows every call so we don't
+    /// have to assert on it.
+    /// </summary>
+    private static VisuAuth.Abstractions.Auditing.IAuditWriter NoOpAudit()
+        => new Mock<VisuAuth.Abstractions.Auditing.IAuditWriter>().Object;
 
     private static UserBackendCapabilities SupportedCapabilities() => new() { SupportsTwoFactor = true };
 

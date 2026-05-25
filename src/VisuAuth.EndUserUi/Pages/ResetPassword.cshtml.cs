@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Localization;
+using VisuAuth.Abstractions.Auditing;
 using VisuAuth.Abstractions.Authentication;
 using VisuAuth.Abstractions.Capabilities;
 
@@ -12,9 +13,11 @@ namespace VisuAuth.EndUserUi.Pages;
 /// </summary>
 public sealed class ResetPasswordModel(
     IAuthenticationFlow authentication,
+    IAuditWriter auditWriter,
     IStringLocalizer<EndUserSharedResources> localizer) : PageModel
 {
     private readonly IAuthenticationFlow _authentication = authentication ?? throw new ArgumentNullException(nameof(authentication));
+    private readonly IAuditWriter _audit = auditWriter ?? throw new ArgumentNullException(nameof(auditWriter));
     private readonly IStringLocalizer<EndUserSharedResources> _l = localizer ?? throw new ArgumentNullException(nameof(localizer));
 
     [BindProperty(SupportsGet = true, Name = "email")]
@@ -68,8 +71,9 @@ public sealed class ResetPasswordModel(
             return Page();
         }
 
+        var email = Email.Trim();
         var result = await _authentication.ResetPasswordAsync(
-            Email.Trim(),
+            email,
             Token,
             Form.NewPassword,
             cancellationToken);
@@ -79,10 +83,29 @@ public sealed class ResetPasswordModel(
             Errors = result.ValidationErrors.Count > 0
                 ? result.ValidationErrors
                 : [result.Error ?? _l["Reset.Error.ResetFailed"].Value];
+
+            await _audit.WriteAsync(new AuditEvent
+            {
+                Action = AuditActions.PasswordResetCompleted,
+                TargetType = AuditTargetTypes.User,
+                TargetLabel = email,
+                Outcome = AuditOutcome.Failure,
+                FailureReason = result.Error ?? string.Join("; ", result.ValidationErrors),
+            }, cancellationToken);
+
             return Page();
         }
 
         Succeeded = true;
+
+        await _audit.WriteAsync(new AuditEvent
+        {
+            Action = AuditActions.PasswordResetCompleted,
+            TargetType = AuditTargetTypes.User,
+            TargetLabel = email,
+            Outcome = AuditOutcome.Success,
+        }, cancellationToken);
+
         // Clear the form so the success view does not echo the password.
         Form = new ResetPasswordForm();
         return Page();

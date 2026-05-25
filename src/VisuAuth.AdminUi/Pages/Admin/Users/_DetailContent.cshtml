@@ -130,7 +130,12 @@ else if (Model.ActionMessage is { Length: > 0 } message)
                 @foreach (var login in detail.ExternalLogins)
                 {
                     <tr>
-                        <td>@(login.DisplayName ?? login.Provider)</td>
+                        <td>
+                            <div style="display:flex;align-items:center;gap:0.5rem;">
+                                <va-provider-icon scheme="@login.Provider" />
+                                <span>@(login.DisplayName ?? login.Provider)</span>
+                            </div>
+                        </td>
                         <td><code>@login.ProviderKey</code></td>
                     </tr>
                 }

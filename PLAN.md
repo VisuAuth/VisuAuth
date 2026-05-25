@@ -12,7 +12,7 @@ immediate next step. Updated as PRs land. Long-term direction lives in
 - **Latest shipped on NuGet**: [`VisuAuth 0.1.0`](https://www.nuget.org/packages/VisuAuth/0.1.0) — first feature release (admin UI, end-user pages, multi-tenancy, four theming layers, mobile JWT + WebView)
 - **Default branch**: `main` at <https://github.com/VisuAuth/visuauth>
 - **Build state**: green (`dotnet build src/VisuAuth.slnx -c Release` → 0 errors, 0 warnings)
-- **Test state**: green on `main` (132 unit + 149 integration = 281 tests)
+- **Test state**: green on `main` (165 unit + 152 integration = 317 tests after TOTP merge)
 
 ---
 
@@ -85,15 +85,42 @@ immediate next step. Updated as PRs land. Long-term direction lives in
 
 ## In flight
 
-- **TOTP pages** (`feat/two-factor-totp`) — first item from the v0.2
-  milestone below. Adds `/visuauth/two-factor/{setup,verify,recovery-codes}`
-  in `VisuAuth.EndUserUi`, an `ITwoFactorFlow` abstraction in
-  `VisuAuth.Abstractions` (with `UserBackendCapabilities.SupportsTwoFactor`),
-  the ASP.NET Identity adapter, and a deterministic
-  `twofactor.demo@example.com` seeded user so the challenge flow is
-  reachable from `/visuauth/login` out of the box. Pulls in QRCoder 1.6.0
-  as a new direct dependency of `VisuAuth.EndUserUi` (only the setup page
-  uses it).
+- **External login providers + admin config** (`feat/external-login-providers`)
+  — third item from the v0.2 milestone below (after TOTP). Adds:
+  - `/visuauth/external-login/{start,callback,confirm}` in
+    `VisuAuth.EndUserUi`, an `IExternalLoginFlow` abstraction in
+    `VisuAuth.Abstractions` paired with
+    `ExternalLoginOptions.FirstTimeStrategy` (three strategies:
+    `AutoCreate` default, `AutoLinkByEmailOrConfirm`, `AlwaysConfirm`).
+  - Provider buttons on `/visuauth/login` with brand SVG icons via the
+    new `<va-provider-icon>` tag helper (Microsoft / Google / Apple /
+    GitHub + generic fallback).
+  - `/visuauth/admin/external-providers` admin page with inline edit +
+    per-row enable/disable + bulk operations — credentials editable at
+    runtime without restart, secret encrypted at rest via
+    `IDataProtectionProvider`. Page lays out four buckets — **Active**
+    (wired + recognised), **Custom** (wired but outside the catalogue),
+    **Available** (catalogue ghost cards with "How to activate" snippet
+    for ~20 popular providers), and **Orphaned credentials** (DB rows
+    for schemes the host no longer wires, with a `Delete` cleanup
+    button). The new `IExternalProviderRegistry` is the source of truth
+    for "what's actually runnable"; `KnownProviderCatalog` in
+    `VisuAuth.AdminUi` supplies the discoverability layer.
+  - `IExternalProviderConfigStore` + EF entity in
+    `IVisuAuthMetadataDbContext` (new table
+    `VisuAuthExternalProviderConfigs`); per-tenant schema column ready
+    for Phase 1.5 runtime.
+  - Generic `DynamicExternalProviderOptionsConfigurator<TOptions>` that
+    overlays admin-edited credentials on top of static
+    `AddXxx(o => ...)` registrations; cache-invalidator wired so save
+    takes effect on the very next sign-in attempt.
+  - Sample wires all four providers (Microsoft / Google / GitHub / Apple)
+    with appsettings-or-placeholder defaults so the admin UI can fully
+    configure a fresh provider via the browser. Sample-only NuGet adds:
+    `Microsoft.AspNetCore.Authentication.Google`,
+    `AspNet.Security.OAuth.Apple`, `AspNet.Security.OAuth.GitHub`.
+  - Mobile/JWT path: external sign-in success reuses the WebView
+    deep-link path so mobile apps get a JWT identical to the password flow.
 
 ---
 
@@ -107,11 +134,9 @@ CLAUDE.md §13 names four items for v0.2:
    form for a "Sign in with Microsoft" button automatically (CLAUDE.md
    §6 capability-driven UI). New package `VisuAuth.Entra` referencing
    only `VisuAuth.Abstractions`. Must NOT leak into `VisuAuth.Identity`.
-2. **TOTP pages** — see "In flight" above. ✅ Shipping in
-   `feat/two-factor-totp`.
-3. **External login providers** — Google, Microsoft, Apple buttons on
-   the login page. Shaped via `IAuthenticationFlow.ExternalProviders`
-   so the UI iterates the registered schemes (no per-provider markup).
+2. **TOTP pages** — ✅ shipped in `feat/two-factor-totp` (PR #30).
+3. **External login providers** — see "In flight" above. ✅ Shipping in
+   `feat/external-login-providers`.
 4. **Audit log plugin** — opt-in package writing to a separate
    `VisuAuthAuditLog` EF Core table (CLAUDE.md §2.5 "Optional
    VisuAuth-specific tables…are explicit and documented"). Retention

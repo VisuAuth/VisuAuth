@@ -50,6 +50,123 @@ Working toward [`0.2.0`](#020--planned). `<VersionPrefix>` in
   `data-otpauth-uri` attribute on the QR container — useful for desktop
   developers who want to copy the URI directly into a password manager
   or import it elsewhere without scanning.
+- External-login provider buttons on `/visuauth/login`
+  (`VisuAuth.EndUserUi`):
+  - One "Continue with {provider}" button per scheme registered via
+    ASP.NET Core's authentication pipeline (Google, Microsoft, Apple,
+    GitHub — anything that ships an OAuth handler). Renders below the
+    password form with an "or" divider; auto-suppresses when no provider
+    is wired so consumers who never call `AddGoogle()` / etc. see no
+    visual change.
+  - `/visuauth/external-login/start` POST-only kickoff that builds the
+    `ChallengeResult` for the selected scheme; rejects unknown schemes
+    silently to prevent provider probing.
+  - `/visuauth/external-login/callback` lands the OAuth redirect, applies
+    the configured first-time strategy, and signs the user in. Mirrors
+    the WebView deep-link path from `/visuauth/login`, so an external
+    sign-in with an allow-listed `returnUrl` mints a JWT and redirects
+    via the mobile fragment.
+  - `/visuauth/external-login/confirm` collects email + optional username
+    when the strategy needs explicit consent before account creation.
+- `ITwoFactorFlow`-style `IExternalLoginFlow` abstraction in
+  `VisuAuth.Abstractions` with `GetProvidersAsync` / `CompleteSignInAsync`
+  / `ConfirmAndCreateAsync`, plus DTOs (`ExternalProviderInfo`,
+  `ExternalSignInResult`, `ExternalLoginFirstTimeStrategy`).
+- `ExternalLoginOptions.FirstTimeStrategy` lets consumers pick between
+  three behaviours when an external identity has no linked local user:
+  - `AutoCreate` (default) — provisions a local user from the provider's
+    claims and signs in.
+  - `AutoLinkByEmailOrConfirm` — auto-links to an existing local user
+    when the provider's email matches; otherwise routes to `/confirm`.
+  - `AlwaysConfirm` — always shows `/confirm` regardless of email match.
+- `AspNetIdentityExternalLoginFlow<TUser>` in `VisuAuth.Identity`
+  implements all three strategies on top of the existing
+  `SignInManager<TUser>` external-login surface.
+- Sample app wires Microsoft conditionally — only when
+  `Microsoft:ClientId` + `Microsoft:ClientSecret` are present in
+  configuration (typically via `dotnet user-secrets`). The home page
+  documents the app-registration steps + which redirect URI to register.
+- **Admin UI for external providers** at `/visuauth/admin/external-providers`
+  (`VisuAuth.AdminUi`): lists every pre-registered OAuth scheme with its
+  `ClientId` / secret state / enabled flag, supports inline edit + per-row
+  toggle + bulk enable-all / disable-all. Edits land in the new
+  `VisuAuthExternalProviderConfigs` table; the `IOptionsMonitorCache` for
+  the matching scheme is invalidated on save so the next sign-in attempt
+  picks up the fresh credentials **without an app restart**.
+- `IExternalProviderConfigStore` abstraction (`VisuAuth.Abstractions`)
+  with `ExternalProviderConfigView` (UI-safe — never returns the
+  plaintext secret) and `SaveExternalProviderConfigCommand` (lets the
+  admin edit `ClientId`/`IsEnabled` without re-typing the secret via the
+  "PlainTextClientSecret = null preserves existing ciphertext" rule).
+- `EfCoreExternalProviderConfigStore` (`VisuAuth.Identity`) encrypts the
+  `ClientSecret` at rest via ASP.NET Core's `IDataProtectionProvider` —
+  ciphertext stays in the DB, plaintext is only ever decrypted server-side
+  for the auth options configurator (never flushed to admin UI responses).
+- `DynamicExternalProviderOptionsConfigurator<TOptions>` overlays
+  admin-edited credentials on top of the consumer's static
+  `AddXxx(o => ...)` registration. Wired per scheme via
+  `services.AddVisuAuthDynamicExternalProviderOptions<MicrosoftAccountOptions>("Microsoft")`
+  — backward-compatible: schemes the consumer never opts in keep using
+  their static options.
+- `IExternalProviderOptionsCacheInvalidator` (`VisuAuth.Abstractions`)
+  evicts the `IOptionsMonitorCache` entry for a scheme so the next auth
+  challenge rebuilds options from the freshly-saved DB values — the
+  no-restart story end-to-end.
+- `AspNetIdentityExternalLoginFlow.GetProvidersAsync` now intersects the
+  registered auth schemes with the store's enabled-and-populated rows.
+  Consumers without the store keep "all registered schemes" behaviour
+  (the constructor parameter is optional).
+- Provider buttons on `/visuauth/login` render the brand SVG icon next
+  to the label via a new `<va-provider-icon scheme="…" />` tag helper
+  (`VisuAuth.AdminUi`). Microsoft / Google / Apple / GitHub get their
+  official brand mark; any other scheme falls back to a generic key glyph.
+- Per-tenant schema column already in place (`TenantId` on
+  `VisuAuthExternalProviderConfig` + unique index on `(Scheme, TenantId)`)
+  so the Phase 1.5 per-tenant runtime can land as a non-breaking change.
+- Sample app pre-registers all four schemes (Microsoft / Google / GitHub /
+  Apple) with placeholder-or-appsettings defaults so the admin UI can
+  fully configure a provider from scratch via the browser — no code
+  change required. `UserSeeder` reads the new `IExternalProviderRegistry`
+  to seed a row for every wired scheme on boot, so adding a fifth
+  provider in `Program.cs` no longer needs a matching seeder edit.
+- **External provider discoverability** in the admin UI:
+  - `IExternalProviderRegistry` (`VisuAuth.Abstractions`) — singleton
+    populated by every `AddVisuAuthDynamicExternalProviderOptions<TOptions>`
+    call. The page consults this as the source of truth for "what's
+    actually wired and runnable", not the DB.
+  - Built-in catalogue of ~20 popular OAuth providers
+    (`KnownProviderCatalog` in `VisuAuth.AdminUi`): Microsoft, Google,
+    Apple, Facebook, GitHub, GitLab, Reddit, LinkedIn, X / Twitter,
+    Discord, Slack, Twitch, Spotify, Amazon, Salesforce, Notion, PayPal,
+    Patreon, Zoom, Shopify. Each entry carries scheme, display name,
+    category, NuGet package id, options-type name, fluent extension method,
+    and a docs URL.
+  - Page renders four buckets via an OUTER JOIN of registry + catalogue +
+    DB: **Active** (wired + known, editable), **Custom** (wired but
+    outside the catalogue, editable with a "custom" badge), **Available**
+    (catalogue entries the host hasn't wired — ghost cards with a
+    copy-pasteable wiring snippet under a "How to activate" disclosure),
+    and **Orphaned credentials** (DB rows for schemes no longer wired —
+    warning section with `Delete` button).
+  - `IExternalProviderConfigStore.DeleteAsync` (idempotent) backs the
+    orphan-row cleanup path.
+  - Brand SVG icons added for all 16 new catalogue entries — same inline,
+    no-CDN approach as the existing Microsoft / Google / Apple / GitHub
+    glyphs.
+  - Save handler now rejects attempts to write into the DB for schemes
+    the host didn't wire (would silently dead-end — no handler means no
+    login button), surfacing a clear localized error instead.
+  - **Source badges** on every Client ID / Client Secret cell: a
+    "from DB" pill (database glyph) appears when the value comes from
+    `VisuAuthExternalProviderConfigs`, a "from code" pill (code-chevrons
+    glyph) appears when the value comes from `appsettings` /
+    `user-secrets` / a `Program.cs` lambda. Both render together when
+    both sources have a value, with a tooltip explaining that the DB
+    value wins at runtime. Backed by `IExternalProviderStaticConfigSnapshot`
+    (`VisuAuth.Abstractions`) — a singleton populated by the dynamic
+    options configurator just before its overlay runs, so the snapshot
+    detects static values from *any* consumer convention without
+    hard-coding a configuration-key pattern.
 
 ### Fixed (in-flight before first 0.2 pre-release)
 
@@ -87,6 +204,17 @@ Working toward [`0.2.0`](#020--planned). `<VersionPrefix>` in
 - Adds [QRCoder 1.6.0](https://github.com/codebude/QRCoder) (MIT) as a
   direct dependency of `VisuAuth.EndUserUi`. Used by the TOTP setup page
   to render the `otpauth://` URI as inline SVG; no other surface uses it.
+- Sample-only NuGet additions (the VisuAuth packages still ship zero
+  provider deps): `Microsoft.AspNetCore.Authentication.Google`,
+  `AspNet.Security.OAuth.Apple`, and `AspNet.Security.OAuth.GitHub` —
+  used by `samples/Sample.WebApp` to demonstrate the four pre-registered
+  providers + the admin edit story.
+- Bumps `System.IdentityModel.Tokens.Jwt` from 8.2.1 to 8.14.0 to match
+  the transitive constraint introduced by Apple's OAuth provider.
+- Test-only: `Microsoft.EntityFrameworkCore.InMemory` 10.0.0 added to
+  `VisuAuth.UnitTests` for the new
+  `EfCoreExternalProviderConfigStoreTests` (round-trips through an
+  in-memory DbContext instead of standing up SQLite per test).
 
 ## [0.2.0] — Planned
 

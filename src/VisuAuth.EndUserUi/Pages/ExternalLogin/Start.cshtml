@@ -1,0 +1,11 @@
+@page "/visuauth/external-login/start"
+@model VisuAuth.EndUserUi.Pages.ExternalLogin.StartModel
+@{
+    Layout = null;
+}
+@*
+    Intentionally empty body — this page only exists to host the POST
+    handler. A direct GET (which Razor still routes here) renders nothing
+    to avoid leaking provider info; the POST handler issues a Challenge
+    and redirects before the body is ever flushed.
+*@

@@ -12,6 +12,7 @@
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.0" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.0" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.0" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.0" />
   </ItemGroup>
 
   <ItemGroup Label="Extensions">
@@ -26,7 +27,25 @@
 
   <ItemGroup Label="JWT">
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.0" />
-    <PackageVersion Include="System.IdentityModel.Tokens.Jwt" Version="8.2.1" />
+    <!-- 8.14.0 minimum because AspNet.Security.OAuth.Apple 10.0.0 transitively
+         requires Microsoft.IdentityModel.Protocols.OpenIdConnect 8.14.0 which
+         pulls 8.14.0 of this package. Central Package Management requires us
+         to track the highest transitive constraint. -->
+    <PackageVersion Include="System.IdentityModel.Tokens.Jwt" Version="8.14.0" />
+  </ItemGroup>
+
+  <ItemGroup Label="External providers (sample only)">
+    <!-- Used by Sample.WebApp to wire external login providers conditionally
+         when the consumer fills in ClientId/ClientSecret. Not pulled in by
+         the VisuAuth packages themselves — adapter contracts stay agnostic.
+         Microsoft / Google are shipped by the ASP.NET Core team; Apple /
+         GitHub use the community AspNet.Security.OAuth.Providers project
+         (https://github.com/aspnet-contrib/AspNet.Security.OAuth.Providers). -->
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.MicrosoftAccount" Version="10.0.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.Google" Version="10.0.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.Facebook" Version="10.0.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.Apple" Version="10.0.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.GitHub" Version="10.0.0" />
   </ItemGroup>
 
   <ItemGroup Label="TOTP">

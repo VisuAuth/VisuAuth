@@ -40,6 +40,10 @@ public static class VisuAuthEndUserUiServiceCollectionExtensions
         // still resolve non-null `IOptions<...>` for the LoginModel chain.
         services.AddOptions<EndUserUiOptions>();
         services.AddOptions<WebViewCallbackOptions>();
+        // First-time strategy for external-login: defaults to AutoCreate so
+        // a consumer who wires a provider (Google, Microsoft, …) without
+        // touching ExternalLoginOptions still gets a working sign-in flow.
+        services.AddOptions<ExternalLoginOptions>();
 
         // QR-code renderer used by the TOTP setup page. TryAddSingleton lets
         // a consumer swap the implementation (e.g. PNG output) without

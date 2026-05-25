@@ -1,0 +1,260 @@
+@*
+    One row in the Active / Custom providers table. Rendered by
+    _ProvidersTable.cshtml via @await Html.PartialAsync — the Razor source
+    generator rejects async output inside local functions, so this partial
+    is the cleanest way to share the view-vs-edit branching across the
+    Active and Custom buckets.
+
+    The bag carries:
+      - Model : the IndexModel itself (needs EditingScheme, EditFields, Ls)
+      - ViewData["Row"]     : the ProviderRow to render
+      - ViewData["IsCustom"]: bool — adds the "custom" badge when true
+*@
+@model VisuAuth.AdminUi.Pages.Admin.ExternalProviders.IndexModel
+@{
+    var row = (VisuAuth.AdminUi.Pages.Admin.ExternalProviders.IndexModel.ProviderRow)ViewData["Row"]!;
+    var isCustom = (bool)(ViewData["IsCustom"] ?? false);
+    var inEditMode = string.Equals(Model.EditingScheme, row.Scheme, StringComparison.Ordinal);
+    var config = row.Config;
+    var hasConfig = config is not null;
+
+    // Source signals: ClientId / Secret can come from the DB, from static
+    // config (appsettings / user-secrets / Program.cs lambda), or both. When
+    // both are present, the DB value wins at runtime — the tooltips
+    // explain that explicitly so the operator isn't surprised.
+    var hasDbClientId = hasConfig && !string.IsNullOrEmpty(config!.ClientId);
+    var hasStaticClientId = row.StaticConfig is { ClientId.Length: > 0 };
+    var hasDbSecret = hasConfig && config!.HasClientSecret;
+    var hasStaticSecret = row.StaticConfig is { HasClientSecret: true };
+
+    // Localised strings used by the source badges. Captured up here so the
+    // attribute values below stay simple expressions — Razor's attribute
+    // parser doesn't accept embedded indexers cleanly inside quotes.
+    var lblFromDb = Ls["ExternalProviders.Source.FromDb"].Value;
+    var lblFromCode = Ls["ExternalProviders.Source.FromCode"].Value;
+    var tipFromDb = Ls["ExternalProviders.Source.FromDbTooltip"].Value;
+    var tipFromCode = Ls["ExternalProviders.Source.FromCodeTooltip"].Value;
+    var tipDbOverridesCode = Ls["ExternalProviders.Source.DbOverridesCode"].Value;
+    var tipCodeOverriddenByDb = Ls["ExternalProviders.Source.CodeOverriddenByDb"].Value;
+
+    var clientIdDbTitle = hasStaticClientId ? tipDbOverridesCode : tipFromDb;
+    var clientIdCodeTitle = hasDbClientId ? tipCodeOverriddenByDb : tipFromCode;
+    var secretDbTitle = hasStaticSecret ? tipDbOverridesCode : tipFromDb;
+    var secretCodeTitle = hasDbSecret ? tipCodeOverriddenByDb : tipFromCode;
+    var secretPresentAria = Ls["ExternalProviders.Secret.PresentAria"].Value;
+    var docsTooltip = Ls["ExternalProviders.Docs.OfficialDocsTooltip"].Value;
+}
+
+@{
+    // "Live" reflects what the OAuth handler will actually see at runtime —
+    // ClientId and Secret can come from either the DB overlay or the
+    // consumer's static config (appsettings / user-secrets / Program.cs
+    // lambda). Only one side needs to supply each field. IsEnabled is the
+    // admin's kill-switch — when false, runtime overlay skips, but the
+    // status still reflects intent ("Disabled") rather than effective.
+    var hasEffectiveClientId = hasDbClientId || hasStaticClientId;
+    var hasEffectiveSecret = hasDbSecret || hasStaticSecret;
+    var isLive = hasConfig && config!.IsEnabled && hasEffectiveClientId && hasEffectiveSecret;
+}
+
+@if (inEditMode)
+{
+    <tr>
+        <td colspan="6">
+            <form method="post"
+                  hx-post="@($"/visuauth/admin/external-providers?handler=Save&scheme={row.Scheme}")"
+                  hx-target="#va-external-providers"
+                  hx-swap="innerHTML"
+                  class="va-inline-form"
+                  autocomplete="off">
+                @Html.AntiForgeryToken()
+                <div class="va-edit-grid">
+                    <div>
+                        <strong>
+                            <va-provider-icon scheme="@row.Scheme" />
+                            @row.DisplayName
+                        </strong>
+                        @if (row.Catalogue?.DocsUrl is { Length: > 0 } editDocsUrl)
+                        {
+                            <div class="va-docs-banner">
+                                @Ls["ExternalProviders.Docs.HowToCreate"]
+                                <a href="@editDocsUrl"
+                                   target="_blank"
+                                   rel="noopener noreferrer"
+                                   class="va-docs-link">
+                                    @row.DisplayName @Ls["ExternalProviders.Docs.OpenDocs"] ↗
+                                </a>
+                            </div>
+                        }
+                    </div>
+                    <label class="va-field">
+                        <span class="va-field-label">@Ls["ExternalProviders.Col.ClientId"]</span>
+                        <input type="text"
+                               name="EditFields.ClientId"
+                               value="@(Model.EditFields.ClientId ?? config?.ClientId)"
+                               class="va-input"
+                               autocomplete="off"
+                               autofocus />
+                    </label>
+                    <label class="va-field">
+                        <span class="va-field-label">
+                            @Ls["ExternalProviders.Col.Secret"]
+                            @if (hasConfig && config!.HasClientSecret)
+                            {
+                                <span class="va-muted" style="font-weight:400;font-size:0.8rem;">@Ls["ExternalProviders.Secret.Stored"]</span>
+                            }
+                        </span>
+                        <input type="password"
+                               name="EditFields.ClientSecret"
+                               value=""
+                               placeholder="@(hasConfig && config!.HasClientSecret ? Ls["ExternalProviders.Secret.PlaceholderReplace"].Value : Ls["ExternalProviders.Secret.PlaceholderNew"].Value)"
+                               class="va-input"
+                               autocomplete="new-password" />
+                    </label>
+                    @if (hasConfig && config!.HasClientSecret)
+                    {
+                        <label class="va-checkbox" style="grid-column:span 2;">
+                            <input type="checkbox" name="EditFields.ClearClientSecret" value="true" />
+                            <span>@Ls["ExternalProviders.Secret.ClearLabel"]</span>
+                        </label>
+                    }
+                    <label class="va-checkbox" style="grid-column:span 2;">
+                        @{ var enabledChecked = (Model.EditFields.IsEnabled || (hasConfig && config!.IsEnabled)) ? "checked" : null; }
+                        <input type="checkbox" name="EditFields.IsEnabled" value="true" checked="@enabledChecked" />
+                        <span>@Ls["ExternalProviders.IsEnabledLabel"]</span>
+                    </label>
+                </div>
+                <div class="va-row-actions" style="margin-top:0.75rem;">
+                    <button type="submit" class="va-btn va-btn-primary va-btn-small">@Ls["Common.Save"]</button>
+                    <button type="button"
+                            class="va-btn va-btn-ghost va-btn-small"
+                            hx-get="/visuauth/admin/external-providers"
+                            hx-target="#va-external-providers"
+                            hx-swap="innerHTML">@Ls["Common.Cancel"]</button>
+                </div>
+            </form>
+        </td>
+    </tr>
+}
+else
+{
+    <tr>
+        <td>
+            <div style="display:flex;align-items:center;gap:0.5rem;">
+                <va-provider-icon scheme="@row.Scheme" />
+                <div>
+                    <strong>@row.DisplayName</strong>
+                    @if (isCustom)
+                    {
+                        <span class="va-badge" style="margin-left:0.4rem;">@Ls["ExternalProviders.Custom.Badge"]</span>
+                    }
+                    @if (row.Catalogue?.DocsUrl is { Length: > 0 } viewDocsUrl)
+                    {
+                        <a href="@viewDocsUrl"
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           class="va-docs-link-inline"
+                           title="@docsTooltip">
+                            @Ls["ExternalProviders.Docs.OpenDocs"] ↗
+                        </a>
+                    }
+                </div>
+            </div>
+        </td>
+        <td>
+            @if (hasDbClientId)
+            {
+                <code class="va-tenant-id">@config!.ClientId</code>
+            }
+            else if (hasStaticClientId)
+            {
+                <code class="va-tenant-id">@row.StaticConfig!.ClientId</code>
+            }
+            else
+            {
+                <span class="va-muted">@Ls["ExternalProviders.NotConfigured"]</span>
+            }
+            <div class="va-source-row">
+                @if (hasDbClientId)
+                {
+                    <va-provider-source kind="db" label="@lblFromDb" title="@clientIdDbTitle" />
+                }
+                @if (hasStaticClientId)
+                {
+                    <va-provider-source kind="code" label="@lblFromCode" title="@clientIdCodeTitle" />
+                }
+            </div>
+        </td>
+        <td>
+            @if (hasDbSecret || hasStaticSecret)
+            {
+                // Mask — never echoes the value, just signals "a secret is
+                // present somewhere". The source badges below (do banco /
+                // do código) tell the operator WHERE it lives.
+                <span class="va-secret-mask" aria-label="@secretPresentAria">*****</span>
+            }
+            else
+            {
+                // Same wording as the ClientId-empty case so "ausente" /
+                // "(não configurado)" doesn't read as two distinct states
+                // when they mean the exact same thing.
+                <span class="va-muted">@Ls["ExternalProviders.NotConfigured"]</span>
+            }
+            <div class="va-source-row">
+                @if (hasDbSecret)
+                {
+                    <va-provider-source kind="db" label="@lblFromDb" title="@secretDbTitle" />
+                }
+                @if (hasStaticSecret)
+                {
+                    <va-provider-source kind="code" label="@lblFromCode" title="@secretCodeTitle" />
+                }
+            </div>
+        </td>
+        <td>
+            @if (isLive)
+            {
+                <span class="va-badge va-success">@Ls["ExternalProviders.Status.Live"]</span>
+            }
+            else if (hasConfig && config!.IsEnabled)
+            {
+                <span class="va-badge">@Ls["ExternalProviders.Status.EnabledButIncomplete"]</span>
+            }
+            else
+            {
+                <span class="va-badge">@Ls["ExternalProviders.Status.Disabled"]</span>
+            }
+        </td>
+        <td>
+            @if (hasConfig)
+            {
+                <span class="va-muted">@config!.UpdatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span>
+            }
+            else
+            {
+                <span class="va-muted">@Ls["Common.Dash"]</span>
+            }
+        </td>
+        <td class="va-col-actions">
+            <div class="va-row-actions">
+                <button type="button"
+                        class="va-btn va-btn-ghost va-btn-small"
+                        hx-get="@($"/visuauth/admin/external-providers?handler=Edit&scheme={row.Scheme}")"
+                        hx-target="#va-external-providers"
+                        hx-swap="innerHTML">@Ls["Common.Edit"]</button>
+                @if (hasConfig)
+                {
+                    <form method="post"
+                          hx-post="@($"/visuauth/admin/external-providers?handler=ToggleEnabled&scheme={row.Scheme}&isEnabled={(!config!.IsEnabled).ToString().ToLowerInvariant()}")"
+                          hx-target="#va-external-providers"
+                          hx-swap="innerHTML">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="va-btn va-btn-ghost va-btn-small">
+                            @(config!.IsEnabled ? Ls["ExternalProviders.Action.Disable"] : Ls["ExternalProviders.Action.Enable"])
+                        </button>
+                    </form>
+                }
+            </div>
+        </td>
+    </tr>
+}

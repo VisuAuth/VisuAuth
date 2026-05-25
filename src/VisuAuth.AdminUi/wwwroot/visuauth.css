@@ -425,10 +425,215 @@ body {
     margin: 0;
 }
 
+/* Edit grid used by the external-providers inline edit row — two-column
+ * layout so ClientId + ClientSecret sit side-by-side on desktop and stack
+ * cleanly on narrow screens. The "span 2" classes inside force checkboxes
+ * to take the full width below the fields. */
+.va-edit-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 0.75rem 1rem;
+    align-items: end;
+}
+
+.va-edit-grid > *:first-child {
+    grid-column: span 2;
+}
+
+.va-inline-form:has(.va-edit-grid) {
+    display: block;
+}
+.va-edit-grid .va-field {
+    min-width: 0;
+}
+.va-edit-grid .va-input {
+    width: 100%;
+}
+
+@media (max-width: 720px) {
+    .va-edit-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .va-edit-grid > *:first-child {
+        grid-column: span 1;
+    }
+}
+
 .va-empty-inline {
     margin: 0;
     color: var(--visuauth-muted);
     font-size: 0.9rem;
+}
+
+/* External providers admin — section heading shared by Active / Available /
+ * Orphan blocks. Centres the title baseline with the muted hint to the right
+ * so the page reads as four stacked groups instead of one long table. */
+.va-section-heading {
+    padding: 1rem 1rem 0.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.va-section-heading h2 {
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+/* "Available providers" grid — auto-fills 220px cards with a comfortable gap
+ * so 20 entries lay out as 3–5 columns depending on viewport without
+ * media-query gymnastics. */
+.va-ghost-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 0.75rem;
+    padding: 0 1rem 1rem;
+}
+
+.va-ghost-card {
+    border: 1px dashed var(--visuauth-border);
+    border-radius: var(--visuauth-radius);
+    padding: 0.75rem;
+    background: var(--visuauth-surface);
+    opacity: 0.92;
+}
+
+.va-ghost-card:hover {
+    opacity: 1;
+    border-style: solid;
+}
+
+.va-ghost-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.va-ghost-card-header > div:first-of-type {
+    flex: 1;
+    min-width: 0;
+}
+
+.va-ghost-badge {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.va-ghost-details > summary {
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--visuauth-primary);
+}
+
+/* Wiring snippet inside ghost-card — fixed-pitch font, scrolls horizontally
+ * on overflow so long package ids don't break the card layout. */
+.va-code-snippet {
+    background: #0f172a;
+    color: #e2e8f0;
+    padding: 0.75rem;
+    border-radius: var(--visuauth-radius);
+    overflow-x: auto;
+    font-size: 0.78rem;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    margin: 0.5rem 0;
+    white-space: pre;
+}
+
+.va-code-snippet code {
+    background: transparent;
+    color: inherit;
+    padding: 0;
+}
+
+/* Source badges next to Client ID / Secret cells on the external-providers
+ * admin page. Two flavours (DB / code) with subtly different palettes so
+ * the operator can tell at a glance where a value came from. Tooltip
+ * (HTML title attribute) explains who wins when both badges render. */
+.va-source-row {
+    display: flex;
+    gap: 0.25rem;
+    margin-top: 0.25rem;
+    flex-wrap: wrap;
+}
+
+/* Icon-only badge — squarer footprint, no internal gap. The hover title
+ * (and aria-label for screen readers) carries the prose; the icon shape
+ * tells sighted users which source the value came from at a glance. */
+.va-source-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.2rem;
+    border-radius: var(--visuauth-radius);
+    line-height: 1;
+    cursor: help;
+    border: 1px solid var(--visuauth-border);
+    background: var(--visuauth-surface);
+}
+
+.va-source-badge svg {
+    flex: 0 0 12px;
+}
+
+/* DB-sourced — uses the primary tint so it stands out as "this is the live
+ * value the runtime uses". */
+.va-source-badge-db {
+    color: var(--visuauth-primary);
+    border-color: color-mix(in srgb, var(--visuauth-primary) 40%, transparent);
+    background: color-mix(in srgb, var(--visuauth-primary) 8%, var(--visuauth-surface));
+}
+
+/* Code-sourced — muted grey to read as "fallback" / "secondary" when paired
+ * with a DB badge. */
+.va-source-badge-code {
+    color: var(--visuauth-muted);
+}
+
+/* Secret-present mask — five asterisks, monospace so the dots align and
+ * letter-spaced so they read as a deliberate placeholder rather than text
+ * we're trying to obscure. The badges underneath disclose the source. */
+.va-secret-mask {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    letter-spacing: 0.15em;
+    color: var(--visuauth-muted);
+}
+
+/* Compact "docs ↗" inline link next to a provider's name on the Active
+ * row. Sized small + muted so it doesn't compete with the provider
+ * display name but stays one click away from the official setup page. */
+.va-docs-link-inline {
+    margin-left: 0.5rem;
+    font-size: 0.78rem;
+    color: var(--visuauth-primary);
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.va-docs-link-inline:hover {
+    text-decoration: underline;
+}
+
+/* Slightly larger banner shown inside the inline edit form — the moment
+ * the admin is about to paste credentials is exactly when they want the
+ * provider's docs handy. */
+.va-docs-banner {
+    margin-top: 0.4rem;
+    font-size: 0.85rem;
+    color: var(--visuauth-muted);
+}
+
+.va-docs-link {
+    color: var(--visuauth-primary);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.va-docs-link:hover {
+    text-decoration: underline;
 }
 
 .va-detail-card .va-table {

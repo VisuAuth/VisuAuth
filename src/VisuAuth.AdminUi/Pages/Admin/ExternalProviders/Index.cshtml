@@ -1,0 +1,14 @@
+@page "/visuauth/admin/external-providers"
+@model VisuAuth.AdminUi.Pages.Admin.ExternalProviders.IndexModel
+@{
+    ViewData["Title"] = Ls["ExternalProviders.PageTitle"].Value;
+}
+
+<div class="va-page-header">
+    <h1>@Ls["ExternalProviders.Title"] <span class="va-muted" style="font-weight:400;font-size:1rem;">(@Model.ConfigurableCount)</span></h1>
+</div>
+<p class="va-muted" style="margin-top:-0.5rem;">@Ls["ExternalProviders.Subtitle"]</p>
+
+<div id="va-external-providers">
+    <partial name="_ProvidersTable" model="Model" />
+</div>

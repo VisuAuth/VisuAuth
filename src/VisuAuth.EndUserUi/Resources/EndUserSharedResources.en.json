@@ -16,7 +16,9 @@
   "Login.Submit": "Sign in",
   "Login.Forgot": "Forgot password?",
   "Login.Register": "Create account",
-  "Login.ExternalOnly": "Sign-in is delegated to an external identity provider. A follow-up PR wires the 'Sign in with Microsoft' button here.",
+  "Login.ExternalOnly": "Sign in with an external identity provider below.",
+  "Login.OrDivider": "or",
+  "Login.ContinueWith": "Continue with {0}",
   "Login.Error.LocalNotSupported": "This backend does not support local sign-in.",
   "Login.Error.EmailPasswordRequired": "Email and password are required.",
   "Login.Error.TwoFactor": "Two-factor authentication is required.",
@@ -147,5 +149,17 @@
   "TwoFactor.Recovery.DisableHint": "Disabling two-factor clears your authenticator key. You can re-enroll any time from the setup page.",
   "TwoFactor.Recovery.Error.NotEnabled": "Two-factor authentication must be enabled before generating recovery codes.",
   "TwoFactor.Recovery.Error.GenerateFailed": "Failed to generate recovery codes. Try again.",
-  "TwoFactor.Recovery.Error.DisableFailed": "Failed to disable two-factor authentication."
+  "TwoFactor.Recovery.Error.DisableFailed": "Failed to disable two-factor authentication.",
+
+  "ExternalLogin.Confirm.PageTitle": "Confirm your account — VisuAuth",
+  "ExternalLogin.Confirm.Heading": "Confirm your account",
+  "ExternalLogin.Confirm.Subtitle": "We could not match your {0} sign-in to an existing account. Confirm your details below to finish signing in.",
+  "ExternalLogin.Confirm.UserNameLabel": "User name (optional)",
+  "ExternalLogin.Confirm.Submit": "Create account and sign in",
+  "ExternalLogin.Confirm.BackToLogin": "Back to sign in",
+  "ExternalLogin.Confirm.ErrorLead": "We could not finish signing you in.",
+  "ExternalLogin.Confirm.Error.EmailRequired": "Email is required.",
+  "ExternalLogin.Error.NoSession": "Your external sign-in session expired. Try again from the sign-in page.",
+  "ExternalLogin.Error.RemoteError": "The external provider reported an error during sign-in. Try again or pick a different provider.",
+  "ExternalLogin.Error.SignInFailed": "We could not sign you in with that provider. Try again or use email + password."
 }

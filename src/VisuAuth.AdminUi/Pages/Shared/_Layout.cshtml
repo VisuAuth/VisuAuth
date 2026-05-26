@@ -43,12 +43,37 @@
             var path = Context.Request.Path.Value ?? string.Empty;
             string NavClass(string segment) =>
                 path.StartsWith(segment, StringComparison.OrdinalIgnoreCase) ? "va-active" : "";
+            // Dashboard sits at the admin root, so the StartsWith helper
+            // above would mark it active on every /admin/* path. Match
+            // exactly instead — trailing slash optional.
+            string DashboardNavClass() =>
+                string.Equals(path, "/visuauth/admin", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(path, "/visuauth/admin/", StringComparison.OrdinalIgnoreCase)
+                    ? "va-active" : "";
         }
         <aside class="va-sidebar">
-            <a class="va-brand" href="/visuauth/admin/users">VisuAuth</a>
+            <a class="va-brand" href="/visuauth/admin">VisuAuth</a>
+            <nav class="va-nav">
+                <a href="/visuauth/admin" class="@DashboardNavClass()">@Ls["Sidebar.NavDashboard"]</a>
+                <a href="/visuauth/admin/users" class="@NavClass("/visuauth/admin/users")">@Ls["Sidebar.NavUsers"]</a>
+                <a href="/visuauth/admin/roles" class="@NavClass("/visuauth/admin/roles")">@Ls["Sidebar.NavRoles"]</a>
+                @if (TenantContext.IsMultiTenancyEnabled)
+                {
+                    <a href="/visuauth/admin/tenants" class="@NavClass("/visuauth/admin/tenants")">@Ls["Sidebar.NavTenants"]</a>
+                }
+                else
+                {
+                    <a href="#" aria-disabled="true" class="va-muted">@Ls["Sidebar.NavTenantsSoon"]</a>
+                }
+                <a href="/visuauth/admin/external-providers" class="@NavClass("/visuauth/admin/external-providers")">@Ls["Sidebar.NavExternalProviders"]</a>
+                <a href="/visuauth/admin/audit-log" class="@NavClass("/visuauth/admin/audit-log")">@Ls["Sidebar.NavAuditLog"]</a>
+            </nav>
             @if (TenantContext.IsMultiTenancyEnabled)
             {
-                @* asp-page + asp-page-handler engage the form tag helper so the
+                @* Tenant switcher sits below the nav (and above the language
+                   switcher) so operators reach for it less often — it's a
+                   contextual control, not a destination. asp-page +
+                   asp-page-handler engage the form tag helper so the
                    antiforgery token is auto-injected. The explicit
                    @Html.AntiForgeryToken() is belt-and-suspenders for any case
                    where the helper does not run (rare, but cheap insurance —
@@ -77,20 +102,6 @@
                     </noscript>
                 </form>
             }
-            <nav class="va-nav">
-                <a href="/visuauth/admin/users" class="@NavClass("/visuauth/admin/users")">@Ls["Sidebar.NavUsers"]</a>
-                <a href="/visuauth/admin/roles" class="@NavClass("/visuauth/admin/roles")">@Ls["Sidebar.NavRoles"]</a>
-                @if (TenantContext.IsMultiTenancyEnabled)
-                {
-                    <a href="/visuauth/admin/tenants" class="@NavClass("/visuauth/admin/tenants")">@Ls["Sidebar.NavTenants"]</a>
-                }
-                else
-                {
-                    <a href="#" aria-disabled="true" class="va-muted">@Ls["Sidebar.NavTenantsSoon"]</a>
-                }
-                <a href="/visuauth/admin/external-providers" class="@NavClass("/visuauth/admin/external-providers")">@Ls["Sidebar.NavExternalProviders"]</a>
-                <a href="/visuauth/admin/audit-log" class="@NavClass("/visuauth/admin/audit-log")">@Ls["Sidebar.NavAuditLog"]</a>
-            </nav>
             @* Language switcher (CLAUDE.md §10.1). The tag helper suppresses
                itself when only one culture is configured, so the markup
                stays clean for single-language deployments. *@

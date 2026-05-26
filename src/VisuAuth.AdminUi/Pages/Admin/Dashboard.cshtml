@@ -1,0 +1,200 @@
+@page "/visuauth/admin"
+@model VisuAuth.AdminUi.Pages.Admin.DashboardModel
+@inject Microsoft.Extensions.Localization.IStringLocalizer<VisuAuth.AdminUi.AdminSharedResources> Ls
+@{
+    ViewData["Title"] = Ls["Dashboard.PageTitle"].Value;
+    var caps = Model.Capabilities;
+
+    // Tile builder lifts the repeated KPI markup out of the template so a
+    // future "add a tile" diff is one line, not seven of duplicated Razor.
+    // The hideWhen flag is what keeps the future Entra adapter from
+    // rendering a meaningless "0 locked" tile when the backend has no
+    // lockout concept at all.
+    string FormatCount(int? n) => n is null ? "—" : n.Value.ToString("N0", System.Globalization.CultureInfo.CurrentUICulture);
+}
+
+<header class="va-page-header">
+    <div>
+        <h1>@Ls["Dashboard.Heading"]</h1>
+        <p class="va-muted">@Ls["Dashboard.Subheading"]</p>
+    </div>
+    <div class="va-page-actions">
+        <a class="va-btn va-btn-primary" href="/visuauth/admin/users/new">@Ls["Dashboard.QuickAction.NewUser"]</a>
+        <a class="va-btn va-btn-ghost" href="/visuauth/admin/roles">@Ls["Dashboard.QuickAction.Roles"]</a>
+        @if (Model.AuditPluginEnabled)
+        {
+            <a class="va-btn va-btn-ghost" href="/visuauth/admin/audit-log">@Ls["Dashboard.QuickAction.AuditLog"]</a>
+        }
+    </div>
+</header>
+
+<section class="va-kpi-grid" aria-label="@Ls["Dashboard.KpiGrid.AriaLabel"]">
+    @* Total users — always present, drill-down to the unfiltered list. *@
+    <a class="va-kpi" href="/visuauth/admin/users" aria-label="@Ls["Dashboard.Kpi.TotalUsers"]">
+        <span class="va-kpi-label">@Ls["Dashboard.Kpi.TotalUsers"]</span>
+        <span class="va-kpi-value">@FormatCount(Model.TotalUsers)</span>
+    </a>
+
+    @if (caps.SupportsLockout)
+    {
+        @* Drill-down: pre-filters the users list to locked accounts. *@
+        <a class="va-kpi va-kpi-warn" href="/visuauth/admin/users?isLockedOut=true" aria-label="@Ls["Dashboard.Kpi.Locked"]">
+            <span class="va-kpi-label">@Ls["Dashboard.Kpi.Locked"]</span>
+            <span class="va-kpi-value">@FormatCount(Model.LockedUsers)</span>
+        </a>
+    }
+
+    @if (caps.SupportsEmailConfirmation)
+    {
+        <a class="va-kpi" href="/visuauth/admin/users?emailConfirmed=false" aria-label="@Ls["Dashboard.Kpi.PendingConfirm"]">
+            <span class="va-kpi-label">@Ls["Dashboard.Kpi.PendingConfirm"]</span>
+            <span class="va-kpi-value">@FormatCount(Model.PendingConfirmUsers)</span>
+        </a>
+    }
+
+    @if (caps.SupportsTwoFactor)
+    {
+        <a class="va-kpi va-kpi-good" href="/visuauth/admin/users?twoFactorEnabled=true" aria-label="@Ls["Dashboard.Kpi.TwoFactor"]">
+            <span class="va-kpi-label">@Ls["Dashboard.Kpi.TwoFactor"]</span>
+            <span class="va-kpi-value">@FormatCount(Model.TwoFactorUsers)</span>
+        </a>
+    }
+
+    <a class="va-kpi" href="/visuauth/admin/roles" aria-label="@Ls["Dashboard.Kpi.Roles"]">
+        <span class="va-kpi-label">@Ls["Dashboard.Kpi.Roles"]</span>
+        <span class="va-kpi-value">@FormatCount(Model.TotalRoles)</span>
+    </a>
+
+    @if (Model.MultiTenancyEnabled && Model.TotalTenants is not null)
+    {
+        <a class="va-kpi" href="/visuauth/admin/tenants" aria-label="@Ls["Dashboard.Kpi.Tenants"]">
+            <span class="va-kpi-label">@Ls["Dashboard.Kpi.Tenants"]</span>
+            <span class="va-kpi-value">@FormatCount(Model.TotalTenants)</span>
+        </a>
+    }
+</section>
+
+<div class="va-dashboard-grid">
+    <section class="va-card va-dashboard-chart" aria-label="@Ls["Dashboard.Chart.AriaLabel"]">
+        <header class="va-card-header">
+            <h2>@Ls["Dashboard.Chart.Title"]</h2>
+            <span class="va-muted va-small">@Ls["Dashboard.Chart.Subtitle"]</span>
+        </header>
+        @if (!Model.AuditPluginEnabled)
+        {
+            <p class="va-empty">@Ls["Dashboard.Chart.PluginDisabled"]</p>
+        }
+        else
+        {
+            <ol class="va-bar-chart" aria-hidden="false">
+                @foreach (var bucket in Model.LoginsPerDay)
+                {
+                    @* Height is a CSS custom property to keep the markup
+                       presentational-state-free; the stylesheet picks it
+                       up as height: var(--bar-height). Max=0 collapses
+                       every bar to the floor — same visual as "no data". *@
+                    var heightPct = Model.LoginChartMax == 0
+                        ? 0
+                        : (int)Math.Round(bucket.Count * 100.0 / Model.LoginChartMax);
+                    <li class="va-bar"
+                        style="--bar-height: @(heightPct)%;"
+                        title="@bucket.Day.ToString("yyyy-MM-dd"): @bucket.Count">
+                        <span class="va-bar-value">@bucket.Count</span>
+                        <span class="va-bar-track">
+                            <span class="va-bar-fill"></span>
+                        </span>
+                        <span class="va-bar-label">@bucket.Day.ToString("MM-dd")</span>
+                    </li>
+                }
+            </ol>
+        }
+    </section>
+
+    <section class="va-card va-dashboard-health" aria-label="@Ls["Dashboard.Health.AriaLabel"]">
+        <header class="va-card-header">
+            <h2>@Ls["Dashboard.Health.Title"]</h2>
+        </header>
+        <dl class="va-health-list">
+            <div>
+                <dt>@Ls["Dashboard.Health.Version"]</dt>
+                <dd><code>@Model.Health.VisuAuthVersion</code></dd>
+            </div>
+            <div>
+                <dt>@Ls["Dashboard.Health.Runtime"]</dt>
+                <dd><code>@Model.Health.FrameworkDescription</code></dd>
+            </div>
+            <div>
+                <dt>@Ls["Dashboard.Health.AuditPlugin"]</dt>
+                <dd>
+                    @if (Model.AuditPluginEnabled)
+                    {
+                        <span class="va-pill va-pill-success">@Ls["Dashboard.Health.AuditPlugin.On"]</span>
+                    }
+                    else
+                    {
+                        <span class="va-pill va-pill-muted">@Ls["Dashboard.Health.AuditPlugin.Off"]</span>
+                    }
+                </dd>
+            </div>
+            <div>
+                <dt>@Ls["Dashboard.Health.MultiTenancy"]</dt>
+                <dd>
+                    @if (Model.MultiTenancyEnabled)
+                    {
+                        <span class="va-pill va-pill-success">@Ls["Dashboard.Health.MultiTenancy.On"]</span>
+                    }
+                    else
+                    {
+                        <span class="va-pill va-pill-muted">@Ls["Dashboard.Health.MultiTenancy.Off"]</span>
+                    }
+                </dd>
+            </div>
+        </dl>
+    </section>
+
+    <section class="va-card va-dashboard-activity" aria-label="@Ls["Dashboard.Activity.AriaLabel"]">
+        <header class="va-card-header">
+            <h2>@Ls["Dashboard.Activity.Title"]</h2>
+            @if (Model.AuditPluginEnabled)
+            {
+                <a class="va-link va-small" href="/visuauth/admin/audit-log">@Ls["Dashboard.Activity.ViewAll"]</a>
+            }
+        </header>
+        @if (!Model.AuditPluginEnabled)
+        {
+            <div class="va-empty">
+                <p>@Ls["Dashboard.Activity.PluginDisabled"]</p>
+                <p><a class="va-link" href="/visuauth/admin/audit-log">@Ls["Dashboard.Activity.HowToEnable"]</a></p>
+            </div>
+        }
+        else if (Model.RecentActivity.Count == 0)
+        {
+            <p class="va-empty">@Ls["Dashboard.Activity.NoEvents"]</p>
+        }
+        else
+        {
+            <ul class="va-activity-list">
+                @foreach (var entry in Model.RecentActivity)
+                {
+                    @* targetId link mirrors the audit-log page convention so
+                       clicking it filters the full log to this target only. *@
+                    var targetHref = string.IsNullOrEmpty(entry.TargetId)
+                        ? "/visuauth/admin/audit-log"
+                        : $"/visuauth/admin/audit-log?targetId={Uri.EscapeDataString(entry.TargetId)}";
+                    <li class="va-activity-item">
+                        <span class="va-activity-when" title="@entry.Timestamp.ToString("u")">
+                            @entry.Timestamp.UtcDateTime.ToString("HH:mm")
+                        </span>
+                        <span class="va-activity-action">@entry.Action</span>
+                        <span class="va-activity-outcome va-pill @(entry.Outcome == VisuAuth.Abstractions.Auditing.AuditOutcome.Success ? "va-pill-success" : "va-pill-danger")">
+                            @entry.Outcome
+                        </span>
+                        <span class="va-activity-target">
+                            <a class="va-link" href="@targetHref">@(entry.TargetLabel ?? entry.TargetId ?? entry.TargetType)</a>
+                        </span>
+                    </li>
+                }
+            </ul>
+        }
+    </section>
+</div>

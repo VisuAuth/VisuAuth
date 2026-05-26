@@ -18,6 +18,50 @@ Working toward [`0.2.0`](#020--planned). `<VersionPrefix>` in
 
 ### Added
 
+- **Admin dashboard** at `/visuauth/admin` (`VisuAuth.AdminUi`) — the new
+  landing page when an admin opens the back office. Replaces the old
+  behaviour of "/admin" 404-ing until the user navigated to a sub-route.
+  - KPI tiles: Total users, Locked, Pending email confirmation,
+    With 2FA, Roles, Tenants. Each tile is clickable and drills into
+    the matching list view already filtered (e.g. Locked →
+    `/admin/users?isLockedOut=true`). Tiles are capability-aware: a
+    backend that reports `SupportsLockout = false` (future Entra
+    adapter) doesn't render the Locked tile at all, instead of showing
+    a meaningless "0 locked".
+  - 7-day login bar chart (UTC days), zero-filled for days with no
+    activity so the chart's vertical rhythm stays stable. Pure CSS bars
+    — no chart library — driven by a `--bar-height` custom property the
+    page model writes per `<li>`.
+  - "System health" card surfaces VisuAuth assembly version
+    (InformationalVersion → semver incl. pre-release suffix), .NET
+    runtime version (`RuntimeInformation.FrameworkDescription`), audit-
+    plugin enabled/disabled pill, multi-tenancy enabled/disabled pill.
+  - "Recent activity" feed shows the 10 most recent audit events (when
+    the plugin is wired); each row's target label links to
+    `/admin/audit-log?targetId=…` so an operator can pivot from the
+    summary view to the full filtered log in one click. When the plugin
+    is off, the card renders an inline "audit log plugin not enabled"
+    hint with a link to the audit-log page (which carries the wiring
+    snippet).
+  - Sidebar gains a "Dashboard" entry as the first item, active when
+    the URL is exactly `/visuauth/admin` (StartsWith would have marked
+    it active on every admin sub-route).
+  - Counts piggy-back on the existing `IUserStore.ListAsync` /
+    `IRoleStore.ListAsync` / `ITenantStore.ListAsync` paths
+    (`PageSize=1` and read `Total`) so no new abstraction lands — the
+    adapter surface stays the same.
+  - New `IAuditReader.CountByDayAsync(action, from, to, ct)` returning
+    `IReadOnlyList<DailyActionCount>` powers the bar chart without
+    pulling every login row into memory. Implementation in
+    `EfCoreAuditStore` groups by `DateOnly.FromDateTime(Timestamp.UtcDateTime)`
+    in memory after a narrow `Where` push-down — works on every EF
+    provider (SQLite included).
+  - EN + PT-BR resources for every dashboard label (`Dashboard.*` keys).
+  - Sample wires nothing new — the existing audit-log + Identity setup
+    light up the dashboard automatically; the home page now links to
+    `/visuauth/admin` so the dashboard is the first thing a fresh
+    sample-app browser visit lands on after Identity sign-in.
+
 - **Audit log plugin** (`feat/audit-log`) — opt-in trail of every
   sensitive admin and end-user action, surfaced at
   `/visuauth/admin/audit-log`. Activates by adding

@@ -1,13 +1,13 @@
 using System.Security.Cryptography;
 
-namespace VisuAuth.Entra.Internal;
+namespace VisuAuth.EntraCore.Security;
 
 /// <summary>
 /// Generates a one-time temporary password the Entra admin hands to the
 /// user after Create / ResetPassword. Independent of
 /// <c>TemporaryPasswordGenerator</c> in <c>VisuAuth.Identity</c> so the
-/// Entra adapter doesn't acquire a dependency on the Identity package
-/// (CLAUDE.md §2.5 — adapters stay independent).
+/// Entra adapter family doesn't acquire a dependency on the Identity
+/// package (CLAUDE.md §2.5 — adapters stay independent).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -23,7 +23,7 @@ namespace VisuAuth.Entra.Internal;
 /// the operator is allowed to assume the value isn't predictable.
 /// </para>
 /// </remarks>
-internal static class EntraTemporaryPassword
+public static class EntraTemporaryPassword
 {
     private const string Upper = "ABCDEFGHJKMNPQRSTUVWXYZ";   // sans I, L, O
     private const string Lower = "abcdefghijkmnpqrstuvwxyz";   // sans l, o
@@ -33,9 +33,6 @@ internal static class EntraTemporaryPassword
 
     public static string Generate()
     {
-        // Each character class is guaranteed once; the remaining slots are
-        // drawn from the combined pool. Final shuffle ensures the guaranteed
-        // chars aren't always at positions 0..3.
         var all = Upper + Lower + Digit + Symbol;
         Span<char> buf = stackalloc char[Length];
         buf[0] = Pick(Upper);
@@ -55,7 +52,6 @@ internal static class EntraTemporaryPassword
 
     private static void Shuffle(Span<char> buffer)
     {
-        // Fisher-Yates with a CSPRNG-backed index.
         for (var i = buffer.Length - 1; i > 0; i--)
         {
             var j = RandomNumberGenerator.GetInt32(i + 1);

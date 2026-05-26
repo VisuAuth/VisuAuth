@@ -1,5 +1,5 @@
 using FluentAssertions;
-using VisuAuth.Entra.Internal;
+using VisuAuth.EntraCore.Security;
 using Xunit;
 
 namespace VisuAuth.UnitTests.Entra;

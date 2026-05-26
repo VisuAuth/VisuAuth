@@ -16,6 +16,28 @@ Working toward [`0.2.0`](#020--planned). `<VersionPrefix>` in
 `Directory.Build.props` is now `0.2.0`, so merges to `main` publish as
 `0.2.0-alpha.<run_number>` pre-releases until the next stable tag.
 
+### Changed
+
+- **Sample.WebApp now uses EF Core migrations** instead of
+  `Database.EnsureCreated()`. New `Data/Migrations/` folder with the
+  initial migration covers every Identity + VisuAuth table (10 total).
+  `UserSeeder.SeedAsync` now calls `Database.MigrateAsync()` on boot
+  — schema additions land automatically without the owner having to
+  delete `visuauth-sample.db*` by hand. `Microsoft.EntityFrameworkCore.Design`
+  added to the Sample csproj as a `PrivateAssets="all"` reference so
+  `dotnet ef migrations add` works locally. Existing local DB files
+  created by the old `EnsureCreated()` path are missing the
+  `__EFMigrationsHistory` table — delete them once and let the
+  migration recreate the schema (the `.gitignore` already excludes
+  `*.db` so this only affects per-machine dev state).
+- **`PLAN.md`** moved the four v0.2 PRs (#30 TOTP, #31 External
+  providers, #32 Audit log, #33 Dashboard, #34 Entra adapter) from
+  "In flight" to "Recently shipped", refreshed the test counts (now
+  579 across the suite), and seeded a v0.3 backlog section
+  (EntraExternal adapter, DB-backed adapter config UI, ResetTwoFactor
+  for Entra, IAuditReader wrapper for Entra audit logs, cursor-based
+  pagination, multi-domain dropdown).
+
 ### Added
 
 - **Microsoft Entra ID adapter** (`VisuAuth.Entra` — new NuGet package).

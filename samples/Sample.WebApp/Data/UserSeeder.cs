@@ -93,7 +93,13 @@ public static class UserSeeder
 
         using var scope = services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        await db.Database.EnsureCreatedAsync(cancellationToken);
+        // MigrateAsync runs any pending migrations under
+        // Data/Migrations/, creating the DB on first boot OR adding
+        // new tables / columns when the schema evolves. Previous
+        // EnsureCreatedAsync only created the DB if it didn't exist —
+        // schema changes forced the owner to delete the .db file by
+        // hand. Migrations make the dev loop self-healing.
+        await db.Database.MigrateAsync(cancellationToken);
 
         // Seed tenants into the metadata table before users — the user rows
         // reference these tenant ids.

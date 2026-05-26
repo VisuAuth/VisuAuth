@@ -10,6 +10,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\VisuAuth\VisuAuth.csproj" />
+    <!-- Entra adapter referenced directly so the sample can flip backends
+         via the VISUAUTH_BACKEND env var. The meta-package doesn't
+         transitively pull Entra in — consumers opt into Microsoft.Graph /
+         Azure.Identity weight only when they actually want the adapter. -->
+    <ProjectReference Include="..\..\src\VisuAuth.Entra\VisuAuth.Entra.csproj" />
   </ItemGroup>
 
   <ItemGroup>

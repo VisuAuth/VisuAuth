@@ -48,6 +48,26 @@
     <PackageVersion Include="AspNet.Security.OAuth.GitHub" Version="10.0.0" />
   </ItemGroup>
 
+  <ItemGroup Label="Microsoft Entra ID (VisuAuth.Entra)">
+    <!-- Microsoft Graph SDK is the only sensible way to call Graph from .NET —
+         the REST shapes change often and Kiota-generated clients track them.
+         Azure.Identity supplies ClientSecretCredential for the app-only
+         (client credentials) auth flow the Entra adapter uses. Both are
+         scoped to VisuAuth.Entra; the Identity adapter does not pull them in. -->
+    <PackageVersion Include="Microsoft.Graph" Version="5.95.0" />
+    <PackageVersion Include="Azure.Identity" Version="1.13.1" />
+    <!-- Adds ValidateDataAnnotations() to OptionsBuilder. ASP.NET hosting
+         pulls this in transitively in web apps; standalone class libraries
+         like VisuAuth.Entra have to opt in. -->
+    <PackageVersion Include="Microsoft.Extensions.Options.DataAnnotations" Version="10.0.0" />
+    <!-- Pin Kiota above the GHSA-7j59-v9qr-6fq9 fix. Microsoft.Graph 5.95
+         transitively pulls 1.17.1 which is vulnerable; central package
+         management lets us override the transitive without touching the
+         Graph reference itself. Remove when Graph's transitive constraint
+         catches up. -->
+    <PackageVersion Include="Microsoft.Kiota.Abstractions" Version="1.22.0" />
+  </ItemGroup>
+
   <ItemGroup Label="TOTP">
     <!-- QR-code generator (pure-managed, MIT) used by the end-user TOTP setup
          page to render the otpauth:// URI as an inline SVG. Picked over rolling

@@ -18,6 +18,71 @@ Working toward [`0.2.0`](#020--planned). `<VersionPrefix>` in
 
 ### Added
 
+- **Microsoft Entra ID adapter** (`VisuAuth.Entra` — new NuGet package).
+  Implements `IUserStore`, `IRoleStore`, and `IAuthenticationFlow`
+  against Microsoft Graph using the app-only (client-credentials)
+  auth flow. Activates the capability-flag system end-to-end: by
+  declaring `SupportsLocalLogin = false`, the existing end-user UI
+  swaps the email/password form for "Sign in with Microsoft" without
+  any code change in the consumer app — CLAUDE.md §1.2 + §6.
+  - **`EntraOptions`** — TenantId / ClientId / ClientSecret /
+    AppRoleResourceId / GraphBaseUrl, bound from configuration or a
+    lambda via `services.AddVisuAuthEntra(...)`. ValidatesDataAnnotations
+    so a missing tenant id fails fast at startup, not at request time.
+  - **`EntraUserStore`** — full IUserStore surface (List / Get /
+    GetDetail / Create / Update / SetEnabled / Delete /
+    RevokeSessions / ResetPassword). Capability-driven: 2FA reset
+    throws NotSupported (per-method DELETE needs typed builders per
+    auth-method subtype; scoped to v0.3). Pagination uses Graph's
+    page-size and treats every list call as "page 1" — the abstraction's
+    1-based page index doesn't map to Graph cursors without state, so
+    the v0.2 admin UI relies on filter / search to refine instead of
+    walking pages. Pre-flight constraint documented inline.
+  - **`EntraRoleStore`** — Graph app-roles. List + Get +
+    GetRolesForUser + AssignRole + RemoveRole work; Create / Rename /
+    Delete throw NotSupported because app roles are declared in the
+    application manifest, not at runtime. Member counts come from a
+    single `appRoleAssignedTo` call on the service principal — no
+    per-role round-trip.
+  - **`EntraAuthenticationFlow`** — capability shim. Every method
+    returns either `SignInOutcome.RedirectToExternalProvider` or
+    `UserResult.Failure(...)`, because the entire end-user flow is
+    hosted by Microsoft. The login page interprets the redirect
+    outcome as "show the Microsoft button" via the existing
+    SignInPageResponseMapper.
+  - **`EntraCapabilities`** — single source of truth for the flag
+    declarations both stores read from. Documented per-flag rationale
+    (why local login is off, why 2FA reset is deferred, why external
+    providers are off because Entra IS the IdP, etc.).
+  - **`EntraTemporaryPassword`** — CSPRNG-backed 12-char password
+    generator independent of `TemporaryPasswordGenerator` in
+    VisuAuth.Identity (so the Entra adapter doesn't acquire a
+    dependency on the Identity adapter — CLAUDE.md §2.5). Mixed
+    alphabet + class-quota guarantees default Entra password policy
+    satisfaction; ambiguous chars (0/O/I/l/1) excluded for read-aloud.
+  - **`Sample.WebApp` toggle** — set `VisuAuth:Backend=entra`
+    (env var `VISUAUTH_BACKEND=entra`) to flip the entire admin from
+    the local Identity backend to the Entra adapter. Same admin UI,
+    different IUserStore underneath. `appsettings.json` ships the
+    `VisuAuth:Entra:*` placeholder block + a `_VisuAuth` description
+    comment; consumers populate via `dotnet user-secrets set
+    VisuAuth:Entra:ClientSecret ...` and friends. The Identity wire-up
+    is hoisted into a local `WireIdentityBackend` function so the
+    Entra branch skips the SQLite DbContext, AddIdentity, JWT issuer,
+    external-OAuth wiring, audit-log plugin, and user seeder cleanly.
+  - **35 unit tests** cover the pure surface (mapper, capabilities,
+    auth-flow shim, temporary-password generator, DI extension
+    registrations + TryAdd preservation). Store implementations
+    against a live Graph SDK are validated by manual smoke against a
+    real tenant — automated integration coverage is gated for v0.3
+    when we have a recorded-response harness.
+  - **Dependencies added** (scoped to `VisuAuth.Entra` only — the
+    other VisuAuth packages remain Graph-free): Microsoft.Graph 5.95.0,
+    Azure.Identity 1.13.1, Microsoft.Extensions.Options.DataAnnotations
+    10.0.0. Microsoft.Kiota.Abstractions pinned to 1.22.0 to override
+    the vulnerable 1.17.1 that Graph 5.95 pulls transitively
+    (GHSA-7j59-v9qr-6fq9).
+
 - **Admin dashboard** at `/visuauth/admin` (`VisuAuth.AdminUi`) — the new
   landing page when an admin opens the back office. Replaces the old
   behaviour of "/admin" 404-ing until the user navigated to a sub-route.

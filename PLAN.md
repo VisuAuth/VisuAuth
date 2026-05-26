@@ -85,6 +85,24 @@ immediate next step. Updated as PRs land. Long-term direction lives in
 
 ## In flight
 
+- **Microsoft Entra ID adapter** (`feat/entra-adapter`) — first item
+  of the v0.2 milestone and the stress-test of the capability-flag
+  system. New `VisuAuth.Entra` package implements `IUserStore`,
+  `IRoleStore`, and `IAuthenticationFlow` against Microsoft Graph via
+  app-only auth (ClientSecretCredential). Capabilities declared by the
+  adapter (`SupportsLocalLogin = false`) automatically flip the
+  end-user UI to "Sign in with Microsoft" without any consumer code
+  change — exactly the behaviour CLAUDE.md §1.2 and §6 promise. The
+  Sample.WebApp gains a `VISUAUTH_BACKEND=entra` toggle that swaps the
+  Identity wire-up for the Entra wire-up cleanly (Identity branch
+  extracted into a local `WireIdentityBackend` function). Out of scope
+  for this milestone: 2FA reset (needs per-method DELETE typed
+  builders), automated integration tests against Graph (gated for v0.3
+  with a recorded-response harness), and cursor-based pagination (the
+  PagedResult contract uses 1-based page indices that don't map to
+  Graph `@odata.nextLink` without state — list calls treat every
+  request as page 1 and the UI relies on search / filter to refine).
+
 - **Admin dashboard landing page** (`feat/admin-dashboard`) — gives
   `/visuauth/admin` an actual page instead of 404-then-/admin/users.
   KPI tiles (Users / Locked / Pending confirm / 2FA / Roles / Tenants)

@@ -15,7 +15,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+    <!-- Adapter-specific README so nuget.org's package page shows
+         Entra setup / capabilities / troubleshooting directly, instead
+         of the generic project overview. -->
+    <None Include="README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
   <ItemGroup>

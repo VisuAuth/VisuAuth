@@ -120,11 +120,13 @@ visuauth/
 │   ├── VisuAuth/                  # Meta-package
 │   ├── VisuAuth.Abstractions/     # IUserStore, capabilities, contracts
 │   ├── VisuAuth.Identity/         # ASP.NET Identity adapter
+│   ├── VisuAuth.Entra/            # Microsoft Entra ID adapter — see its own README
 │   ├── VisuAuth.AdminUi/          # Admin dashboard
 │   └── VisuAuth.EndUserUi/        # Login, register, password reset, etc.
 ├── tests/
 ├── samples/
-│   └── Sample.WebApp/             # Drop-in example
+│   ├── Sample.WebApp/             # Drop-in example (Identity + Entra toggle)
+│   └── Sample.EntraWebApp/        # Minimal Entra-only reference
 └── docs/                          # (Docusaurus, coming soon)
 ```
 

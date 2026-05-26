@@ -78,7 +78,7 @@ internal static class SampleHomePage
 
               <h2>Admin UI</h2>
               <ul>
-                <li><a href="/visuauth/admin"><code>/visuauth/admin</code></a> &mdash; dashboard landing (KPI tiles, 7-day login chart, recent audit activity, system health)</li>
+                <li><a href="/visuauth/admin"><code>/visuauth/admin</code></a> &mdash; dashboard landing (KPI tiles, 7-day login chart, recent audit activity, system health). Set <code>VISUAUTH_BACKEND=entra</code> + populate <code>VisuAuth:Entra:*</code> via user-secrets to drive this entire admin against a Microsoft Entra ID tenant instead of the local SQLite Identity store.</li>
                 <li><a href="/visuauth/admin/users"><code>/visuauth/admin/users</code></a> &mdash; users list (search, role / status / verified / 2FA filters, pagination)</li>
                 <li><a href="/visuauth/admin/users/new"><code>/visuauth/admin/users/new</code></a> &mdash; create user form</li>
             """);

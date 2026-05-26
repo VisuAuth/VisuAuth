@@ -1,11 +1,13 @@
 <Solution>
   <Folder Name="/samples/">
+    <Project Path="../samples/Sample.EntraWebApp/Sample.EntraWebApp.csproj" />
     <Project Path="../samples/Sample.WebApp/Sample.WebApp.csproj" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="VisuAuth.Abstractions/VisuAuth.Abstractions.csproj" />
     <Project Path="VisuAuth.AdminUi/VisuAuth.AdminUi.csproj" />
     <Project Path="VisuAuth.EndUserUi/VisuAuth.EndUserUi.csproj" />
+    <Project Path="VisuAuth.Entra/VisuAuth.Entra.csproj" />
     <Project Path="VisuAuth.Identity/VisuAuth.Identity.csproj" />
     <Project Path="VisuAuth/VisuAuth.csproj" />
   </Folder>

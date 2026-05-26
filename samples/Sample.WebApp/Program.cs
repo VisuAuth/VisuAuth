@@ -6,13 +6,35 @@ using Sample.WebApp.Theming;
 using VisuAuth;
 using VisuAuth.AdminUi.Localization;
 using VisuAuth.AdminUi.Theming;
+using VisuAuth.Entra.DependencyInjection;
 using VisuAuth.Identity.Authentication;
 using VisuAuth.Identity.DependencyInjection;
 using VisuAuth.Identity.MultiTenancy;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Pick the user backend. Three accepted sources, in priority order:
+//   1. VISUAUTH_BACKEND env var — the shouty SCREAM_CASE convention
+//      operators reach for first ("$env:VISUAUTH_BACKEND='entra'").
+//   2. VisuAuth:Backend in any IConfiguration source (appsettings,
+//      user-secrets, or the double-underscore env var form
+//      VisuAuth__Backend which ASP.NET Core auto-maps to the
+//      colon-key shape).
+//   3. Default: "identity" — ASP.NET Core Identity against the local
+//      SQLite DB.
+// The "entra" value swaps to the Microsoft Entra ID adapter against
+// Microsoft Graph — same admin UI, different IUserStore / IRoleStore /
+// IAuthenticationFlow. See README "Entra adapter" section for the
+// app-registration steps + the user-secrets snippet
+// (VisuAuth:Entra:TenantId / ClientId / ClientSecret).
+var backend = Environment.GetEnvironmentVariable("VISUAUTH_BACKEND")
+              ?? builder.Configuration["VisuAuth:Backend"]
+              ?? "identity";
+var isEntra = string.Equals(backend, "entra", StringComparison.OrdinalIgnoreCase);
+Console.WriteLine($"[VisuAuth.Sample] Backend selected: {backend} (isEntra={isEntra})");
+
 // SQLite database file lives next to the binaries — zero setup for the sample.
+// Only used by the Identity branch.
 var dbPath = Path.Combine(builder.Environment.ContentRootPath, "visuauth-sample.db");
 
 // Fluent composition (CLAUDE.md §2.1, §7). The sample exercises the
@@ -27,16 +49,26 @@ var dbPath = Path.Combine(builder.Environment.ContentRootPath, "visuauth-sample.
 // The one-liner `services.AddVisuAuth<ApplicationUser>()` is the drop-in
 // shortcut and produces an equivalent service graph; consumers who only
 // want a subset (e.g. EndUserUi without AdminUi) reach for this chain.
-builder.Services.AddVisuAuth()
-    .UseAspNetIdentity<ApplicationUser>()
-    // Opt into multi-tenancy. Without this the sample is single-tenant —
-    // every other VisuAuth feature works the same. The generic overload
-    // also wires the tenant catalogue store at /visuauth/admin/tenants.
-    .EnableMultiTenant<AppDbContext, ApplicationUser>(options =>
-    {
-        options.HeaderName = "X-Tenant-Id";
-        options.CookieName = "va-tenant";
-    })
+//
+// In Entra mode we skip UseAspNetIdentity / EnableMultiTenant — the
+// Entra adapter brings its own IUserStore / IRoleStore /
+// IAuthenticationFlow against Microsoft Graph, and per-user tenancy isn't
+// a concept on the Entra side (the directory itself IS the tenant).
+var visuAuthBuilder = builder.Services.AddVisuAuth();
+if (!isEntra)
+{
+    visuAuthBuilder
+        .UseAspNetIdentity<ApplicationUser>()
+        // Opt into multi-tenancy. Without this the sample is single-tenant —
+        // every other VisuAuth feature works the same. The generic overload
+        // also wires the tenant catalogue store at /visuauth/admin/tenants.
+        .EnableMultiTenant<AppDbContext, ApplicationUser>(options =>
+        {
+            options.HeaderName = "X-Tenant-Id";
+            options.CookieName = "va-tenant";
+        });
+}
+visuAuthBuilder
     .AddAdminUi()
     .AddEndUserUi();
 
@@ -115,16 +147,24 @@ builder.Services.Configure<VisuAuth.Identity.Authentication.TwoFactorIssuerOptio
     options.Issuer = "VisuAuth.Sample";
 });
 
-// Mobile / native API channel: HS256 JWTs at /visuauth/api/auth. The signing
-// key below is committed for dev convenience — a real deployment loads it
-// from a secret store / Key Vault. 32+ UTF-8 bytes is mandatory for HS256.
-builder.Services.AddVisuAuthJwt<ApplicationUser>(options =>
+// JWT issuer is Identity-only — AspNetIdentityJwtIssuer<TUser> needs
+// UserManager<TUser>, which only AddIdentity registers. In Entra mode the
+// mobile / API channel is satisfied by Microsoft's own tokens, so we skip
+// the issuer registration entirely; the AuthApi minimal-API just doesn't
+// have an issuer to call.
+if (!isEntra)
 {
-    options.SigningKey = "sample-dev-signing-key-do-not-use-in-production-or-anywhere-else";
-    options.Issuer = "VisuAuth.Sample";
-    options.Audience = "VisuAuth.Sample";
-    options.LifetimeMinutes = 60;
-});
+    // Mobile / native API channel: HS256 JWTs at /visuauth/api/auth. The signing
+    // key below is committed for dev convenience — a real deployment loads it
+    // from a secret store / Key Vault. 32+ UTF-8 bytes is mandatory for HS256.
+    builder.Services.AddVisuAuthJwt<ApplicationUser>(options =>
+    {
+        options.SigningKey = "sample-dev-signing-key-do-not-use-in-production-or-anywhere-else";
+        options.Issuer = "VisuAuth.Sample";
+        options.Audience = "VisuAuth.Sample";
+        options.LifetimeMinutes = 60;
+    });
+}
 
 // WebView callback flow: a native app opens an in-app browser at
 // /visuauth/login?returnUrl=visuauth-sample://auth/callback and receives
@@ -140,6 +180,60 @@ builder.Services.Configure<VisuAuth.Abstractions.Authentication.WebViewCallbackO
     options.ShowPreviewPage = true;
 });
 
+if (isEntra)
+{
+    // Entra branch — registers EntraUserStore / EntraRoleStore /
+    // EntraAuthenticationFlow against Microsoft Graph. Reads
+    // TenantId / ClientId / ClientSecret from configuration under
+    // "VisuAuth:Entra" (typically populated via user-secrets in dev or
+    // env vars in production). No DbContext, no Identity, no JWT issuer
+    // — Microsoft owns the login UX and the directory entirely.
+    builder.Services.AddVisuAuthEntra(builder.Configuration);
+}
+else
+{
+    WireIdentityBackend(builder, dbPath);
+}
+
+var app = builder.Build();
+
+if (!isEntra)
+{
+    // UserSeeder pokes at UserManager / RoleManager / AppDbContext — only
+    // available in the Identity branch. Entra mode relies on whatever
+    // the configured tenant already holds.
+    await UserSeeder.SeedAsync(app.Services);
+}
+
+app.UseStaticFiles();
+// UseVisuAuthLocalization plugs the request-localization middleware into
+// the pipeline. Must run before any localized response is rendered.
+app.UseVisuAuthLocalization();
+app.UseRouting();
+if (!isEntra)
+{
+    // Tenancy middleware reads X-Tenant-Id / cookie — only meaningful
+    // when EnableMultiTenant was called.
+    app.UseVisuAuthTenancy();
+}
+app.UseAuthentication();
+app.UseAuthorization();
+
+// Manual-test launcher at "/" — see Sample.WebApp.Home.SampleHomePage.
+app.MapSampleHomePage();
+
+app.MapVisuAuth();
+
+app.Run();
+
+/// <summary>
+/// Wires the ASP.NET Core Identity backend (default sample mode) — local
+/// SQLite, AddIdentity, JWT issuer, external OAuth providers, audit log.
+/// Extracted so the Entra branch can opt out cleanly. Local function so
+/// it lives next to its callsite without leaking helper types.
+/// </summary>
+static void WireIdentityBackend(WebApplicationBuilder builder, string dbPath)
+{
 builder.Services.AddDbContext<AppDbContext>((sp, options) =>
 {
     options.UseSqlite($"Data Source={dbPath}");
@@ -268,28 +362,10 @@ void RegisterScheme(string providerName, Action<string, string> register)
 builder.Services.Configure<VisuAuth.Abstractions.Authentication.ExternalLoginOptions>(options =>
 {
     // This is the default, but set explicitly here for clarity. Change to AutoLinkByEmailOrConfirm or AlwaysConfirm to require user input on first-time external logins.
-    options.FirstTimeStrategy = VisuAuth.Abstractions.Authentication.ExternalLoginFirstTimeStrategy.AutoCreate; 
+    options.FirstTimeStrategy = VisuAuth.Abstractions.Authentication.ExternalLoginFirstTimeStrategy.AutoCreate;
 });
 
-var app = builder.Build();
-
-await UserSeeder.SeedAsync(app.Services);
-
-app.UseStaticFiles();
-// UseVisuAuthLocalization plugs the request-localization middleware into
-// the pipeline. Must run before any localized response is rendered.
-app.UseVisuAuthLocalization();
-app.UseRouting();
-app.UseVisuAuthTenancy();
-app.UseAuthentication();
-app.UseAuthorization();
-
-// Manual-test launcher at "/" — see Sample.WebApp.Home.SampleHomePage.
-app.MapSampleHomePage();
-
-app.MapVisuAuth();
-
-app.Run();
+} // end WireIdentityBackend
 
 /// <summary>
 /// Marker type used by <c>WebApplicationFactory&lt;Program&gt;</c> in tests.

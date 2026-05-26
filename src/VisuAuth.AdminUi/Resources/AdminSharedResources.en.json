@@ -328,5 +328,10 @@
   "Dashboard.Activity.ViewAll": "View all →",
   "Dashboard.Activity.PluginDisabled": "Audit log plugin is not enabled — recent activity will appear here once it is.",
   "Dashboard.Activity.HowToEnable": "How to enable",
-  "Dashboard.Activity.NoEvents": "No audit events recorded yet."
+  "Dashboard.Activity.NoEvents": "No audit events recorded yet.",
+
+  "Users.New.EmailLocalPartHint": "Local part only — letters, digits, dot, underscore, hyphen, percent, plus.",
+  "Users.New.EmailLocalPartAria": "Email local part (before the @)",
+  "Users.New.EmailDomainAria": "Fixed verified domain",
+  "Users.New.EmailDomainLockedHint": "Domain is fixed by the backend — type only the local part. Multi-domain tenants can override via the API."
 }

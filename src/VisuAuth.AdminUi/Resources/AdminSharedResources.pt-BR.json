@@ -328,5 +328,10 @@
   "Dashboard.Activity.ViewAll": "Ver tudo →",
   "Dashboard.Activity.PluginDisabled": "Plugin de auditoria desativado — a atividade recente aparece aqui assim que for ligado.",
   "Dashboard.Activity.HowToEnable": "Como ativar",
-  "Dashboard.Activity.NoEvents": "Nenhum evento de auditoria registrado ainda."
+  "Dashboard.Activity.NoEvents": "Nenhum evento de auditoria registrado ainda.",
+
+  "Users.New.EmailLocalPartHint": "Apenas a parte local — letras, dígitos, ponto, sublinhado, hífen, porcento, mais.",
+  "Users.New.EmailLocalPartAria": "Parte local do e-mail (antes do @)",
+  "Users.New.EmailDomainAria": "Domínio verificado fixo",
+  "Users.New.EmailDomainLockedHint": "O domínio é fixado pelo backend — digite apenas a parte local. Tenants com múltiplos domínios podem sobrescrever via API."
 }

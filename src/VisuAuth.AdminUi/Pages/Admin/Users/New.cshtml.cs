@@ -72,9 +72,21 @@ public sealed class NewModel(
             return Page();
         }
 
+        // When the backend declares an EmailDomainSuffix the form renders a
+        // locked-suffix input (only the local part is editable). The browser
+        // posts back just the local part, so we re-append the suffix here
+        // before handing the command to the store. A power-user / API
+        // caller who passes a full email already containing @ bypasses
+        // this branch — useful for the rare multi-domain tenant where the
+        // operator wants a different verified domain than the default.
+        var rawEmail = Form.Email?.Trim() ?? string.Empty;
+        var resolvedEmail = Capabilities.EmailDomainSuffix is { Length: > 0 } suffix && !rawEmail.Contains('@', StringComparison.Ordinal)
+            ? rawEmail + suffix
+            : rawEmail;
+
         var command = new CreateUserCommand
         {
-            Email = Form.Email?.Trim() ?? string.Empty,
+            Email = resolvedEmail,
             UserName = string.IsNullOrWhiteSpace(Form.UserName) ? null : Form.UserName.Trim(),
             Password = string.IsNullOrEmpty(Form.Password) ? null : Form.Password,
             PhoneNumber = string.IsNullOrWhiteSpace(Form.PhoneNumber) ? null : Form.PhoneNumber.Trim(),

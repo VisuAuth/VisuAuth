@@ -1,0 +1,18 @@
+# EF Core-generated migration files don't follow the repo's style rules
+# (file-scoped namespaces, no constant array arguments, etc.) — those are
+# templated by the tool and we don't hand-edit them. Suppress the noisiest
+# rules here so a future `dotnet ef migrations add` produces a build that
+# passes our TreatWarningsAsErrors gate.
+
+[*.cs]
+# IDE0161: file-scoped namespace — EF emits block-scoped.
+dotnet_diagnostic.IDE0161.severity = none
+
+# CA1861: constant array argument — EF emits inline arrays for columns().
+dotnet_diagnostic.CA1861.severity = none
+
+# IDE0058: expression value never used — EF's fluent `.HasIndex(...)` etc.
+dotnet_diagnostic.IDE0058.severity = none
+
+# S1192: duplicated string literal — index / column names repeat naturally.
+dotnet_diagnostic.S1192.severity = none

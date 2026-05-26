@@ -20,6 +20,13 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+    <!-- Required for `dotnet ef migrations add` / `database update`.
+         PrivateAssets=All keeps it as a dev-time-only reference so
+         the design package doesn't leak into anything that consumes
+         the sample (we don't pack it, but defence in depth). -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
     <!-- Sample-only: powers each external-login button when the developer
          fills in ClientId/ClientSecret in ExternalProviders.*. The VisuAuth
          packages themselves ship no provider deps — consumers add the ones

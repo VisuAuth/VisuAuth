@@ -8,11 +8,11 @@ immediate next step. Updated as PRs land. Long-term direction lives in
 
 ## Current status
 
-- **Version in development**: v0.2 (Microsoft Entra ID adapter milestone)
-- **Latest shipped on NuGet**: [`VisuAuth 0.1.0`](https://www.nuget.org/packages/VisuAuth/0.1.0) — first feature release (admin UI, end-user pages, multi-tenancy, four theming layers, mobile JWT + WebView)
+- **Version in development**: between milestones — v0.2 fully merged to `main`, awaiting a `v0.2.0` tag from the owner to ship; v0.3 backlog forming.
+- **Latest shipped on NuGet**: [`VisuAuth 0.1.0`](https://www.nuget.org/packages/VisuAuth/0.1.0) — first feature release. The v0.2 release will publish six packages (the five `0.1.0` ones plus the new `VisuAuth.Entra`).
 - **Default branch**: `main` at <https://github.com/VisuAuth/visuauth>
 - **Build state**: green (`dotnet build src/VisuAuth.slnx -c Release` → 0 errors, 0 warnings)
-- **Test state**: green on `main` (165 unit + 152 integration = 317 tests after TOTP merge)
+- **Test state**: green on `main` (400 unit + 179 integration = 579 tests after the Entra adapter merge)
 
 ---
 
@@ -85,124 +85,106 @@ immediate next step. Updated as PRs land. Long-term direction lives in
 
 ## In flight
 
-- **Microsoft Entra ID adapter** (`feat/entra-adapter`) — first item
-  of the v0.2 milestone and the stress-test of the capability-flag
-  system. New `VisuAuth.Entra` package implements `IUserStore`,
-  `IRoleStore`, and `IAuthenticationFlow` against Microsoft Graph via
-  app-only auth (ClientSecretCredential). Capabilities declared by the
-  adapter (`SupportsLocalLogin = false`) automatically flip the
-  end-user UI to "Sign in with Microsoft" without any consumer code
-  change — exactly the behaviour CLAUDE.md §1.2 and §6 promise. The
-  Sample.WebApp gains a `VISUAUTH_BACKEND=entra` toggle that swaps the
-  Identity wire-up for the Entra wire-up cleanly (Identity branch
-  extracted into a local `WireIdentityBackend` function). Out of scope
-  for this milestone: 2FA reset (needs per-method DELETE typed
-  builders), automated integration tests against Graph (gated for v0.3
-  with a recorded-response harness), and cursor-based pagination (the
-  PagedResult contract uses 1-based page indices that don't map to
-  Graph `@odata.nextLink` without state — list calls treat every
-  request as page 1 and the UI relies on search / filter to refine).
-
-- **Admin dashboard landing page** (`feat/admin-dashboard`) — gives
-  `/visuauth/admin` an actual page instead of 404-then-/admin/users.
-  KPI tiles (Users / Locked / Pending confirm / 2FA / Roles / Tenants)
-  drill into the filtered list views; 7-day bar chart of successful
-  logins; system-health card (VisuAuth version, .NET runtime, audit /
-  multi-tenancy pills); recent-activity feed (last 10 audit events).
-  Tiles + sections are capability-aware so a future Entra adapter
-  (which will declare `SupportsLockout = false` etc.) doesn't render
-  meaningless "0 locked" KPIs. Counts reuse `IUserStore.ListAsync` so
-  no abstraction grows. New `IAuditReader.CountByDayAsync` powers the
-  chart.
-
-- **Audit log plugin** (`feat/audit-log`) — fourth item of the v0.2
-  milestone. Opt-in trail recorded into a dedicated
-  `VisuAuthAuditLog` table; activated by `AddVisuAuthAuditLog(opts)`.
-  Abstractions in `VisuAuth.Abstractions/Auditing/` (IAuditWriter +
-  IAuditReader + AuditEvent + AuditFilter + AuditEntryView +
-  AuditActions registry). EF-backed `EfCoreAuditStore` enriches each
-  event with actor (HttpContext.User), IP (X-Forwarded-For-aware),
-  user-agent (truncated), tenant id, and UTC timestamp via
-  `TimeProvider`. `AuditRetentionHostedService` purges entries older
-  than `RetentionDays` (default 90). Default `NoOpAuditWriter` keeps
-  the 26 instrumented handler call sites zero-cost when the plugin is
-  off. Admin surface at `/visuauth/admin/audit-log` with filters
-  (actor email search, action dropdown, outcome, date range,
-  deep-linkable targetId) and pagination. Sample wires the plugin out
-  of the box. The login switch that audit emission would have made
-  unmanageable was extracted into a five-class sign-in pipeline
-  (`SignInChannel`, `SignInAuditMapper`, `SignInAuditEmitter`,
-  `SignInApiResponseMapper`, `SignInPageResponseMapper`) so both the
-  Razor `LoginModel` and the minimal-API `AuthApi` orchestrate the
-  same shape — adding a new `SignInOutcome` now means editing three
-  table-driven mappers, not two switches.
-
-- **External login providers + admin config** (`feat/external-login-providers`)
-  — third item from the v0.2 milestone below (after TOTP). Adds:
-  - `/visuauth/external-login/{start,callback,confirm}` in
-    `VisuAuth.EndUserUi`, an `IExternalLoginFlow` abstraction in
-    `VisuAuth.Abstractions` paired with
-    `ExternalLoginOptions.FirstTimeStrategy` (three strategies:
-    `AutoCreate` default, `AutoLinkByEmailOrConfirm`, `AlwaysConfirm`).
-  - Provider buttons on `/visuauth/login` with brand SVG icons via the
-    new `<va-provider-icon>` tag helper (Microsoft / Google / Apple /
-    GitHub + generic fallback).
-  - `/visuauth/admin/external-providers` admin page with inline edit +
-    per-row enable/disable + bulk operations — credentials editable at
-    runtime without restart, secret encrypted at rest via
-    `IDataProtectionProvider`. Page lays out four buckets — **Active**
-    (wired + recognised), **Custom** (wired but outside the catalogue),
-    **Available** (catalogue ghost cards with "How to activate" snippet
-    for ~20 popular providers), and **Orphaned credentials** (DB rows
-    for schemes the host no longer wires, with a `Delete` cleanup
-    button). The new `IExternalProviderRegistry` is the source of truth
-    for "what's actually runnable"; `KnownProviderCatalog` in
-    `VisuAuth.AdminUi` supplies the discoverability layer.
-  - `IExternalProviderConfigStore` + EF entity in
-    `IVisuAuthMetadataDbContext` (new table
-    `VisuAuthExternalProviderConfigs`); per-tenant schema column ready
-    for Phase 1.5 runtime.
-  - Generic `DynamicExternalProviderOptionsConfigurator<TOptions>` that
-    overlays admin-edited credentials on top of static
-    `AddXxx(o => ...)` registrations; cache-invalidator wired so save
-    takes effect on the very next sign-in attempt.
-  - Sample wires all four providers (Microsoft / Google / GitHub / Apple)
-    with appsettings-or-placeholder defaults so the admin UI can fully
-    configure a fresh provider via the browser. Sample-only NuGet adds:
-    `Microsoft.AspNetCore.Authentication.Google`,
-    `AspNet.Security.OAuth.Apple`, `AspNet.Security.OAuth.GitHub`.
-  - Mobile/JWT path: external sign-in success reuses the WebView
-    deep-link path so mobile apps get a JWT identical to the password flow.
+- **Sample EF Migrations + PLAN housekeeping** (`chore/plan-and-ef-migrations`)
+  — replaces the Sample.WebApp `EnsureCreated()` boot path with proper
+  EF Core migrations so schema changes (new audit columns, new
+  external-provider tables, etc.) stop forcing the owner to delete the
+  SQLite file by hand. Also moves the v0.2 entries out of "In flight"
+  and onto "Recently shipped" — bookkeeping only, no library behaviour
+  changes.
 
 ---
 
-## Next up — v0.2: Microsoft Entra ID adapter milestone
+## Next up — v0.3 backlog
 
-CLAUDE.md §13 names four items for v0.2:
+Roadmap row from CLAUDE.md §13 is *"Microsoft Entra External ID
+adapter, profile / sessions management, bulk operations, view-level
+customization"*. Concrete ideas surfaced during v0.2:
 
-1. **Microsoft Entra ID adapter** — admin UI against the Microsoft Graph
-   API. `IUserStore` / `IRoleStore` adapter declares
-   `SupportsLocalLogin = false`; the end-user UI swaps the email/password
-   form for a "Sign in with Microsoft" button automatically (CLAUDE.md
-   §6 capability-driven UI). New package `VisuAuth.Entra` referencing
-   only `VisuAuth.Abstractions`. Must NOT leak into `VisuAuth.Identity`.
-2. **TOTP pages** — ✅ shipped in `feat/two-factor-totp` (PR #30).
-3. **External login providers** — see "In flight" above. ✅ Shipping in
-   `feat/external-login-providers`.
-4. **Audit log plugin** — opt-in package writing to a separate
-   `VisuAuthAuditLog` EF Core table (CLAUDE.md §2.5 "Optional
-   VisuAuth-specific tables…are explicit and documented"). Retention
-   policy + filter UI in admin.
+1. **`VisuAuth.EntraExternal` adapter** — Entra External ID (the B2C
+   successor) for customer-facing apps. Reuses most of Graph CRUD from
+   `VisuAuth.Entra` but handles the differences: native users (no
+   `#EXT#@` shape), `identities` collection (social + email), user
+   attributes / user flows, no `appRoles` (External tenants don't
+   declare them). Plus the OIDC signup flow, which today sits outside
+   the adapter — needs to decide whether to ship a wrapper for
+   `Microsoft.Identity.Web.UI` or stick to "consumer wires their own
+   OIDC".
+2. **DB-backed adapter config UI** — `/visuauth/admin/entra-config`
+   (and similar for future adapters). Pattern reuses the existing
+   External Providers infrastructure: `IConfigureOptions<TOptions>`
+   overlay on top of `IConfiguration`, source badges ("from DB" /
+   "from code"), cache invalidator so saves take effect on the next
+   Graph call without restart. Possibly generalised to
+   `VisuAuthAdapterConfigs` (section/key/value/isSecret) so future
+   adapters (LDAP, Cognito, …) get the same admin surface for free.
+3. **Entra `ResetTwoFactor`** — per-method DELETE through typed
+   builders (microsoftAuthenticatorMethods, fido2Methods, …). Flips
+   `EntraCapabilities.SupportsTwoFactorReset` from false to true,
+   surfaces the button on the user detail page in Entra mode.
+4. **`IAuditReader` wrapper for Entra `auditLogs`** — surfaces Entra
+   sign-in / directory audit logs on `/admin/audit-log` for
+   Entra-mode deployments. Today the page renders the "plugin not
+   enabled" hint because the Identity-only `EfCoreAuditStore` isn't
+   wired in Entra apps.
+5. **Cursor-based pagination** — `PagedResult` evolves from numeric
+   pages to an opaque cursor (string) so Entra `@odata.nextLink` and
+   future stores with the same shape work natively. Breaking change
+   on the abstraction; flagged for v0.3 since the v0.2 surface is now
+   public.
+6. **Multi-domain dropdown on `/admin/users/new`** — replaces the
+   single-default `EmailDomainSuffix` UI with a dropdown of verified
+   domains for the Entra adapter (calls Graph `/domains` once at
+   startup, caches). Optional; the single-default already covers the
+   90% case.
 
 No branches queued yet — each item lands as its own feature branch +
-PR per CLAUDE.md §11. Owner picks the order; the natural sequencing is
-**TOTP → external providers → audit log → Entra ID adapter** because
-the first three exercise the existing abstractions and the fourth is
-the big "does the capability flag system actually work" stress test.
+PR per CLAUDE.md §11. Owner picks order.
 
 ---
 
 ## Recently shipped
+
+### v0.2 (merged to `main`, awaiting `v0.2.0` tag)
+
+Five PRs landed on `main` in milestone order. CI publishes pre-release
+nupkgs on every merge; cutting the tag flips them to stable.
+
+- **#30 `feat/two-factor-totp`** — TOTP setup / challenge / recovery
+  codes (`/visuauth/two-factor/setup,verify,recovery-codes`), inline
+  SVG QR via QRCoder, capability-gated via
+  `UserBackendCapabilities.SupportsTwoFactor`.
+- **#31 `feat/external-login-providers`** — `/visuauth/external-login/*`
+  pages with `IExternalLoginFlow` + three first-time strategies, plus
+  `/admin/external-providers` admin UI with secret encryption at rest,
+  dynamic option overlay, and `KnownProviderCatalog` ghost cards for
+  ~20 popular providers.
+- **#32 `feat/audit-log`** — opt-in `AddVisuAuthAuditLog()` plugin
+  with EF-backed writer + reader + retention service. 26 instrumented
+  handler call sites, `/admin/audit-log` filter UI. The login switch
+  was refactored into the five-class sign-in pipeline
+  (`SignInChannel`, `SignInAuditMapper`, `SignInAuditEmitter`,
+  `SignInApiResponseMapper`, `SignInPageResponseMapper`) so both the
+  Razor LoginModel and the minimal-API AuthApi orchestrate the same
+  shape.
+- **#33 `feat/admin-dashboard`** — `/visuauth/admin` landing page
+  with KPI tiles, 7-day login bar chart, system-health card, recent
+  activity feed. Tiles are capability-aware so an Entra-mode deploy
+  hides Locked / 2FA / PendingEmail automatically. Added
+  `IAuditReader.CountByDayAsync` for the chart series.
+- **#34 `feat/entra-adapter`** — Microsoft Entra ID Workforce adapter
+  (`VisuAuth.Entra` new package). `IUserStore` + `IRoleStore` +
+  `IAuthenticationFlow` against Microsoft Graph via app-only
+  ClientSecretCredential. Capability flags (`SupportsLocalLogin =
+  false` + friends) flip the UI automatically; the Login page swaps
+  to a Microsoft hint, dashboard hides Lockout/2FA tiles, etc. New
+  `EmailDomainSuffix` capability + `EntraOptions.DefaultEmailDomain`
+  drive a split input on `/admin/users/new` (locked verified domain
+  suffix). Two samples: `Sample.WebApp` with `VISUAUTH_BACKEND=entra`
+  toggle, and a minimal `Sample.EntraWebApp` (~30-line Program.cs).
+  Adapter-specific README in `src/VisuAuth.Entra/README.md`.
+  Validated end-to-end against a real tenant (`visuauth.onmicrosoft.com`
+  + `visuauth.com` multi-domain).
 
 ### v0.1.0 (tag `v0.1.0`, on NuGet)
 

@@ -281,7 +281,12 @@ body {
     display: flex;
     flex-direction: column;
     gap: 0.2rem;
-    margin: 0 0 1.25rem;
+    /* Symmetric vertical margin so the tenant + language switchers
+     * (both .va-tenant-indicator) sit at the same distance from the
+     * nav above AND from each other. Margins collapse between
+     * consecutive siblings, so tenant-bottom 1.25rem + language-top
+     * 1.25rem still renders as a single 1.25rem gap — no double spacing. */
+    margin: 1.25rem 0;
     padding: 0.5rem 0.75rem;
     background: var(--visuauth-bg);
     border: 1px dashed var(--visuauth-border);

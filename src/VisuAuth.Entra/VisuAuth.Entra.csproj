@@ -23,14 +23,19 @@
 
   <ItemGroup>
     <ProjectReference Include="..\VisuAuth.Abstractions\VisuAuth.Abstractions.csproj" />
+    <!-- EntraCore hosts the no-op stubs (IAuditWriter / IJwtIssuer / etc.),
+         the GraphServiceClient factory, and the temporary-password
+         generator that every Entra-family adapter shares. We deliberately
+         do NOT reference VisuAuth.Identity here — adapters stay
+         independent of each other per CLAUDE.md §2.5. -->
+    <ProjectReference Include="..\VisuAuth.EntraCore\VisuAuth.EntraCore.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Microsoft.Graph is the Kiota-generated SDK for the Graph REST API.
-         Azure.Identity supplies ClientSecretCredential / DefaultAzureCredential
-         for the app-only flow. We deliberately do NOT reference VisuAuth.Identity
-         or any ASP.NET Core Identity package here — Entra adapter must stay
-         independent of the Identity adapter per CLAUDE.md §2.5 / §6. -->
+    <!-- Microsoft.Graph + Azure.Identity flow in transitively via EntraCore;
+         the explicit references here are belt-and-suspenders for code in
+         THIS package that calls them directly (Graph types in EntraUserStore /
+         EntraRoleStore). -->
     <PackageReference Include="Microsoft.Graph" />
     <PackageReference Include="Azure.Identity" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />

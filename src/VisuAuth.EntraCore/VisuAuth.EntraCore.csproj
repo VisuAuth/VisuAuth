@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>VisuAuth.EntraCore</RootNamespace>
+    <AssemblyName>VisuAuth.EntraCore</AssemblyName>
+  </PropertyGroup>
+
+  <PropertyGroup Label="NuGet">
+    <PackageId>VisuAuth.EntraCore</PackageId>
+    <Title>VisuAuth Microsoft Entra Shared Infrastructure</Title>
+    <Description>Shared Graph + Azure.Identity wiring that the Microsoft Entra adapter family (VisuAuth.Entra for Workforce, VisuAuth.EntraExternal for Customer / External ID) builds on. Hosts the no-op fallbacks for IAuditWriter / IJwtIssuer / ITenantContext / IExternalLoginFlow that an Entra-only deployment needs when the consumer has not wired the Identity adapter, plus the CSPRNG temporary-password generator. Consumers normally never reference this package directly — install VisuAuth.Entra or VisuAuth.EntraExternal, which pull this in transitively.</Description>
+    <PackageTags>visuauth;entra;azuread;graph;shared</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\VisuAuth.Abstractions\VisuAuth.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Microsoft.Graph + Azure.Identity flow transitively to every adapter
+         that references EntraCore. Pinning Microsoft.Kiota.Abstractions above
+         the GHSA-7j59-v9qr-6fq9 fix line stays here so a future
+         microsoft.graph bump can't accidentally regress the override. -->
+    <PackageReference Include="Microsoft.Graph" />
+    <PackageReference Include="Azure.Identity" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
+    <PackageReference Include="Microsoft.Extensions.Options.DataAnnotations" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup Label="Test access">
+    <InternalsVisibleTo Include="VisuAuth.UnitTests" />
+  </ItemGroup>
+
+</Project>

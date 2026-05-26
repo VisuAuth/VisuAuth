@@ -1,4 +1,3 @@
-using Azure.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -9,7 +8,8 @@ using VisuAuth.Abstractions.Roles;
 using VisuAuth.Abstractions.Tenancy;
 using VisuAuth.Abstractions.Users;
 using VisuAuth.Entra.Configuration;
-using VisuAuth.Entra.Internal;
+using VisuAuth.EntraCore.Infrastructure;
+using VisuAuth.EntraCore.Stubs;
 
 namespace VisuAuth.Entra.DependencyInjection;
 
@@ -104,31 +104,28 @@ public static class VisuAuthEntraExtensions
         return RegisterCore(services);
     }
 
-    // App-only flows always request every permission granted to the
-    // registered app via admin consent; the .default scope is the standard
-    // way to express that. Hoisted to a static readonly array to satisfy
-    // CA1861 ("avoid allocating a fresh array each call").
-    private static readonly string[] GraphDefaultScopes =
-        { "https://graph.microsoft.com/.default" };
-
     private static IServiceCollection RegisterCore(IServiceCollection services)
     {
-        // GraphServiceClient is registered as a singleton — Microsoft.Graph
-        // v5 explicitly supports concurrent use from multiple threads. The
-        // ClientSecretCredential it wraps caches tokens for the rest of
-        // their lifetime, so the cost of building the client is paid once
-        // per process.
+        // Singleton GraphServiceClient — Microsoft.Graph v5 supports
+        // concurrent use from multiple threads, and the wrapped
+        // ClientSecretCredential caches tokens for their lifetime, so the
+        // cost of building the client is paid once per process. Factory
+        // lives in VisuAuth.EntraCore so VisuAuth.EntraExternal can reuse
+        // it (both adapters auth the same way).
         services.TryAddSingleton<GraphServiceClient>(sp =>
         {
             var opts = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<EntraOptions>>().Value;
-            var credential = new ClientSecretCredential(opts.TenantId, opts.ClientId, opts.ClientSecret);
-            return new GraphServiceClient(credential, GraphDefaultScopes);
+            return EntraGraphClientFactory.Create(opts.TenantId, opts.ClientId, opts.ClientSecret);
         });
 
         services.TryAddScoped<IUserStore, EntraUserStore>();
         services.TryAddScoped<IRoleStore, EntraRoleStore>();
         services.TryAddScoped<IAuthenticationFlow, EntraAuthenticationFlow>();
-        services.TryAddScoped<IExternalLoginFlow, EntraNoOpExternalLoginFlow>();
+        // The shared EntraNoOpExternalLoginFlow takes a UserBackendCapabilities
+        // in its ctor so each adapter (Workforce / External) can hand its
+        // own caps bag — the LoginModel reads Capabilities.SupportsExternalProviders
+        // off the flow to decide whether to render the providers section.
+        services.TryAddScoped<IExternalLoginFlow>(_ => new EntraNoOpExternalLoginFlow(EntraCapabilities.Value));
 
         // VisuAuth.EndUserUi's SignInAuditEmitter depends on IAuditWriter
         // unconditionally. The Identity adapter registers a NoOpAuditWriter

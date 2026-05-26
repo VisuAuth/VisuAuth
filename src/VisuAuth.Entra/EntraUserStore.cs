@@ -9,6 +9,7 @@ using VisuAuth.Abstractions.Users;
 using VisuAuth.Entra.Configuration;
 using VisuAuth.Entra.Internal;
 using VisuAuth.Entra.Mapping;
+using VisuAuth.EntraCore.Security;
 using GraphUser = Microsoft.Graph.Models.User;
 
 namespace VisuAuth.Entra;

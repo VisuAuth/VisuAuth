@@ -1116,18 +1116,26 @@ body {
 .va-kpi-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-    gap: 0.75rem;
-    margin: 1.25rem 0 1.5rem;
+    /* Matches the gap admin list pages leave between filters and the
+     * results card (.va-filters margin-bottom 1rem) so the eye reads
+     * the KPI strip + the lower cards as a single rhythm. */
+    gap: 1rem;
+    margin: 0 0 1.5rem;
 }
 
 .va-kpi {
     display: flex;
     flex-direction: column;
-    gap: 0.35rem;
-    padding: 1rem 1.1rem;
-    background: var(--visuauth-card-bg, #fff);
+    gap: 0.4rem;
+    /* Mirrors .va-detail-card's 1.25rem × 1.5rem so a KPI tile sits at
+     * the same visual depth as the panels below it in the dashboard
+     * grid. Using the existing token would also work but the tile is
+     * a slightly different shape (no header / single value), so the
+     * literal keeps the relationship explicit. */
+    padding: 1.25rem 1.5rem;
+    background: var(--visuauth-bg, #fff);
     border: 1px solid var(--visuauth-border, #e2e6ed);
-    border-radius: 10px;
+    border-radius: var(--visuauth-radius, 10px);
     color: inherit;
     text-decoration: none;
     transition: border-color 0.15s ease, transform 0.05s ease;
@@ -1167,8 +1175,11 @@ body {
     grid-template-areas:
         "chart health"
         "activity activity";
+    /* Same 1rem the KPI strip uses for inter-tile spacing, and the
+     * same 1.5rem the .va-detail-card uses for its bottom margin —
+     * keeps the page rhythm uniform. */
     gap: 1rem;
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
 }
 
 @media (max-width: 900px) {
@@ -1181,6 +1192,16 @@ body {
     }
 }
 
+/* .va-card itself has padding: 0 (it wraps tables that span edge-to-
+ * edge); the dashboard panels carry text + lists + a chart and need
+ * the same internal padding as .va-detail-card so titles and content
+ * don't touch the border. */
+.va-dashboard-chart,
+.va-dashboard-health,
+.va-dashboard-activity {
+    padding: 1.25rem 1.5rem;
+}
+
 .va-dashboard-chart    { grid-area: chart; }
 .va-dashboard-health   { grid-area: health; }
 .va-dashboard-activity { grid-area: activity; }
@@ -1190,13 +1211,18 @@ body {
     align-items: baseline;
     justify-content: space-between;
     gap: 0.75rem;
-    margin: 0 0 0.85rem;
+    /* Same 1rem .va-detail-card h2 uses below its title so headers in
+     * either card style sit at the same distance from their content. */
+    margin: 0 0 1rem;
 }
 
 .va-card-header h2 {
     margin: 0;
-    font-size: 1rem;
+    /* Matches .va-detail-card h2 — keeps dashboard panel titles and
+     * detail-card titles at the same hierarchy weight. */
+    font-size: 1.05rem;
     font-weight: 600;
+    color: var(--visuauth-fg, inherit);
 }
 
 .va-small  { font-size: 0.78rem; }
@@ -1292,6 +1318,9 @@ body {
     background: var(--visuauth-code-bg, #f3f4f6);
     padding: 0.1rem 0.35rem;
     border-radius: 4px;
+    /* InformationalVersion can be very long (semver + commit hash from
+     * CI), so let the code chip wrap rather than blow out the card. */
+    word-break: break-all;
 }
 
 /* Pills: status badges used in the health card and activity feed. */

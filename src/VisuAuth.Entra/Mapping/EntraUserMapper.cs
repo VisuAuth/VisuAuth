@@ -152,10 +152,12 @@ internal static class EntraUserMapper
         // Graph types businessPhones as `Collection(Edm.String)[Nullable=False]`,
         // which rejects an explicit null on the wire even though it's "just
         // not setting it". Empty list is the canonical "no phones" payload —
-        // Kiota serialises it as `[]`, which Graph accepts.
-        var phones = string.IsNullOrEmpty(command.PhoneNumber)
-            ? new List<string>()
-            : new List<string> { command.PhoneNumber };
+        // Kiota serialises it as `[]`, which Graph accepts. The collection
+        // expressions below resolve to List<string> via target-typing, so
+        // IDE0028 (and Sonar) stay quiet.
+        List<string> phones = string.IsNullOrEmpty(command.PhoneNumber)
+            ? []
+            : [command.PhoneNumber];
 
         return (new GraphUser
         {

@@ -85,4 +85,23 @@ public sealed class EntraOptions
     /// clouds (Entra Government, Entra China). Trailing slash optional.
     /// </summary>
     public string GraphBaseUrl { get; set; } = "https://graph.microsoft.com/v1.0";
+
+    /// <summary>
+    /// Default verified email domain the admin Create-User form should
+    /// suggest. Surfaced through
+    /// <see cref="VisuAuth.Abstractions.Capabilities.UserBackendCapabilities.EmailDomainSuffix"/>
+    /// so the UI renders a fixed-suffix input ("type the local part,
+    /// @domain stays locked"). Avoids the Graph 400 every operator hits
+    /// the first time they try to create a user with an external email.
+    /// </summary>
+    /// <remarks>
+    /// Set without the leading <c>@</c> for readability
+    /// (e.g. <c>"visuauth.onmicrosoft.com"</c>); the adapter prefixes it
+    /// when populating the capability. Null = no suggestion, the form
+    /// renders a free-text email input. Multi-domain tenants pick the
+    /// most-common one as default; users with mailboxes in another
+    /// verified domain can still be created via the API by passing a
+    /// full email through <c>CreateUserCommand.Email</c>.
+    /// </remarks>
+    public string? DefaultEmailDomain { get; set; }
 }

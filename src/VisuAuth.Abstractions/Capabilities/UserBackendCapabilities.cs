@@ -58,4 +58,23 @@ public sealed record UserBackendCapabilities
 
     /// <summary>The backend supports lockout after failed attempts.</summary>
     public bool SupportsLockout { get; init; }
+
+    /// <summary>
+    /// When set, the admin Create-User form locks the email input to this
+    /// fixed suffix and only lets the operator type the local part. Used
+    /// by backends that reject arbitrary domains — typically Microsoft
+    /// Entra ID, where the user principal name has to belong to a verified
+    /// tenant domain (otherwise Graph returns 400 "The domain portion of
+    /// the userPrincipalName property is invalid").
+    /// </summary>
+    /// <remarks>
+    /// Include the leading <c>@</c> when setting (e.g.
+    /// <c>"@visuauth.onmicrosoft.com"</c>). Null means "any domain" — the
+    /// input stays a single free-text field, matching the historical
+    /// behaviour of the Identity adapter. Multi-domain tenants pick one
+    /// "default" to suggest; the operator can still bypass via the API by
+    /// passing a full email in CreateUserCommand.Email — this flag drives
+    /// UI ergonomics, not validation.
+    /// </remarks>
+    public string? EmailDomainSuffix { get; init; }
 }

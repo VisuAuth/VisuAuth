@@ -1398,3 +1398,61 @@ body {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+
+/* ===========================================================================
+   Input group — used on /admin/users/new when the backend reports an
+   EmailDomainSuffix (Entra ID workforce). The operator types the local
+   part in a free input; the @domain suffix is a non-editable visual
+   "addon" so the verified-domain constraint is obvious before submit.
+   =========================================================================== */
+
+.va-input-group {
+    display: flex;
+    align-items: stretch;
+    border: 1px solid var(--visuauth-border, #e2e6ed);
+    border-radius: var(--visuauth-radius, 6px);
+    overflow: hidden;
+    background: var(--visuauth-bg, #fff);
+}
+
+.va-input-group:focus-within {
+    border-color: var(--visuauth-primary, #4f46e5);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--visuauth-primary, #4f46e5) 18%, transparent);
+}
+
+.va-input-group-input {
+    flex: 1 1 auto;
+    min-width: 0;
+    border: none;
+    background: transparent;
+    outline: none;
+    box-shadow: none;
+    border-radius: 0;
+}
+
+.va-input-group-input:focus {
+    outline: none;
+    box-shadow: none;
+    border: none;
+}
+
+.va-input-group-suffix {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    padding: 0 0.75rem;
+    background: var(--visuauth-surface, #f5f6f8);
+    color: var(--visuauth-muted, #6b7280);
+    border-left: 1px solid var(--visuauth-border, #e2e6ed);
+    font-family: var(--visuauth-mono, ui-monospace, SFMono-Regular, monospace);
+    font-size: 0.92em;
+    user-select: all;
+    white-space: nowrap;
+}
+
+.va-field-hint {
+    display: block;
+    margin-top: 0.3rem;
+    font-size: 0.78rem;
+    line-height: 1.35;
+}

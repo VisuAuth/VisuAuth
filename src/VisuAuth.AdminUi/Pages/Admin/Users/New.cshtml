@@ -43,14 +43,45 @@
 
     <form method="post" autocomplete="off">
         <div class="va-form-grid">
-            <label class="va-field">
-                <span class="va-field-label">@Ls["Common.LabelEmail"] <span class="va-required">*</span></span>
-                <input type="email"
-                       name="Form.Email"
-                       value="@Model.Form.Email"
-                       required
-                       class="va-input" />
-            </label>
+            @if (Model.Capabilities.EmailDomainSuffix is { Length: > 0 } emailSuffix)
+            {
+                @* Backend reports a fixed verified domain (e.g. Entra ID
+                   workforce). Lock the suffix visually and only let the
+                   operator type the local part. type="text" because the
+                   <input type="email"> validator demands "@" which the
+                   user no longer types. The pagemodel re-appends the
+                   suffix server-side before calling the store. *@
+                <label class="va-field">
+                    <span class="va-field-label">@Ls["Common.LabelEmail"] <span class="va-required">*</span></span>
+                    <div class="va-input-group">
+                        <input type="text"
+                               name="Form.Email"
+                               value="@Model.Form.Email"
+                               required
+                               autocomplete="off"
+                               spellcheck="false"
+                               pattern="[A-Za-z0-9._%+\-]+"
+                               title="@Ls["Users.New.EmailLocalPartHint"]"
+                               aria-label="@Ls["Users.New.EmailLocalPartAria"]"
+                               class="va-input va-input-group-input" />
+                        <span class="va-input-group-suffix"
+                              aria-label="@Ls["Users.New.EmailDomainAria"]"
+                              title="@Ls["Users.New.EmailDomainLockedHint"]">@emailSuffix</span>
+                    </div>
+                    <span class="va-field-hint va-muted">@Ls["Users.New.EmailDomainLockedHint"]</span>
+                </label>
+            }
+            else
+            {
+                <label class="va-field">
+                    <span class="va-field-label">@Ls["Common.LabelEmail"] <span class="va-required">*</span></span>
+                    <input type="email"
+                           name="Form.Email"
+                           value="@Model.Form.Email"
+                           required
+                           class="va-input" />
+                </label>
+            }
 
             <label class="va-field">
                 <span class="va-field-label">@Ls["Common.LabelUsername"]</span>

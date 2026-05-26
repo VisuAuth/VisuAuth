@@ -79,7 +79,12 @@ public sealed class VisuAuthEntraExtensionsTests
         using var scope = sp.CreateScope();
         var userStore = scope.ServiceProvider.GetRequiredService<IUserStore>();
         userStore.Should().BeOfType<EntraUserStore>();
-        userStore.Capabilities.Should().BeSameAs(EntraCapabilities.Value);
+        // Structural equality (not reference) — the store overlays the
+        // EntraOptions.DefaultEmailDomain onto the singleton Value when
+        // computing Capabilities, so a brand-new copy comes back. Every
+        // flag should still mirror the static set.
+        userStore.Capabilities.Should().Be(
+            EntraCapabilities.Value with { EmailDomainSuffix = userStore.Capabilities.EmailDomainSuffix });
     }
 
     [Fact]

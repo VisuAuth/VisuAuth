@@ -77,8 +77,23 @@ public sealed class EntraUserStore(
     private readonly ILogger<EntraUserStore> _logger =
         logger ?? throw new ArgumentNullException(nameof(logger));
 
+    private UserBackendCapabilities? _capabilitiesCache;
+
     /// <inheritdoc />
-    public UserBackendCapabilities Capabilities => EntraCapabilities.Value;
+    /// <remarks>
+    /// Overlays <see cref="EntraOptions.DefaultEmailDomain"/> onto the
+    /// static <see cref="EntraCapabilities.Value"/> so the admin Create-User
+    /// form picks up the locked-suffix UX without the consumer having to
+    /// touch capabilities directly. Cached after first read because both
+    /// inputs are immutable for the lifetime of the store.
+    /// </remarks>
+    public UserBackendCapabilities Capabilities => _capabilitiesCache ??=
+        EntraCapabilities.Value with
+        {
+            EmailDomainSuffix = string.IsNullOrWhiteSpace(_options.DefaultEmailDomain)
+                ? null
+                : "@" + _options.DefaultEmailDomain.TrimStart('@'),
+        };
 
     /// <inheritdoc />
     public async Task<UserSummary?> GetAsync(string id, CancellationToken cancellationToken = default)

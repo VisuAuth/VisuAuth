@@ -45,8 +45,12 @@ public sealed class EntraUserStoreTests
     public void Capabilities_ExposesEntraSingletonByReference()
     {
         var sut = BuildStore();
-        sut.Capabilities.Should().BeSameAs(EntraCapabilities.Value,
-            "the same flag bag must serve the user store, the role store, and the auth flow — single source of truth");
+        // The user store overlays EntraOptions onto the singleton Value
+        // (EmailDomainSuffix etc.), so it's a structural-equality match,
+        // not a reference one. Every other flag must still be identical.
+        sut.Capabilities.Should().Be(
+            EntraCapabilities.Value with { EmailDomainSuffix = sut.Capabilities.EmailDomainSuffix },
+            "the same flag bag must serve every facet of the adapter — single source of truth modulo per-options overlay");
     }
 
     [Fact]
@@ -181,6 +185,49 @@ public sealed class EntraUserStoreTests
         var sut = BuildStore();
         var act = () => sut.ListAsync(null!);
         await act.Should().ThrowAsync<ArgumentNullException>().WithParameterName("filter");
+    }
+
+    [Fact]
+    public void Capabilities_WithDefaultEmailDomain_OverlaysEmailDomainSuffix_WithLeadingAt()
+    {
+        var sut = new EntraUserStore(
+            BuildOfflineGraphClient(),
+            Microsoft.Extensions.Options.Options.Create(new EntraOptions
+            {
+                TenantId = "t",
+                ClientId = "c",
+                ClientSecret = "s",
+                DefaultEmailDomain = "visuauth.onmicrosoft.com",
+            }),
+            NullLogger<EntraUserStore>.Instance);
+
+        sut.Capabilities.EmailDomainSuffix.Should().Be("@visuauth.onmicrosoft.com",
+            "the adapter prefixes the leading @ so consumers can configure either form");
+    }
+
+    [Fact]
+    public void Capabilities_WithDefaultEmailDomainAlreadyPrefixed_DoesNotDoubleAtSign()
+    {
+        var sut = new EntraUserStore(
+            BuildOfflineGraphClient(),
+            Microsoft.Extensions.Options.Options.Create(new EntraOptions
+            {
+                TenantId = "t",
+                ClientId = "c",
+                ClientSecret = "s",
+                DefaultEmailDomain = "@visuauth.onmicrosoft.com",
+            }),
+            NullLogger<EntraUserStore>.Instance);
+
+        sut.Capabilities.EmailDomainSuffix.Should().Be("@visuauth.onmicrosoft.com",
+            "operators who include @ in their config shouldn't end up with @@");
+    }
+
+    [Fact]
+    public void Capabilities_WithoutDefaultEmailDomain_LeavesSuffixNull()
+    {
+        BuildStore().Capabilities.EmailDomainSuffix.Should().BeNull(
+            "no config = no suggestion, the form keeps its free-text email input");
     }
 
     [Fact]

@@ -129,6 +129,21 @@ public sealed class EntraUserMapperTests
     }
 
     [Fact]
+    public void ToGraphCreate_NoPhone_StillSetsBusinessPhonesAsEmptyList_NotNull()
+    {
+        // Graph types businessPhones as `Collection(Edm.String)[Nullable=False]`
+        // — a null on the wire triggers a 400 ("does not allow null
+        // values"). The mapper must serialise "no phones" as the empty
+        // list, not as a missing property.
+        var (graphUser, _) = EntraUserMapper.ToGraphCreate(
+            new CreateUserCommand { Email = "x@y.com", PhoneNumber = null },
+            () => "pwd");
+
+        graphUser.BusinessPhones.Should().NotBeNull("Graph rejects null for non-nullable collection types");
+        graphUser.BusinessPhones.Should().BeEmpty();
+    }
+
+    [Fact]
     public void ToGraphCreate_DerivesMailNicknameFromEmailLocalPart()
     {
         var command = new CreateUserCommand { Email = "olivia@contoso.com" };
@@ -146,6 +161,26 @@ public sealed class EntraUserMapperTests
         patch.UserPrincipalName.Should().BeNull();
         patch.Mail.Should().BeNull();
         patch.BusinessPhones.Should().BeNull("absent fields in the command must NOT translate to null on the wire — PATCH would clear them");
+    }
+
+    [Fact]
+    public void ToGraphUpdate_WithEmail_DoesNotPatchUpnOrMail_BecauseGraphRejectsItForExternals()
+    {
+        // Graph rejects userPrincipalName / mail patches for B2B external
+        // users (the {addr}#EXT#@{tenant} format) with HTTP 403, even when
+        // User.ReadWrite.All is granted. The mapper deliberately drops
+        // Email from the PATCH body so the generic admin "save" stays
+        // safe — UPN / mail changes have to go through the Entra portal.
+        var patch = EntraUserMapper.ToGraphUpdate(new UpdateUserCommand
+        {
+            Email = "new@contoso.com",
+            UserName = "New display",
+            PhoneNumber = "+5511",
+        });
+        patch.DisplayName.Should().Be("New display");
+        patch.BusinessPhones.Should().ContainSingle().Which.Should().Be("+5511");
+        patch.UserPrincipalName.Should().BeNull("UPN is read-only in Graph for B2B externals — see ToGraphUpdate remarks");
+        patch.Mail.Should().BeNull("mail is server-managed");
     }
 
     [Fact]

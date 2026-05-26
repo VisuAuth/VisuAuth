@@ -89,7 +89,17 @@ internal static class EntraCapabilities
     public static UserBackendCapabilities Value { get; } = new()
     {
         SupportsLocalLogin = false,
-        SupportsRegistration = false,
+        // SupportsRegistration covers two distinct paths in the v0.2 UI:
+        // (a) end-user self-service signup at /visuauth/register, and
+        // (b) admin-create at /admin/users/new. Entra can't do (a) — the
+        // tenant-level signup flow is Microsoft's — but (b) IS supported
+        // through Graph's POST /users (which EntraUserStore.CreateAsync
+        // already implements). Flipping to true unblocks the admin
+        // surface; the end-user /register page still resolves to
+        // UserResult.Failure via EntraAuthenticationFlow.RegisterAsync,
+        // so the "self-service" half stays honest. v0.3 splits this into
+        // a dedicated SupportsAdminUserCreation capability.
+        SupportsRegistration = true,
         SupportsPasswordReset = true,
         SupportsTwoFactor = false,
         // v0.2 scope: per-method DELETE in Graph requires a typed builder

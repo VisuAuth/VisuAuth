@@ -149,15 +149,21 @@ internal static class EntraUserMapper
         var atIndex = command.Email.IndexOf('@');
         var nickname = atIndex > 0 ? command.Email[..atIndex] : command.Email;
 
+        // Graph types businessPhones as `Collection(Edm.String)[Nullable=False]`,
+        // which rejects an explicit null on the wire even though it's "just
+        // not setting it". Empty list is the canonical "no phones" payload —
+        // Kiota serialises it as `[]`, which Graph accepts.
+        var phones = string.IsNullOrEmpty(command.PhoneNumber)
+            ? new List<string>()
+            : new List<string> { command.PhoneNumber };
+
         return (new GraphUser
         {
             AccountEnabled = true,
             DisplayName = command.UserName ?? command.Email,
             MailNickname = nickname,
             UserPrincipalName = command.Email,
-            BusinessPhones = string.IsNullOrEmpty(command.PhoneNumber)
-                ? null
-                : [command.PhoneNumber],
+            BusinessPhones = phones,
             PasswordProfile = new PasswordProfile
             {
                 Password = temporaryPassword,
@@ -176,6 +182,18 @@ internal static class EntraUserMapper
     /// (and explicit null as "clear"), so this preserves the partial-update
     /// behaviour the abstraction promises.
     /// </summary>
+    /// <remarks>
+    /// <b>UPN / mail are intentionally NOT patched.</b> Microsoft Graph
+    /// rejects writes to <c>userPrincipalName</c> for B2B external users
+    /// (the <c>{address}#EXT#@{tenant}</c> shape that lands when a guest
+    /// is invited) with HTTP 403 "Insufficient privileges to complete the
+    /// operation" — even when the calling app has User.ReadWrite.All. The
+    /// <c>mail</c> property is server-managed too. Both are best changed
+    /// in the Entra portal (or by a custom flow that handles the
+    /// member-vs-guest branch); from the generic admin UI we only patch
+    /// the safe surface (display name + phones) so a typical "fix a
+    /// typo in the phone field" save can't surface a confusing 403.
+    /// </remarks>
     public static GraphUser ToGraphUpdate(UpdateUserCommand command)
     {
         ArgumentNullException.ThrowIfNull(command);
@@ -183,11 +201,6 @@ internal static class EntraUserMapper
         if (!string.IsNullOrEmpty(command.UserName))
         {
             patch.DisplayName = command.UserName;
-        }
-        if (!string.IsNullOrEmpty(command.Email))
-        {
-            patch.UserPrincipalName = command.Email;
-            patch.Mail = command.Email;
         }
         if (command.PhoneNumber is not null)
         {

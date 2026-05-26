@@ -1,0 +1,68 @@
+using Sample.EntraWebApp.Home;
+using VisuAuth;
+using VisuAuth.Entra.DependencyInjection;
+
+// Minimalist reference for VisuAuth + Microsoft Entra ID.
+//
+// What this app demonstrates:
+//   - The shortest path from a fresh ASP.NET Core project to a working
+//     VisuAuth admin against a real Entra tenant.
+//   - Zero Identity/SQLite/JWT/OAuth wire-up — Microsoft owns the user
+//     directory, VisuAuth.Entra reads/writes it through Microsoft Graph.
+//   - Capability-driven UI: the same /visuauth/admin pages that
+//     Sample.WebApp renders against Identity work against Graph here,
+//     just with the Locked / 2FA / PendingEmail tiles auto-hidden and
+//     the login form swapped for "Sign in with Microsoft".
+//
+// Setup (do once):
+//   1. Create an Entra tenant + app registration (Workforce). See the
+//      README "Entra adapter" section for portal steps. The app needs
+//      these Application permissions on Microsoft Graph with admin
+//      consent: User.Read.All, User.ReadWrite.All,
+//      AppRoleAssignment.ReadWrite.All, Application.Read.All.
+//   2. Populate the three required secrets:
+//        cd samples/Sample.EntraWebApp
+//        dotnet user-secrets set "VisuAuth:Entra:TenantId"     "<guid>"
+//        dotnet user-secrets set "VisuAuth:Entra:ClientId"     "<guid>"
+//        dotnet user-secrets set "VisuAuth:Entra:ClientSecret" "<value>"
+//   3. dotnet run
+//
+// That's it. Browse http://localhost:5240 and follow the links.
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Fluent composition (CLAUDE.md §2.1). UseAspNetIdentity / EnableMultiTenant
+// are deliberately absent — the Entra adapter brings its own IUserStore /
+// IRoleStore / IAuthenticationFlow + the no-op fallbacks for IAuditWriter /
+// IJwtIssuer / ITenantContext that the EndUserUi pipeline expects.
+builder.Services
+    .AddVisuAuth()
+    .AddAdminUi()
+    .AddEndUserUi();
+
+// The single Entra-specific call. Binds VisuAuth:Entra:* from configuration,
+// registers EntraUserStore + EntraRoleStore + EntraAuthenticationFlow against
+// a singleton GraphServiceClient backed by app-only (client credentials) auth.
+builder.Services.AddVisuAuthEntra(builder.Configuration);
+
+var app = builder.Build();
+
+app.UseStaticFiles();
+app.UseRouting();
+app.UseAuthentication();
+app.UseAuthorization();
+
+// Manual-test launcher at "/" — see Sample.EntraWebApp.Home.SampleEntraHomePage.
+// Mirrors Sample.WebApp's MapSampleHomePage convention so the inline HTML
+// stays out of Program.cs and the route list is one place to update when
+// new VisuAuth surfaces land.
+app.MapSampleEntraHomePage();
+
+app.MapVisuAuth();
+app.Run();
+
+/// <summary>
+/// Marker type for WebApplicationFactory&lt;Program&gt; if integration
+/// tests ever want to spin this sample up.
+/// </summary>
+public partial class Program;

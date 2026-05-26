@@ -128,6 +128,7 @@ public static class VisuAuthEntraExtensions
         services.TryAddScoped<IUserStore, EntraUserStore>();
         services.TryAddScoped<IRoleStore, EntraRoleStore>();
         services.TryAddScoped<IAuthenticationFlow, EntraAuthenticationFlow>();
+        services.TryAddScoped<IExternalLoginFlow, EntraNoOpExternalLoginFlow>();
 
         // VisuAuth.EndUserUi's SignInAuditEmitter depends on IAuditWriter
         // unconditionally. The Identity adapter registers a NoOpAuditWriter

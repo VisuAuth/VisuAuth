@@ -36,8 +36,21 @@ internal static class EntraUserMapper
     /// the wire payload and avoids accidental dependency on properties
     /// the registered app doesn't have permissions for.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Why no signInActivity?</b> That field is gated on the
+    /// <c>AuditLog.Read.All</c> permission AND a Microsoft Entra ID P1+
+    /// licence on the tenant. Free / E1 tenants reject the entire request
+    /// (not just the field) with a 403 when it's in the select. Leaving
+    /// it out means <see cref="UserSummary.LastSignInAt"/> stays null —
+    /// the admin UI degrades to "—" in the column, which is the right
+    /// behaviour when the data isn't available anyway. Consumers on P1+
+    /// who want LastSignInAt populated can subclass / re-register the
+    /// store with a custom select; v0.3 will turn this into an option.
+    /// </para>
+    /// </remarks>
     public const string SummarySelect =
-        "id,displayName,userPrincipalName,mail,businessPhones,accountEnabled,createdDateTime,signInActivity";
+        "id,displayName,userPrincipalName,mail,businessPhones,accountEnabled,createdDateTime";
 
     /// <summary>
     /// Wider $select for the detail page — adds anything the

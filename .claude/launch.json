@@ -6,6 +6,16 @@
       "runtimeExecutable": "dotnet",
       "runtimeArgs": ["run", "--project", "samples/Sample.WebApp/Sample.WebApp.csproj", "--launch-profile", "http", "-c", "Release"],
       "port": 5239
+    },
+    {
+      "name": "sample-entra",
+      "runtimeExecutable": "powershell",
+      "runtimeArgs": [
+        "-NoProfile",
+        "-Command",
+        "$env:VISUAUTH_BACKEND='entra'; $env:ASPNETCORE_ENVIRONMENT='Development'; dotnet run --project samples/Sample.WebApp -c Release --no-build --no-launch-profile --urls http://localhost:5239"
+      ],
+      "port": 5239
     }
   ]
 }

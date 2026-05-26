@@ -58,12 +58,19 @@ public sealed class EntraOptions
     public string ClientSecret { get; set; } = string.Empty;
 
     /// <summary>
-    /// Object ID of the application whose <c>appRoles</c> the
+    /// <b>Application (client) ID</b> — NOT object id — of the application
+    /// whose <c>appRoles</c> the
     /// <see cref="VisuAuth.Abstractions.Roles.IRoleStore"/> surfaces and
     /// assigns. Defaults to <see cref="ClientId"/> — i.e. VisuAuth's own
     /// registered app is the role catalogue.
     /// </summary>
     /// <remarks>
+    /// The adapter uses this value in a Graph
+    /// <c>$filter=appId eq '{AppRoleResourceId}'</c> against
+    /// <c>/servicePrincipals</c>, so it must be an Application Id (the same
+    /// shape as <see cref="ClientId"/>). The name "ResourceId" reflects the
+    /// OAuth role naming (the resource being protected), not Graph's
+    /// "object id" terminology — the two are different GUIDs.
     /// App roles are declared in the application manifest (Azure portal → App
     /// registrations → {your app} → App roles). The Entra adapter cannot
     /// create / rename / delete them at runtime — those operations throw

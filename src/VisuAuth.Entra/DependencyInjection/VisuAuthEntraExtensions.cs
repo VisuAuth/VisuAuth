@@ -3,10 +3,13 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Graph;
+using VisuAuth.Abstractions.Auditing;
 using VisuAuth.Abstractions.Authentication;
 using VisuAuth.Abstractions.Roles;
+using VisuAuth.Abstractions.Tenancy;
 using VisuAuth.Abstractions.Users;
 using VisuAuth.Entra.Configuration;
+using VisuAuth.Entra.Internal;
 
 namespace VisuAuth.Entra.DependencyInjection;
 
@@ -125,6 +128,31 @@ public static class VisuAuthEntraExtensions
         services.TryAddScoped<IUserStore, EntraUserStore>();
         services.TryAddScoped<IRoleStore, EntraRoleStore>();
         services.TryAddScoped<IAuthenticationFlow, EntraAuthenticationFlow>();
+
+        // VisuAuth.EndUserUi's SignInAuditEmitter depends on IAuditWriter
+        // unconditionally. The Identity adapter registers a NoOpAuditWriter
+        // as fallback; an Entra-only deployment has no Identity wire-up, so
+        // without this line every sign-in attempt would crash with
+        // "Unable to resolve IAuditWriter". TryAdd preserves the real
+        // EfCoreAuditStore when the consumer ALSO wires AddVisuAuthAuditLog.
+        services.TryAddSingleton<IAuditWriter, EntraNoOpAuditWriter>();
+
+        // Same story for IJwtIssuer — the minimal-API /api/auth/login
+        // endpoint mapped by MapVisuAuthEndUserUi lists it as a required
+        // parameter, so startup fails without one. The Entra mobile flow
+        // doesn't need our HS256 issuer (Microsoft issues its own tokens),
+        // so a stub that always returns null is the right shape; the API
+        // surfaces a clean 401 via the existing IssueOrUnauthorized branch.
+        services.TryAddSingleton<IJwtIssuer, EntraNoOpJwtIssuer>();
+
+        // And ITenantContext — VisuAuth.Identity registers
+        // HttpContextTenantContext only when EnableMultiTenant fires; an
+        // Entra-only deployment skips that step entirely, but the minimal
+        // API's RegisterAsync handler still expects ITenantContext as a
+        // constructor param. The no-op reports IsMultiTenancyEnabled =
+        // false, which is the right answer for Entra (the directory IS
+        // the tenant — per-user tenancy doesn't apply).
+        services.TryAddSingleton<ITenantContext, EntraNoOpTenantContext>();
 
         return services;
     }

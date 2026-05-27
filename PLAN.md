@@ -85,6 +85,36 @@ immediate next step. Updated as PRs land. Long-term direction lives in
 
 ## In flight
 
+- **`VisuAuth.EntraExternal.Web` package — PR C of 3** (`feat/entra-external-oidc-signin`)
+  — the End-user OIDC sign-in foundation for the EntraExternal adapter.
+  Ships a sixth NuGet package (`VisuAuth.EntraExternal.Web`) that wraps
+  `Microsoft.Identity.Web` against the External tenant authority
+  (`{tenant}.ciamlogin.com`) and replaces the no-op
+  `IExternalLoginFlow` stub from EntraCore with a real implementation.
+  The "Sign in with Microsoft" button on `/visuauth/login` now actually
+  works — clicks redirect to the hosted Microsoft page, callback
+  validates + writes the Cookies session cookie, and the existing
+  EndUserUi `Callback` page picks up via `CompleteSignInAsync` to
+  verify the user against Graph and surface Success. Capability
+  overlay flips `SupportsExternalProviders = true` at this layer (the
+  CRUD-only adapter singleton stays false). Wraps two app
+  registrations: the CRUD app remains app-only / client-credentials
+  for Graph; this layer adds a second public OIDC client for the
+  hosted sign-in. Scope deliberately stops short of user-flow
+  selection + attribute mapping — those land in PR D (queued).
+  Sample wired (`samples/Sample.EntraExternalWebApp`) with both
+  configuration sections documented. Tests: 3 new files
+  (~29 unit tests) covering options validation, the flow's full
+  branch surface (no session / missing oid claim / happy path /
+  AutoCreate vs Confirm strategies / pending info fallbacks), and DI
+  registration semantics (lambda + IConfiguration overloads, Replace
+  vs TryAdd, OIDC scheme registration, post-configure pinning).
+  Pulls in 4 transitive-pin bumps (`Microsoft.Identity.Web 4.10`
+  required them): `Microsoft.Extensions.Logging.Abstractions` /
+  `Microsoft.Extensions.DependencyInjection.Abstractions` 10.0.0 →
+  10.0.7, `System.IdentityModel.Tokens.Jwt` 8.14.0 → 8.18.0,
+  `Azure.Identity` 1.13.1 → 1.17.2. All patch-level safe.
+
 - **`VisuAuth.EntraExternal` adapter — PR B of 3** (`feat/entra-external-adapter`)
   — the customer-facing CRUD adapter. Ships
   `src/VisuAuth.EntraExternal/` (Options, Capabilities, UserStore,
@@ -117,14 +147,15 @@ customization"*. The External adapter is split across PRs A/B/C
 (A merged as #36, B in flight, C pending). Other concrete ideas
 surfaced during v0.2:
 
-1. **EntraExternal PR C — `Microsoft.Identity.Web` signup integration**
-   — wires the customer-facing OIDC redirect so `/visuauth/login` (with
-   `SupportsLocalLogin = false`) actually lands the user on the hosted
-   `{tenant}.ciamlogin.com` page and round-trips back with claims.
-   Replaces the "use Microsoft sign-in" hint with a real button.
-   Likely a small package (`VisuAuth.EntraExternal.Web` or an
-   opt-in `AddOidc()` extension on the existing one) so consumers who
-   want a different OIDC stack aren't forced into MS.Identity.Web.
+1. **EntraExternal PR D — signup customization** — builds on PR C's
+   `VisuAuth.EntraExternal.Web` package. Adds a `Graph`-backed reader
+   for the tenant's user flows (sign-up vs sign-in flow selection),
+   an admin UI page at `/visuauth/admin/entra-external/user-flows`
+   to pick which flow the "Sign in with Microsoft" button invokes,
+   and an attribute-mapping layer that pushes user-flow-collected
+   attributes (firstName, country, custom fields) back into the
+   Graph user resource on first sign-in. Estimated ~1000 lines + 2-3
+   new admin pages. Mergeable after PR C lands.
 2. **DB-backed adapter config UI** — `/visuauth/admin/entra-config`
    (and similar for future adapters). Pattern reuses the existing
    External Providers infrastructure: `IConfigureOptions<TOptions>`

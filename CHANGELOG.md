@@ -18,6 +18,83 @@ Working toward [`0.2.0`](#020--planned). `<VersionPrefix>` in
 
 ### Added
 
+- **Microsoft Entra External ID End-user OIDC sign-in**
+  (`VisuAuth.EntraExternal.Web` — new NuGet package). Opt-in sub-package
+  that closes the customer sign-in loop for the EntraExternal adapter:
+  consumers who want their End-user `/visuauth/login` page to render a
+  working "Sign in with Microsoft" button add this package on top of
+  `VisuAuth.EntraExternal` and call `AddVisuAuthEntraExternalSignIn(...)`.
+  Wraps `Microsoft.Identity.Web` against the External authority shape
+  (`{tenant}.ciamlogin.com`), registers OIDC + Cookies handlers under
+  a stable scheme name, and replaces the no-op `IExternalLoginFlow`
+  stub from `VisuAuth.EntraCore` with a real implementation that
+  verifies the OIDC-authenticated principal against Microsoft Graph
+  via `IUserStore.GetAsync` and returns the `ExternalSignInResult`
+  envelope the existing EndUserUi `Callback` page consumes.
+  - **`EntraExternalWebOptions`** — TenantSubdomain / TenantId /
+    ClientId (required) + ClientSecret / CallbackPath /
+    SignedOutCallbackPath / SignInUserFlow (optional). Bound from
+    `VisuAuth:EntraExternal:Web` by default. Distinct from the admin
+    Graph section because admin (app-only) and end-user (OIDC) flows
+    use different app registrations in typical deployments.
+  - **`EntraExternalLoginFlow`** — `IExternalLoginFlow`
+    implementation. `GetProvidersAsync` surfaces a single
+    "Sign in with Microsoft" entry under the scheme name the DI
+    extension registers OIDC under. `CompleteSignInAsync` reads the
+    OIDC `oid` claim (both long URI and short alias), verifies the
+    user exists in Graph, returns `Success` with the directory id —
+    or graceful failures with actionable hints when the user is
+    missing / the token lacks `oid`. Confirmation strategies fail
+    deliberately because the External adapter can't create users
+    without Microsoft's hosted user-flow context. `GetPendingInfoAsync`
+    falls back from `email` to `preferred_username` so the confirm
+    page still renders something meaningful when the token shape
+    varies.
+  - **DI**: `AddVisuAuthEntraExternalSignIn(IConfiguration ...)` and
+    a lambda overload, both binding the new options section, wiring
+    `Microsoft.Identity.Web`'s `AddMicrosoftIdentityWebApp` with
+    External-appropriate authority + sign-in scheme defaults, and
+    using `services.Replace` (not `TryAdd`) to swap the no-op
+    `IExternalLoginFlow` stub for the real one — `TryAdd` would
+    silently leave the stub in place and the button would never
+    render.
+  - **Capability overlay**: the flow's `Capabilities` property
+    overlays `SupportsExternalProviders = true` on top of the
+    `EntraExternalCapabilities` singleton — once OIDC is wired we DO
+    have a provider to surface, so any UI that consults the flow's
+    capability bag gets the right answer without the CRUD-only
+    package's singleton having to lie.
+  - **Sample**: `samples/Sample.EntraExternalWebApp/Program.cs` now
+    calls `AddVisuAuthEntraExternalSignIn(builder.Configuration)`
+    alongside the existing admin wiring. `appsettings.json` documents
+    both configuration sections side-by-side. Distinct `UserSecretsId`
+    so the new `Web:*` secrets stay isolated.
+  - **Tests**: 3 new files (~29 unit tests) covering options
+    validation (required `TenantSubdomain` / `TenantId` / `ClientId`
+    + computed authority URL), the flow's full branch surface (no
+    session / missing oid claim / happy path / AutoCreate vs Confirm
+    strategies / pending info fallbacks), and DI registration
+    semantics (lambda + IConfiguration overloads, `Replace` vs
+    `TryAdd`, OIDC scheme registration, post-configure pinning of
+    `SignInScheme` + `NameClaimType`). Suite: 569 unit (was 540, +29)
+    + 179 integration = 748 green.
+  - **Docs**: `src/VisuAuth.EntraExternal.Web/README.md` with the
+    two-app-registration rationale, an end-to-end flow walkthrough,
+    and the first-time-strategy table for External (`AutoCreate`
+    recommended; `Confirm` strategies graceful-fail with a clear
+    hint).
+  - **Scope of PR C**: OIDC sign-in foundation. PR D (queued) adds
+    user-flow selection, the admin UI to pick which flow the button
+    invokes, and attribute mapping from sign-up flows into Graph
+    user properties.
+  - **Transitive package version bumps** required by
+    `Microsoft.Identity.Web` 4.10:
+    `Microsoft.Extensions.Logging.Abstractions` and
+    `Microsoft.Extensions.DependencyInjection.Abstractions`
+    10.0.0 → 10.0.7 (patch-level servicing),
+    `System.IdentityModel.Tokens.Jwt` 8.14.0 → 8.18.0 (servicing),
+    `Azure.Identity` 1.13.1 → 1.17.2 (patch on 1.x).
+
 - **Microsoft Entra External ID adapter** (`VisuAuth.EntraExternal` — new
   NuGet package). Customer-facing (CIAM / B2C-successor) sibling to
   `VisuAuth.Entra`. Same admin surface, same `IUserStore` /

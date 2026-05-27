@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>VisuAuth.EntraExternal.Web</RootNamespace>
+    <AssemblyName>VisuAuth.EntraExternal.Web</AssemblyName>
+  </PropertyGroup>
+
+  <PropertyGroup Label="NuGet">
+    <PackageId>VisuAuth.EntraExternal.Web</PackageId>
+    <Title>VisuAuth Microsoft Entra External ID Web Sign-In</Title>
+    <Description>End-user OIDC sign-in for the VisuAuth.EntraExternal adapter. Wraps Microsoft.Identity.Web so the consumer's /visuauth/login renders a working "Sign in with Microsoft" button that round-trips through the External tenant's hosted sign-in page ({tenant}.ciamlogin.com). Replaces the no-op IExternalLoginFlow shipped by VisuAuth.EntraCore with a real implementation that reads the OIDC-authenticated principal, verifies the user against Microsoft Graph, and returns the success outcome the existing End-user UI expects. Consumers who only need admin CRUD (no End-user sign-in) skip this package and pay nothing.</Description>
+    <PackageTags>visuauth;entra;external-id;ciam;b2c;oidc;openidconnect;signin</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\VisuAuth.Abstractions\VisuAuth.Abstractions.csproj" />
+    <!-- The EntraExternal adapter ships the IUserStore against Graph we
+         use to verify the signed-in user. We deliberately do NOT reference
+         VisuAuth.EntraCore directly — the EntraExternal package transitively
+         brings it in (the no-op IExternalLoginFlow stub we replace lives
+         there). Keeping the project reference graph narrow means consumers
+         who already pull EntraExternal don't double-count weight. -->
+    <ProjectReference Include="..\VisuAuth.EntraExternal\VisuAuth.EntraExternal.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Microsoft.Identity.Web pulls in OpenIdConnect + Cookies + token
+         caching. We don't reference Microsoft.Identity.Web.UI — the Razor
+         pages it ships are scaffolded and the consumer's End-user UI is
+         VisuAuth's; the bare framework package is enough. -->
+    <PackageReference Include="Microsoft.Identity.Web" />
+  </ItemGroup>
+
+  <ItemGroup Label="Test access">
+    <InternalsVisibleTo Include="VisuAuth.UnitTests" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Sample.EntraExternalWebApp</RootNamespace>
+    <AssemblyName>Sample.EntraExternalWebApp</AssemblyName>
+    <!-- Distinct UserSecretsId from the Workforce sample on purpose:
+         External tenants have different TenantId / ClientId / ClientSecret
+         from the developer's Workforce tenant, plus a required TenantDomain
+         the Workforce config doesn't have. Keeping the namespaces separated
+         avoids accidentally feeding Workforce credentials into the External
+         adapter (which would fail validate-on-start with a confusing
+         "TenantDomain is required" message). -->
+    <UserSecretsId>visuauth-sample-entra-external-webapp</UserSecretsId>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The meta-package and the External adapter — that's it. No
+         Microsoft.AspNetCore.Identity.*, no EF Core, no OAuth providers,
+         no JWT issuer. The whole point of this sample is to show the
+         shortest possible path from "fresh ASP.NET Core project" to
+         "admin UI against a real Microsoft Entra External ID tenant". -->
+    <ProjectReference Include="..\..\src\VisuAuth\VisuAuth.csproj" />
+    <ProjectReference Include="..\..\src\VisuAuth.EntraExternal\VisuAuth.EntraExternal.csproj" />
+  </ItemGroup>
+
+</Project>

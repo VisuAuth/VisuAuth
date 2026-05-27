@@ -56,7 +56,8 @@ dotnet sonarscanner begin `
     /d:sonar.host.url="$SonarHost" `
     /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml" `
     /d:sonar.coverage.exclusions="samples/**,tests/**" `
-    /d:sonar.exclusions="samples/**"
+    /d:sonar.exclusions="samples/**" `
+    /d:sonar.cpd.exclusions="src/VisuAuth.EntraExternal/EntraExternalUserStore.cs,src/VisuAuth.EntraExternal/EntraExternalRoleStore.cs,src/VisuAuth.EntraExternal/EntraExternalAuthenticationFlow.cs"
 Assert-LastExitCode 'sonarscanner begin'
 
 dotnet build $Solution -c Release

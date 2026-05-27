@@ -16,6 +16,82 @@ Working toward [`0.2.0`](#020--planned). `<VersionPrefix>` in
 `Directory.Build.props` is now `0.2.0`, so merges to `main` publish as
 `0.2.0-alpha.<run_number>` pre-releases until the next stable tag.
 
+### Added
+
+- **Microsoft Entra External ID adapter** (`VisuAuth.EntraExternal` — new
+  NuGet package). Customer-facing (CIAM / B2C-successor) sibling to
+  `VisuAuth.Entra`. Same admin surface, same `IUserStore` /
+  `IRoleStore` / `IAuthenticationFlow` contracts; differs in the user
+  shape it persists and reads. Activates against any Entra External
+  tenant via app-only (client-credentials) Microsoft Graph auth, shared
+  with the Workforce adapter through the `VisuAuth.EntraCore` package.
+  - **`EntraExternalOptions`** — TenantId / ClientId / ClientSecret /
+    `TenantDomain` (the new External-specific required field — used as
+    the `issuer` when minting `identities[]` entries) / AppRoleResourceId
+    / GraphBaseUrl / DefaultEmailDomain. ValidatesDataAnnotations so a
+    missing TenantDomain fails fast at startup, not at the first
+    `POST /users` call.
+  - **`EntraExternalUserStore`** — full IUserStore surface mirroring
+    the Workforce store. The CreateAsync path is the headline
+    divergence: identity travels in `identities[]` (signInType =
+    `emailAddress`, issuer = `TenantDomain`, issuerAssignedId = the
+    customer's email) rather than `UserPrincipalName` (which Microsoft
+    auto-generates as `cpim_{guid}@…`). Read paths prefer the customer-
+    typed email from identities over the cpim UPN so the admin grid
+    stays readable. UpdateAsync deliberately leaves identities / UPN
+    / mail untouched — rewriting any of those from a generic admin
+    form would lock the customer out of their own login (a footgun
+    we made unreachable).
+  - **`EntraExternalRoleStore`** — app roles via Graph, identical
+    contract to the Workforce role store (the Graph API for app roles
+    is tenant-family-agnostic). Deliberately duplicated rather than
+    extracted into a shared base — see the type's XML doc for the
+    reasoning (avoiding an inverted dependency from EntraCore onto a
+    typed options class).
+  - **`EntraExternalAuthenticationFlow`** — `SupportsLocalLogin = false`
+    shim. Sign-in returns `RedirectToExternalProvider` (the SignIn
+    mapper turns that into the "Sign in with Microsoft" hint on
+    `/visuauth/login`). Register / reset / confirm return graceful
+    failures with the same message; PR-C replaces those with the real
+    hosted OIDC redirect via `Microsoft.Identity.Web`.
+  - **`EntraExternalUserMapper`** — pure projections. Builds the
+    identities-aware Create payload, the identities-fallback read
+    projection (identities[emailAddress] → mail → UPN), the safe
+    PATCH body (display name + phones only), and an identities-aware
+    search filter (`identities/any(id:id/issuerAssignedId eq '…')`)
+    so customer-typed emails are findable even when the auto-generated
+    UPN doesn't match.
+  - **DI**: `services.AddVisuAuthEntraExternal(...)` (both lambda and
+    `IConfiguration` overloads). All registrations are `TryAdd` so
+    consumers can pre-register their own `IUserStore` / `IAuthenticationFlow`
+    test doubles. Reuses the `VisuAuth.EntraCore` no-op stubs for
+    `IAuditWriter` / `IJwtIssuer` / `ITenantContext` / `IExternalLoginFlow`
+    so an External-only deployment resolves cleanly without the
+    Identity adapter wired alongside.
+  - **Sample**: new `samples/Sample.EntraExternalWebApp` — ~30-line
+    `Program.cs` parallel to `samples/Sample.EntraWebApp` for easy
+    A/B comparison between Workforce and External flows. Listens on
+    `http://localhost:5260`, distinct `UserSecretsId` so dev
+    credentials don't leak between the two adapter families.
+  - **Tests**: 6 new unit-test files (~93 tests) covering
+    Capabilities, Options validation (including the new required
+    `TenantDomain`), the mapper's identities-aware Create + read
+    fallback chain + identities-aware search predicate, store
+    synchronous defences (null-arg / blank-id / NotSupported branches),
+    role store NotSupported branches, and the DI extension's both
+    overloads + TryAdd semantics. Suite: 510 unit (was 417, +93) +
+    179 integration = 689 green.
+  - **Docs**: adapter-specific `src/VisuAuth.EntraExternal/README.md`
+    with a tenant-setup walkthrough mirroring the Workforce one (the
+    External setup is actually free, unlike Workforce after Microsoft's
+    2024 policy change — so this is the lower-friction "try
+    VisuAuth against real Graph" path for new contributors).
+  - **Scope of PR B**: admin CRUD + sample wiring + capability
+    surface. PR C is queued separately and adds the customer-facing
+    OIDC redirect via `Microsoft.Identity.Web` so `/visuauth/login`
+    becomes a working "Sign in with Microsoft" button instead of just
+    a hint.
+
 ### Changed
 
 - **Sample.WebApp now uses EF Core migrations** instead of

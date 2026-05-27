@@ -12,7 +12,7 @@ immediate next step. Updated as PRs land. Long-term direction lives in
 - **Latest shipped on NuGet**: [`VisuAuth 0.1.0`](https://www.nuget.org/packages/VisuAuth/0.1.0) — first feature release. The v0.2 release will publish six packages (the five `0.1.0` ones plus the new `VisuAuth.Entra`).
 - **Default branch**: `main` at <https://github.com/VisuAuth/visuauth>
 - **Build state**: green (`dotnet build src/VisuAuth.slnx -c Release` → 0 errors, 0 warnings)
-- **Test state**: green on `main` (400 unit + 179 integration = 579 tests after the Entra adapter merge)
+- **Test state**: green on `main` (417 unit + 179 integration = 596 tests after the EntraCore extraction; PR B's adapter + sample push the in-flight branch to 510 unit + 179 integration = 689 tests)
 
 ---
 
@@ -85,13 +85,27 @@ immediate next step. Updated as PRs land. Long-term direction lives in
 
 ## In flight
 
-- **Sample EF Migrations + PLAN housekeeping** (`chore/plan-and-ef-migrations`)
-  — replaces the Sample.WebApp `EnsureCreated()` boot path with proper
-  EF Core migrations so schema changes (new audit columns, new
-  external-provider tables, etc.) stop forcing the owner to delete the
-  SQLite file by hand. Also moves the v0.2 entries out of "In flight"
-  and onto "Recently shipped" — bookkeeping only, no library behaviour
-  changes.
+- **`VisuAuth.EntraExternal` adapter — PR B of 3** (`feat/entra-external-adapter`)
+  — the customer-facing CRUD adapter. Ships
+  `src/VisuAuth.EntraExternal/` (Options, Capabilities, UserStore,
+  RoleStore, AuthenticationFlow, UserMapper, DI extension), wires the
+  shared `VisuAuth.EntraCore` from PR A for the Graph factory + no-op
+  stubs, and adds `samples/Sample.EntraExternalWebApp/` — the
+  minimalist ~30-line `Program.cs` Entra-External-only reference,
+  mirroring `Sample.EntraWebApp` for easy A/B comparison. Capability
+  surface matches Workforce except for the `identities[]`-driven user
+  shape: Create mints `signInType = emailAddress` with the configured
+  `TenantDomain` as `issuer`; List / Detail prefer the customer-typed
+  email from identities over the auto-generated `cpim_{guid}` UPN.
+  Update deliberately leaves identities / UPN / mail untouched — a
+  generic admin save can't lock a customer out of their own login.
+  Tests: 6 new files (~93 unit tests) covering Capabilities, Options
+  validation (incl. the new required `TenantDomain`), the mapper's
+  identities-aware Create + read fallback chain + identities-aware
+  search predicate, store synchronous defences, role store NotSupported
+  branches, and the DI extension's both overloads + TryAdd semantics.
+  PR C (next) wires `Microsoft.Identity.Web` for the actual hosted
+  OIDC redirect at `/visuauth/login`.
 
 ---
 
@@ -99,17 +113,18 @@ immediate next step. Updated as PRs land. Long-term direction lives in
 
 Roadmap row from CLAUDE.md §13 is *"Microsoft Entra External ID
 adapter, profile / sessions management, bulk operations, view-level
-customization"*. Concrete ideas surfaced during v0.2:
+customization"*. The External adapter is split across PRs A/B/C
+(A merged as #36, B in flight, C pending). Other concrete ideas
+surfaced during v0.2:
 
-1. **`VisuAuth.EntraExternal` adapter** — Entra External ID (the B2C
-   successor) for customer-facing apps. Reuses most of Graph CRUD from
-   `VisuAuth.Entra` but handles the differences: native users (no
-   `#EXT#@` shape), `identities` collection (social + email), user
-   attributes / user flows, no `appRoles` (External tenants don't
-   declare them). Plus the OIDC signup flow, which today sits outside
-   the adapter — needs to decide whether to ship a wrapper for
-   `Microsoft.Identity.Web.UI` or stick to "consumer wires their own
-   OIDC".
+1. **EntraExternal PR C — `Microsoft.Identity.Web` signup integration**
+   — wires the customer-facing OIDC redirect so `/visuauth/login` (with
+   `SupportsLocalLogin = false`) actually lands the user on the hosted
+   `{tenant}.ciamlogin.com` page and round-trips back with claims.
+   Replaces the "use Microsoft sign-in" hint with a real button.
+   Likely a small package (`VisuAuth.EntraExternal.Web` or an
+   opt-in `AddOidc()` extension on the existing one) so consumers who
+   want a different OIDC stack aren't forced into MS.Identity.Web.
 2. **DB-backed adapter config UI** — `/visuauth/admin/entra-config`
    (and similar for future adapters). Pattern reuses the existing
    External Providers infrastructure: `IConfigureOptions<TOptions>`

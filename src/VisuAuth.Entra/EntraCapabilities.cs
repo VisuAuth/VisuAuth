@@ -110,6 +110,11 @@ internal static class EntraCapabilities
         SupportsLockout = false,
         SupportsEmailConfirmation = false,
         SupportsRoleManagement = true,
+        // App roles are declared in the app-registration manifest, not at
+        // runtime — EntraRoleStore.Create/Rename/Delete throw NotSupported.
+        // Flagging false hides those controls on the admin Roles page so an
+        // operator never submits a form that can't succeed.
+        SupportsRoleMutation = false,
         SupportsSessionRevocation = true,
         SupportsExternalProviders = false,
         SupportsImpersonation = false,

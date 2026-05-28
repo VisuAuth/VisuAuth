@@ -148,6 +148,9 @@
   "Roles.RenameAria": "Renomear papel {0}",
   "Roles.DeleteAria": "Excluir papel {0}",
   "Roles.DeleteConfirm": "Excluir o papel '{0}'? Usuários que possuem este papel perderão a permissão.",
+  "Roles.EmptyReadOnly": "Nenhum papel definido no provedor de identidade ainda.",
+  "Roles.MutationNotSupported.Heading": "Os papéis são gerenciados pelo provedor de identidade",
+  "Roles.MutationNotSupported.Body": "Este backend declara os papéis externamente — no Microsoft Entra, as app roles ficam no manifesto do registro de aplicativo. Aqui você pode listar os papéis e atribuí-los ou removê-los de usuários, mas criar, renomear e excluir papéis precisa ser feito no portal do provedor de identidade.",
 
   "Tenants.Title": "Tenants",
   "Tenants.PageTitle": "Tenants — VisuAuth Admin",
@@ -174,6 +177,7 @@
   "Roles.Error.CreateFailed": "Falha ao criar o papel.",
   "Roles.Error.RenameFailed": "Falha ao renomear o papel.",
   "Roles.Error.DeleteFailed": "Falha ao excluir o papel.",
+  "Roles.Error.MutationNotSupported": "Este backend não permite criar, renomear ou excluir papéis — eles são declarados pelo provedor de identidade.",
   "Tenants.Action.Created": "Tenant '{0}' criado.",
   "Tenants.Action.Renamed": "Tenant '{0}' renomeado.",
   "Tenants.Action.Deleted": "Tenant '{0}' excluído.",

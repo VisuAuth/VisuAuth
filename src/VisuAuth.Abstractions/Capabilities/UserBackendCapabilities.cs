@@ -41,6 +41,33 @@ public sealed record UserBackendCapabilities
     /// <summary>The backend exposes role management.</summary>
     public bool SupportsRoleManagement { get; init; }
 
+    /// <summary>
+    /// The role catalogue can be mutated at runtime — i.e. roles can be
+    /// created, renamed, and deleted through <see cref="VisuAuth.Abstractions.Roles.IRoleStore"/>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Distinct from <see cref="SupportsRoleManagement"/>: a backend can
+    /// fully support <i>assigning</i> roles (list / get / assign / remove)
+    /// while forbidding <i>defining</i> them at runtime. Microsoft Entra is
+    /// the canonical example — app roles are declared in the application
+    /// registration manifest, so the Graph adapters' <c>CreateAsync</c> /
+    /// <c>RenameAsync</c> / <c>DeleteAsync</c> throw
+    /// <see cref="NotSupportedException"/> per the IRoleStore contract.
+    /// </para>
+    /// <para>
+    /// The admin Roles page consults this flag to hide the create / rename
+    /// / delete controls when the backend can't honour them, so an operator
+    /// never submits a form that would surface a NotSupported error. The
+    /// ASP.NET Core Identity adapter sets it <c>true</c> (it owns its role
+    /// table); the Entra and Entra External adapters set it <c>false</c>.
+    /// Defaults to <c>false</c> — a new adapter that hasn't reasoned about
+    /// runtime role mutation is presented as read-only, which is the safe
+    /// degradation (hides a feature rather than 500-ing on submit).
+    /// </para>
+    /// </remarks>
+    public bool SupportsRoleMutation { get; init; }
+
     /// <summary>An audit log of identity events is available.</summary>
     public bool SupportsAuditLog { get; init; }
 

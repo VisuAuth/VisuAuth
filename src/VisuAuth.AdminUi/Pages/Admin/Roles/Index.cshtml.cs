@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Localization;
 using VisuAuth.Abstractions.Auditing;
 using VisuAuth.Abstractions.Capabilities;
+using VisuAuth.Abstractions.Common;
 using VisuAuth.Abstractions.Roles;
 using VisuAuth.Abstractions.Users;
 
@@ -62,7 +63,19 @@ public sealed class IndexModel(
             return Partial("_RolesCatalogue", this);
         }
 
-        var result = await _roleStore.CreateAsync(trimmed, tenantId: null, cancellationToken);
+        UserResult result;
+        try
+        {
+            result = await _roleStore.CreateAsync(trimmed, tenantId: null, cancellationToken);
+        }
+        catch (NotSupportedException)
+        {
+            // Defence in depth: the UI hides the create form when
+            // Capabilities.SupportsRoleMutation is false, but a stale form
+            // or a direct POST can still reach here. Surface the friendly
+            // message instead of letting the exception 500 the htmx swap.
+            return await RoleMutationNotSupportedAsync(cancellationToken);
+        }
 
         if (!result.IsSuccess)
         {
@@ -135,7 +148,15 @@ public sealed class IndexModel(
         var preRename = await _roleStore.GetAsync(id, cancellationToken);
         var oldName = preRename?.Name ?? id;
 
-        var result = await _roleStore.RenameAsync(id, trimmed, cancellationToken);
+        UserResult result;
+        try
+        {
+            result = await _roleStore.RenameAsync(id, trimmed, cancellationToken);
+        }
+        catch (NotSupportedException)
+        {
+            return await RoleMutationNotSupportedAsync(cancellationToken);
+        }
         if (!result.IsSuccess)
         {
             EditingRoleId = id;
@@ -190,7 +211,15 @@ public sealed class IndexModel(
         var role = await _roleStore.GetAsync(id, cancellationToken);
         var name = role?.Name ?? id;
 
-        var result = await _roleStore.DeleteAsync(id, cancellationToken);
+        UserResult result;
+        try
+        {
+            result = await _roleStore.DeleteAsync(id, cancellationToken);
+        }
+        catch (NotSupportedException)
+        {
+            return await RoleMutationNotSupportedAsync(cancellationToken);
+        }
         if (!result.IsSuccess)
         {
             ActionErrors = result.ValidationErrors.Count > 0
@@ -221,6 +250,21 @@ public sealed class IndexModel(
             }, cancellationToken);
         }
 
+        await LoadAsync(cancellationToken);
+        return Partial("_RolesCatalogue", this);
+    }
+
+    /// <summary>
+    /// Shared response for the three mutating handlers when the backend
+    /// declares its roles externally (Microsoft Entra app roles live in
+    /// the application manifest). Surfaces the friendly explanation and
+    /// re-renders the catalogue partial instead of letting the
+    /// <see cref="NotSupportedException"/> the Graph adapters throw bubble
+    /// up as a 500.
+    /// </summary>
+    private async Task<IActionResult> RoleMutationNotSupportedAsync(CancellationToken cancellationToken)
+    {
+        ActionErrors = [_l["Roles.Error.MutationNotSupported"].Value];
         await LoadAsync(cancellationToken);
         return Partial("_RolesCatalogue", this);
     }

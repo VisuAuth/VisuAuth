@@ -81,7 +81,7 @@ No `AddIdentity`, no `AddDbContext`, no JWT issuer, no OAuth providers. Everythi
 | `SupportsSessionRevocation` | `true` | Graph `revokeSignInSessions` invalidates every refresh token. |
 | `SupportsExternalProviders` | `false` | Federated providers (Google, Facebook, Apple) ARE supported by External ID, but they're configured at the tenant level and rendered by the hosted Microsoft login page — not by VisuAuth's providers admin section. |
 | `SupportsCustomClaims` | `true` | Graph extension properties + the user-attribute collection External ID ships with (v0.4 surfaces in the UI). |
-| `SupportsAuditLog` | `true` | Entra has its own auditLogs API. Opt in with `AddVisuAuthEntraSignInAuditLog()` to surface sign-in events on `/admin/audit-log` (needs `AuditLog.Read.All` + Entra ID P1). |
+| `SupportsAuditLog` | `true` | Entra has its own auditLogs API. Opt in with `AddVisuAuthEntraAuditLog()` to surface sign-in + directory-change events on `/admin/audit-log` (needs `AuditLog.Read.All` + Entra ID P1). |
 | `EmailDomainSuffix` | from `EntraExternalOptions.DefaultEmailDomain` | When set, locks the Create-User email input to that suffix. |
 
 Every flag above is a real decision point in the UI — flipping one reshapes what the admin sees.

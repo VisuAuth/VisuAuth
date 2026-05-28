@@ -85,24 +85,24 @@ immediate next step. Updated as PRs land. Long-term direction lives in
 
 ## In flight
 
-- **Entra audit reader — directoryAudits** (`feat/entra-directory-audit`)
-  — completes the audit reader shipped in #43 (which was sign-ins only).
-  `EntraAuditReader` (renamed from `EntraSignInAuditReader`, pre-release
-  so safe) now merges BOTH `/auditLogs/signIns` and
-  `/auditLogs/directoryAudits` (user CRUD, role assignments — including
-  VisuAuth's own admin operations as Graph logs them) onto
-  `/visuauth/admin/audit-log`. Action-aware source routing: a login code
-  → sign-ins only; any other action → directory only; no action → both,
-  merged newest-first (page-1 semantics). Sign-in actor search is pushed
-  to Graph; directory actor search is client-side (nested
-  `initiatedBy/user` path isn't reliably filterable). `ListDistinctActions`
-  unions the two login codes with the distinct directory activity names
-  from a bounded scan. The opt-in extension is renamed
-  `AddVisuAuthEntraSignInAuditLog` → `AddVisuAuthEntraAuditLog`. New pure
-  `EntraDirectoryAuditMapper`. Both Entra samples updated. Tests: the new
-  mapper + a comprehensive reader suite (merge ordering, action routing,
-  client-side actor filter, per-source 403 degradation, distinct-action
-  union, day rollup).
+- **Multi-domain dropdown on `/admin/users/new`** (`feat/entra-multi-domain`)
+  — turns the single locked `EmailDomainSuffix` input into a domain
+  dropdown when an Entra tenant exposes two or more verified domains.
+  New optional `IEmailDomainSource` contract in `VisuAuth.Abstractions`;
+  the create-user page consults it async and renders a `<select>` of
+  verified domains (local-part input + `@` + dropdown) only when 2+ come
+  back. `EntraEmailDomainSource` (in `VisuAuth.Entra`, registered
+  singleton) backs it via Graph `/domains`, cached for the process
+  lifetime (empty results aren't cached so a missing `Domain.Read.All`
+  retries). The chosen domain is validated server-side against the
+  rendered choices so a tampered POST can't inject an arbitrary domain;
+  a full address typed with `@` always passes through untouched, and with
+  no source registered (ASP.NET Identity, single-domain tenants) the
+  existing locked-suffix / free-text UX is unchanged. i18n keys for both
+  cultures. Tests: `EntraEmailDomainSource` over `FakeGraphHandler`
+  (projection, 403 degrade, cache + no-cache-on-empty), the DI
+  registration, and `NewModel` email resolution (dropdown wins, tampered
+  domain rejected, full address untouched, suffix fallback).
 
 ---
 
@@ -112,8 +112,10 @@ Roadmap row from CLAUDE.md §13 is *"Microsoft Entra External ID
 adapter, profile / sessions management, bulk operations, view-level
 customization"*. The External adapter shipped across PRs A/B/C
 (#36 EntraCore extraction, #37 CRUD adapter, #38 OIDC sign-in) plus two
-admin-robustness fixes (#39 roles, #40 external-providers); PR D
-(profile sync) is in flight. Other concrete ideas surfaced during v0.2:
+admin-robustness fixes (#39 roles, #40 external-providers) and PR D
+(#41 profile sync). Follow-ups #42 (ResetTwoFactor), #43 (sign-in audit
+reader) and #44 (directoryAudits merge) also landed. Other concrete
+ideas surfaced during v0.2:
 
 1. **User-flow management admin UI** *(blocked on Graph v1.0)* — the
    originally-envisioned `/visuauth/admin/entra-external/user-flows`
@@ -136,11 +138,6 @@ admin-robustness fixes (#39 roles, #40 external-providers); PR D
    future stores with the same shape work natively. Breaking change
    on the abstraction; flagged for v0.3 since the v0.2 surface is now
    public.
-6. **Multi-domain dropdown on `/admin/users/new`** — replaces the
-   single-default `EmailDomainSuffix` UI with a dropdown of verified
-   domains for the Entra adapter (calls Graph `/domains` once at
-   startup, caches). Optional; the single-default already covers the
-   90% case.
 
 No branches queued yet — each item lands as its own feature branch +
 PR per CLAUDE.md §11. Owner picks order.

@@ -1450,6 +1450,40 @@ body {
     white-space: nowrap;
 }
 
+/* The literal "@" separating the local-part input from the domain dropdown
+   in the multi-domain create-user field. Sits flush between the two without
+   the surface fill of a suffix chip. */
+.va-input-group-at {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    padding: 0 0.4rem;
+    color: var(--visuauth-muted, #6b7280);
+    font-family: var(--visuauth-mono, ui-monospace, SFMono-Regular, monospace);
+    font-size: 0.92em;
+    white-space: nowrap;
+    user-select: none;
+}
+
+.va-input-group-select {
+    flex: 0 0 auto;
+    min-width: 0;
+    max-width: 60%;
+    border: none;
+    border-left: 1px solid var(--visuauth-border, #e2e6ed);
+    background: var(--visuauth-surface, #f5f6f8);
+    color: var(--visuauth-fg, #1f2430);
+    border-radius: 0;
+    outline: none;
+    box-shadow: none;
+    cursor: pointer;
+}
+
+.va-input-group-select:focus {
+    outline: none;
+    box-shadow: none;
+}
+
 .va-field-hint {
     display: block;
     margin-top: 0.3rem;

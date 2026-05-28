@@ -339,5 +339,7 @@
   "Users.New.EmailLocalPartHint": "Local part only — letters, digits, dot, underscore, hyphen, percent, plus.",
   "Users.New.EmailLocalPartAria": "Email local part (before the @)",
   "Users.New.EmailDomainAria": "Fixed verified domain",
-  "Users.New.EmailDomainLockedHint": "Domain is fixed by the backend — type only the local part. Multi-domain tenants can override via the API."
+  "Users.New.EmailDomainLockedHint": "Domain is fixed by the backend — type only the local part. Enter a full address to use a different verified domain.",
+  "Users.New.EmailDomainSelectAria": "Verified domain",
+  "Users.New.EmailDomainSelectHint": "Type the local part and choose one of the tenant's verified domains."
 }

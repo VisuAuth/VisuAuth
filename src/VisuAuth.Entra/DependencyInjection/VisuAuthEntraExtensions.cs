@@ -121,6 +121,14 @@ public static class VisuAuthEntraExtensions
         services.TryAddScoped<IUserStore, EntraUserStore>();
         services.TryAddScoped<IRoleStore, EntraRoleStore>();
         services.TryAddScoped<IAuthenticationFlow, EntraAuthenticationFlow>();
+        // Surfaces the tenant's verified domains (Graph /domains, cached)
+        // so the admin Create-User form can render a domain dropdown for a
+        // multi-domain tenant instead of the single configured suffix.
+        // Singleton — the list is process-stable and the form calls it on
+        // every render. Optional from the page's perspective (it resolves
+        // IEmailDomainSource with a null default), so a tenant with one
+        // domain keeps the existing locked-suffix UX.
+        services.TryAddSingleton<IEmailDomainSource, EntraEmailDomainSource>();
         // The shared EntraNoOpExternalLoginFlow takes a UserBackendCapabilities
         // in its ctor so each adapter (Workforce / External) can hand its
         // own caps bag — the LoginModel reads Capabilities.SupportsExternalProviders

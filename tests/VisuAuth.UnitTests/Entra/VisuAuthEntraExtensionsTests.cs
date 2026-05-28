@@ -116,6 +116,25 @@ public sealed class VisuAuthEntraExtensionsTests
         return services;
     }
 
+    [Fact]
+    public void AddVisuAuthEntra_RegistersEmailDomainSource()
+    {
+        // The multi-domain create-user dropdown resolves IEmailDomainSource
+        // from DI; the Entra adapter must wire its Graph-backed implementation
+        // so a multi-domain tenant gets the dropdown out of the box.
+        var services = BaseServices();
+        services.AddVisuAuthEntra(o =>
+        {
+            o.TenantId = "t";
+            o.ClientId = "c";
+            o.ClientSecret = "s";
+        });
+
+        services.Should().ContainSingle(d =>
+            d.ServiceType == typeof(IEmailDomainSource)
+            && d.ImplementationType == typeof(EntraEmailDomainSource));
+    }
+
     private static void AssertEntraSurfaceRegistered(IServiceCollection services)
     {
         using var sp = services.BuildServiceProvider();

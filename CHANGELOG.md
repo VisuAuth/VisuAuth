@@ -18,6 +18,27 @@ Working toward [`0.2.0`](#020--planned). `<VersionPrefix>` in
 
 ### Added
 
+- **Multi-domain email dropdown on `/admin/users/new`.** When the backend
+  exposes two or more verified domains the create-user form now renders a
+  local-part input plus a domain `<select>` instead of the single locked
+  suffix, so operators on a multi-domain Entra tenant choose which verified
+  domain a new mailbox lives under.
+  - New optional `IEmailDomainSource` contract in `VisuAuth.Abstractions`.
+    The create page resolves it from DI and only switches to the dropdown
+    when 2+ domains come back; with no source registered (ASP.NET Identity)
+    or a single-domain tenant, the existing locked-suffix / free-text UX is
+    untouched. The chosen domain is validated server-side against the
+    rendered choices, and a full address typed with `@` always passes
+    through unchanged.
+  - `EntraEmailDomainSource` (`VisuAuth.Entra`, registered as a singleton)
+    backs it via Microsoft Graph `/domains` — verified domains only, primary
+    first, cached for the process lifetime. An empty/failed fetch (e.g.
+    missing `Domain.Read.All`) is not cached, so a later render retries and
+    the form degrades gracefully rather than 500ing.
+  - i18n keys for `en` + `pt-BR`. Tests: `EntraEmailDomainSource` over
+    `FakeGraphHandler` (projection, 403 degrade, cache + no-cache-on-empty),
+    the DI registration, and `NewModel` email resolution.
+
 - **Entra audit reader** (`VisuAuth.EntraCore`). Opt-in `IAuditReader`
   over Microsoft Entra's audit logs: call
   `services.AddVisuAuthEntraAuditLog()` (after `AddVisuAuthEntra` /

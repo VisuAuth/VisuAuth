@@ -16,12 +16,19 @@ public sealed class NewModel(
     IUserStore userStore,
     IRoleStore roleStore,
     IAuditWriter auditWriter,
-    IStringLocalizer<AdminSharedResources> localizer) : PageModel
+    IStringLocalizer<AdminSharedResources> localizer,
+    IEmailDomainSource? emailDomainSource = null) : PageModel
 {
     private readonly IUserStore _userStore = userStore ?? throw new ArgumentNullException(nameof(userStore));
     private readonly IRoleStore _roleStore = roleStore ?? throw new ArgumentNullException(nameof(roleStore));
     private readonly IAuditWriter _audit = auditWriter ?? throw new ArgumentNullException(nameof(auditWriter));
     private readonly IStringLocalizer<AdminSharedResources> _l = localizer ?? throw new ArgumentNullException(nameof(localizer));
+
+    // Optional: only Entra-style adapters register an IEmailDomainSource.
+    // A null source keeps the existing single-suffix / free-text UX, so the
+    // ASP.NET Identity adapter (and any consumer that never wires one) is
+    // unaffected by the multi-domain dropdown.
+    private readonly IEmailDomainSource? _emailDomainSource = emailDomainSource;
 
     [BindProperty]
     public CreateUserForm Form { get; set; } = new();
@@ -30,6 +37,15 @@ public sealed class NewModel(
 
     /// <summary>All roles known to the backend, used to populate the role checkbox list.</summary>
     public IReadOnlyList<RoleSummary> AvailableRoles { get; private set; } = [];
+
+    /// <summary>
+    /// Verified email domains the admin can pick from. Populated only when an
+    /// <see cref="IEmailDomainSource"/> is registered and the tenant exposes
+    /// two or more domains; otherwise empty and the form falls back to the
+    /// single locked suffix (<see cref="UserBackendCapabilities.EmailDomainSuffix"/>)
+    /// or free-text entry.
+    /// </summary>
+    public IReadOnlyList<string> EmailDomainChoices { get; private set; } = [];
 
     /// <summary>Validation / business errors from the most recent submission.</summary>
     public IReadOnlyList<string> Errors { get; private set; } = [];
@@ -50,6 +66,7 @@ public sealed class NewModel(
         }
 
         await LoadRolesAsync(cancellationToken);
+        await LoadEmailDomainsAsync(cancellationToken);
         return Page();
     }
 
@@ -59,6 +76,7 @@ public sealed class NewModel(
         {
             Errors = [_l["Users.Error.RegistrationNotSupported"].Value];
             await LoadRolesAsync(cancellationToken);
+            await LoadEmailDomainsAsync(cancellationToken);
             return Page();
         }
 
@@ -69,20 +87,13 @@ public sealed class NewModel(
                 .SelectMany(kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage))
                 .ToList();
             await LoadRolesAsync(cancellationToken);
+            await LoadEmailDomainsAsync(cancellationToken);
             return Page();
         }
 
-        // When the backend declares an EmailDomainSuffix the form renders a
-        // locked-suffix input (only the local part is editable). The browser
-        // posts back just the local part, so we re-append the suffix here
-        // before handing the command to the store. A power-user / API
-        // caller who passes a full email already containing @ bypasses
-        // this branch — useful for the rare multi-domain tenant where the
-        // operator wants a different verified domain than the default.
-        var rawEmail = Form.Email?.Trim() ?? string.Empty;
-        var resolvedEmail = Capabilities.EmailDomainSuffix is { Length: > 0 } suffix && !rawEmail.Contains('@', StringComparison.Ordinal)
-            ? rawEmail + suffix
-            : rawEmail;
+        await LoadEmailDomainsAsync(cancellationToken);
+
+        var resolvedEmail = ResolveEmail();
 
         var command = new CreateUserCommand
         {
@@ -205,9 +216,57 @@ public sealed class NewModel(
         }
     }
 
+    // Surfaces the tenant's verified domains for the dropdown. Only meaningful
+    // with 2+ domains — a single-domain tenant keeps the locked-suffix UX, and
+    // a missing source (the ASP.NET Identity adapter) leaves the list empty.
+    private async Task LoadEmailDomainsAsync(CancellationToken cancellationToken)
+    {
+        if (_emailDomainSource is null)
+        {
+            return;
+        }
+
+        var domains = await _emailDomainSource.GetEmailDomainsAsync(cancellationToken);
+        EmailDomainChoices = domains.Count >= 2 ? domains : [];
+    }
+
+    // Combines the editable local part with the chosen domain. Precedence:
+    //   1. A multi-domain dropdown selection (validated against EmailDomainChoices
+    //      so a tampered POST can't inject an arbitrary domain).
+    //   2. The single locked EmailDomainSuffix capability.
+    //   3. Free text exactly as typed (already contains '@', or no suffix at all).
+    private string ResolveEmail()
+    {
+        var rawEmail = Form.Email?.Trim() ?? string.Empty;
+
+        // A value already containing '@' is a full address — never re-append.
+        if (rawEmail.Contains('@', StringComparison.Ordinal))
+        {
+            return rawEmail;
+        }
+
+        var chosenDomain = Form.EmailDomain?.Trim();
+        if (!string.IsNullOrEmpty(chosenDomain) &&
+            EmailDomainChoices.Contains(chosenDomain, StringComparer.OrdinalIgnoreCase))
+        {
+            return rawEmail + "@" + chosenDomain;
+        }
+
+        return Capabilities.EmailDomainSuffix is { Length: > 0 } suffix
+            ? rawEmail + suffix
+            : rawEmail;
+    }
+
     public sealed class CreateUserForm
     {
         public string? Email { get; set; }
+
+        /// <summary>
+        /// Verified domain picked from the multi-domain dropdown (without the
+        /// leading <c>@</c>). Ignored when the tenant exposes a single domain
+        /// or none. Validated against the rendered choices server-side.
+        /// </summary>
+        public string? EmailDomain { get; set; }
 
         public string? UserName { get; set; }
 

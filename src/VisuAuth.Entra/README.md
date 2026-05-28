@@ -117,7 +117,9 @@ Walkthrough that takes a fresh Microsoft account to a working VisuAuth.Entra in 
    - `User.ReadWrite.All`
    - `AppRoleAssignment.ReadWrite.All`
    - `Application.Read.All`
-3. **Grant admin consent for {your tenant}** at the top of the permissions table. Each row should show a green ✓ "Granted" check.
+3. Optional, for the multi-domain Create-User dropdown:
+   - `Domain.Read.All` — lets `/admin/users/new` offer a dropdown of the tenant's verified domains. Skip it on a single-domain tenant; without it the form falls back to the locked suffix.
+4. **Grant admin consent for {your tenant}** at the top of the permissions table. Each row should show a green ✓ "Granted" check.
 
 > Forgetting "Grant admin consent" is the single most common setup mistake — without it Graph returns `Authorization_RequestDenied` on every call.
 
@@ -221,6 +223,10 @@ To create users in a non-default verified domain, pass the full email through th
 
 To go back to a free-text email input, remove the option (`dotnet user-secrets remove "VisuAuth:Entra:DefaultEmailDomain"`).
 
+### Automatic domain dropdown
+
+When the tenant has **two or more verified domains**, the Create-User form upgrades the locked suffix to a dropdown automatically — no extra configuration. The adapter registers an `IEmailDomainSource` (`EntraEmailDomainSource`) that reads the verified domains from Graph `/domains` (primary first, cached for the process lifetime) and the page renders a local-part input plus a domain `<select>`. The selected domain is validated server-side against the offered list before the address is assembled, so a tampered POST can't inject an unverified domain. A single-domain tenant keeps the locked-suffix UX above. Requires the `Domain.Read.All` application permission; without it the fetch fails quietly and the form falls back to the single suffix.
+
 ---
 
 ## Operations supported
@@ -262,7 +268,7 @@ Every method returns either `RedirectToExternalProvider` (`SignInWithPasswordAsy
 | `UPN` / `mail` not editable from the admin UI | Graph rejects PATCH on these for B2B externals (`*#EXT#@*`) with 403, even with `User.ReadWrite.All` | Edit in the Entra portal, or POST `PATCH /users/{id}` from custom code that branches on member-vs-guest |
 | `signInActivity` is not in the default user `$select` | Field requires `AuditLog.Read.All` + Entra ID P1 license; free tenants get a 403 on the whole list call | `UserSummary.LastSignInAt` stays null; UI renders "—". Subclass / override the store if you're on P1+ |
 | Pagination treats every list call as page 1 | Graph paginates with `@odata.nextLink` cursors, not numeric pages; the v0.2 `PagedResult.Page` contract is 1-based | Use search / filter to refine. v0.3 adds cursor-based paging |
-| Multi-domain UI picks ONE default | The HTML form binds a single fixed suffix | API can override (pass a full email in `CreateUserCommand.Email`). v0.x may add a dropdown of verified domains |
+| Single-domain UI locks ONE suffix | With exactly one verified domain the form binds a single fixed suffix | Multi-domain tenants get a dropdown automatically (needs `Domain.Read.All`); or pass a full email in `CreateUserCommand.Email` to override |
 | End-user `/visuauth/login` shows "use external provider" with no provider button | VisuAuth.Entra doesn't implement OIDC — the consumer wires `Microsoft.Identity.Web` to host the actual login | Add `Microsoft.Identity.Web` and configure a sign-in route (`/signin-microsoft` etc.). The VisuAuth login page is a hint, not the auth surface |
 
 ---

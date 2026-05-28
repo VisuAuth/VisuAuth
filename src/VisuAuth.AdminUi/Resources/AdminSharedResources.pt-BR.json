@@ -339,5 +339,7 @@
   "Users.New.EmailLocalPartHint": "Apenas a parte local — letras, dígitos, ponto, sublinhado, hífen, porcento, mais.",
   "Users.New.EmailLocalPartAria": "Parte local do e-mail (antes do @)",
   "Users.New.EmailDomainAria": "Domínio verificado fixo",
-  "Users.New.EmailDomainLockedHint": "O domínio é fixado pelo backend — digite apenas a parte local. Tenants com múltiplos domínios podem sobrescrever via API."
+  "Users.New.EmailDomainLockedHint": "O domínio é fixado pelo backend — digite apenas a parte local. Informe um endereço completo para usar outro domínio verificado.",
+  "Users.New.EmailDomainSelectAria": "Domínio verificado",
+  "Users.New.EmailDomainSelectHint": "Digite a parte local e escolha um dos domínios verificados do tenant."
 }

@@ -43,7 +43,57 @@
 
     <form method="post" autocomplete="off">
         <div class="va-form-grid">
-            @if (Model.Capabilities.EmailDomainSuffix is { Length: > 0 } emailSuffix)
+            @if (Model.EmailDomainChoices.Count >= 2)
+            {
+                @* Tenant exposes several verified domains (multi-domain Entra
+                   directory). Offer a local-part input plus a domain dropdown
+                   so the operator picks which verified domain the new mailbox
+                   lives under. type="text" because the local part has no "@".
+                   The pagemodel joins local-part + "@" + selected domain after
+                   validating the choice against EmailDomainChoices. *@
+                @* A <div> (not a wrapping <label>) so the <select> isn't
+                   nested inside a label element — that keeps each control's
+                   accessible name unambiguous (the local part gets an explicit
+                   <label for>, the domain select gets its own aria-label, same
+                   as the standalone filter selects on the Users list). *@
+                <div class="va-field">
+                    <label class="va-field-label" for="va-newuser-email-local">@Ls["Common.LabelEmail"] <span class="va-required">*</span></label>
+                    <div class="va-input-group">
+                        <input id="va-newuser-email-local"
+                               type="text"
+                               name="Form.Email"
+                               value="@Model.Form.Email"
+                               required
+                               autocomplete="off"
+                               spellcheck="false"
+                               pattern="[A-Za-z0-9._%+\-]+"
+                               title="@Ls["Users.New.EmailLocalPartHint"]"
+                               class="va-input va-input-group-input" />
+                        <span class="va-input-group-at" aria-hidden="true">@@</span>
+                        @* A real (visually-hidden) <label for> gives the select
+                           its accessible name without an aria-label override,
+                           which keeps the WCAG "label in name" check happy. *@
+                        <label for="va-newuser-email-domain" class="va-sr-only">@Ls["Users.New.EmailDomainSelectAria"]</label>
+                        <select id="va-newuser-email-domain"
+                                name="Form.EmailDomain"
+                                class="va-input va-input-group-select">
+                            @foreach (var domain in Model.EmailDomainChoices)
+                            {
+                                if (string.Equals(domain, Model.Form.EmailDomain, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    <option value="@domain" selected>@domain</option>
+                                }
+                                else
+                                {
+                                    <option value="@domain">@domain</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <span class="va-field-hint va-muted">@Ls["Users.New.EmailDomainSelectHint"]</span>
+                </div>
+            }
+            else if (Model.Capabilities.EmailDomainSuffix is { Length: > 0 } emailSuffix)
             {
                 @* Backend reports a fixed verified domain (e.g. Entra ID
                    workforce). Lock the suffix visually and only let the

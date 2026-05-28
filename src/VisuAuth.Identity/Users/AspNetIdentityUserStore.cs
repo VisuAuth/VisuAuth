@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using VisuAuth.Abstractions.Capabilities;
 using VisuAuth.Abstractions.Common;
 using VisuAuth.Abstractions.Users;
+using VisuAuth.Identity.Common;
 using VisuAuth.Identity.MultiTenancy;
 
 namespace VisuAuth.Identity.Users;
@@ -171,20 +172,25 @@ public sealed class AspNetIdentityUserStore<TUser>(
 
         var total = await query.CountAsync(cancellationToken);
 
-        var page = Math.Max(filter.Page, 1);
+        // The cursor encodes the offset of the page to fetch; an absent /
+        // tampered cursor decodes to 0 (the first page). EF has random access,
+        // so this stays a plain Skip/Take — the offset is just expressed as the
+        // opaque forward cursor the abstraction now speaks.
+        var offset = OffsetCursor.Decode(filter.Cursor);
         var pageSize = Math.Clamp(filter.PageSize, 1, 200);
 
         var users = await query
-            .Skip((page - 1) * pageSize)
+            .Skip(offset)
             .Take(pageSize)
             .ToListAsync(cancellationToken);
 
+        var nextOffset = offset + users.Count;
         return new PagedResult<UserSummary>
         {
             Items = users.Select(MapToSummary).ToList(),
-            Total = total,
-            Page = page,
-            PageSize = pageSize,
+            // Only hand back a cursor when rows remain beyond this page.
+            NextCursor = nextOffset < total ? OffsetCursor.Encode(nextOffset) : null,
+            TotalCount = total,
         };
     }
 

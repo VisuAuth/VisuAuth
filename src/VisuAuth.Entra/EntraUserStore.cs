@@ -29,15 +29,15 @@ namespace VisuAuth.Entra;
 /// <see cref="NotSupportedException"/> per the IUserStore contract.
 /// </para>
 /// <para>
-/// <b>Pagination caveat:</b> Graph's <c>/users</c> endpoint paginates with
-/// <c>@odata.nextLink</c> + skip tokens, not numeric page indices. The
-/// PagedResult contract VisuAuth ships uses 1-based pages — to keep the
-/// admin UI working without rewriting it, this implementation honours
-/// <see cref="UserFilter.PageSize"/> exactly and treats every call as
-/// "page 1". The admin can refine via search / filter (which DO push down
-/// to Graph) or raise <c>PageSize</c>. v0.3 will add cursor-based paging
-/// to the abstraction so the UI can render "next" buttons against the
-/// real Graph cursor.
+/// <b>Pagination:</b> Graph's <c>/users</c> endpoint paginates with
+/// <c>@odata.nextLink</c> + skip tokens, which maps directly onto the
+/// cursor-based <see cref="PagedResult{T}"/> contract. The first call applies
+/// <see cref="UserFilter.PageSize"/> as <c>$top</c>; the returned
+/// <see cref="PagedResult{T}.NextCursor"/> wraps Graph's continuation link
+/// (validated on the way back in — see
+/// <see cref="VisuAuth.EntraCore.Infrastructure.GraphPageCursor"/>). Graph
+/// doesn't return a total alongside a page, so
+/// <see cref="PagedResult{T}.TotalCount"/> stays <see langword="null"/>.
 /// </para>
 /// <para>
 /// <b>Failure mapping:</b> Graph errors arrive as
@@ -152,21 +152,35 @@ public sealed class EntraUserStore(
 
         try
         {
-            var response = await _graph.Users.GetAsync(rc =>
+            UserCollectionResponse? response;
+            if (GraphPageCursor.TryDecode(filter.Cursor, _options.GraphBaseUrl, out var nextLink))
             {
-                rc.QueryParameters.Top = pageSize;
-                rc.QueryParameters.Select = EntraUserMapper.SummarySelect.Split(',');
-                var graphFilter = EntraUserMapper.BuildGraphFilter(filter);
-                if (graphFilter is not null)
+                // Continuation request: the skiptoken URL already carries the
+                // original $top / $filter / $select, so we replay it as-is and
+                // only re-assert the consistency level (a header, so not part
+                // of the URL) in case the original query was an advanced one.
+                response = await _graph.Users
+                    .WithUrl(nextLink)
+                    .GetAsync(rc => rc.Headers.Add("ConsistencyLevel", "eventual"), cancellationToken);
+            }
+            else
+            {
+                response = await _graph.Users.GetAsync(rc =>
                 {
-                    rc.QueryParameters.Filter = graphFilter;
-                    // Advanced query capabilities (filter, count, search)
-                    // require eventual consistency level on directory
-                    // objects. Without this header Graph rejects the call
-                    // for anything beyond the trivial $select.
-                    rc.Headers.Add("ConsistencyLevel", "eventual");
-                }
-            }, cancellationToken);
+                    rc.QueryParameters.Top = pageSize;
+                    rc.QueryParameters.Select = EntraUserMapper.SummarySelect.Split(',');
+                    var graphFilter = EntraUserMapper.BuildGraphFilter(filter);
+                    if (graphFilter is not null)
+                    {
+                        rc.QueryParameters.Filter = graphFilter;
+                        // Advanced query capabilities (filter, count, search)
+                        // require eventual consistency level on directory
+                        // objects. Without this header Graph rejects the call
+                        // for anything beyond the trivial $select.
+                        rc.Headers.Add("ConsistencyLevel", "eventual");
+                    }
+                }, cancellationToken);
+            }
 
             var items = (response?.Value ?? [])
                 .Select(EntraUserMapper.ToSummary)
@@ -175,21 +189,18 @@ public sealed class EntraUserStore(
             return new PagedResult<UserSummary>
             {
                 Items = items,
-                // Graph doesn't return an exact total without an extra
-                // $count call. Treating it as items.Count is honest for
-                // page 1 and keeps the admin UI from rendering a
-                // "showing 1-25 of ?" line with a misleading number.
-                // PagedResult.HasNext = false when Total <= PageSize,
-                // which is the right default for the no-cursor v0.2.
-                Total = items.Count,
-                Page = 1,
-                PageSize = pageSize,
+                // Graph hands back a continuation link when more rows exist;
+                // wrap it as our opaque cursor. No cheap total is available
+                // (a $count call is a separate round-trip), so TotalCount
+                // stays null and the UI shows a count-only "showing N" line.
+                NextCursor = GraphPageCursor.Encode(response?.OdataNextLink),
+                TotalCount = null,
             };
         }
         catch (ODataError ex)
         {
             _logger.GraphListFailed(ex, ex.Error?.Message);
-            return PagedResult<UserSummary>.Empty(1, pageSize);
+            return PagedResult<UserSummary>.Empty();
         }
     }
 

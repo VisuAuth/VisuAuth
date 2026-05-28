@@ -128,8 +128,8 @@ public sealed class EntraUserStoreGraphTests
         page.Items.Should().HaveCount(2);
         page.Items[0].Email.Should().Be("alice@contoso.com");
         page.Items[1].IsEnabled.Should().BeFalse("bob's accountEnabled is false in the fixture");
-        page.Page.Should().Be(1);
-        page.PageSize.Should().Be(50);
+        page.TotalCount.Should().BeNull("Graph doesn't return a cheap total alongside a page");
+        page.NextCursor.Should().BeNull("the fixture has no @odata.nextLink, so this is the last page");
 
         var listRequest = handler.RecordedRequests.Single();
         // Query string has `$` URL-encoded as %24. We assert on the
@@ -151,7 +151,55 @@ public sealed class EntraUserStoreGraphTests
         var page = await sut.ListAsync(new UserFilter());
 
         page.Items.Should().BeEmpty("Graph failures degrade gracefully — empty page beats a 500 for the admin UI");
-        page.Total.Should().Be(0);
+        page.NextCursor.Should().BeNull();
+        page.TotalCount.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task ListAsync_WhenGraphReturnsNextLink_ExposesCursor_AndFollowingItReplaysTheSkiptokenUrl()
+    {
+        const string firstPageJson = """
+            {
+              "@odata.nextLink": "https://graph.microsoft.com/v1.0/users?$skiptoken=OPAQUE_TOKEN_123",
+              "value": [
+                { "id": "u-1", "userPrincipalName": "a@contoso.com", "accountEnabled": true, "createdDateTime": "2026-01-01T00:00:00Z" }
+              ]
+            }
+            """;
+        var handler = new FakeGraphHandler().SetupGet("/users", firstPageJson);
+        var sut = BuildStore(handler);
+
+        var first = await sut.ListAsync(new UserFilter { PageSize = 1 });
+        first.NextCursor.Should().NotBeNull("Graph returned an @odata.nextLink, so a cursor must be surfaced");
+
+        // Following the cursor replays Graph's continuation URL verbatim —
+        // the skiptoken must survive the opaque-cursor round-trip.
+        await sut.ListAsync(new UserFilter { PageSize = 1, Cursor = first.NextCursor });
+
+        var followUp = handler.RecordedRequests[^1];
+        Uri.UnescapeDataString(followUp.RequestUri!.Query)
+            .Should().Contain("$skiptoken=OPAQUE_TOKEN_123");
+    }
+
+    [Fact]
+    public async Task ListAsync_WithCursorForADifferentHost_IgnoresItAndFetchesFirstPage()
+    {
+        // A tampered cursor pointing off the Graph origin must never be
+        // followed (it would leak the bearer token). The store falls back to a
+        // normal first-page request instead.
+        var handler = new FakeGraphHandler().SetupGet("/users", UserListJson);
+        var sut = BuildStore(handler);
+
+        var evilCursor = Convert.ToBase64String(
+            System.Text.Encoding.UTF8.GetBytes("https://evil.example.com/users?$skiptoken=x"))
+            .TrimEnd('=').Replace('+', '-').Replace('/', '_');
+
+        var page = await sut.ListAsync(new UserFilter { PageSize = 50, Cursor = evilCursor });
+
+        page.Items.Should().HaveCount(2, "the off-origin cursor is rejected and the first page is fetched");
+        var request = handler.RecordedRequests.Single();
+        request.RequestUri!.Host.Should().Be("graph.microsoft.com",
+            "the request must target Graph, never the attacker host in the tampered cursor");
     }
 
     [Fact]

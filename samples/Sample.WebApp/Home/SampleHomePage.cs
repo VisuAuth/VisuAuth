@@ -40,7 +40,7 @@ internal static class SampleHomePage
     private static async Task<UserSummary?> ResolveFirstUserAsync(IUserStore userStore, CancellationToken cancellationToken)
     {
         var page = await userStore.ListAsync(
-            new UserFilter { Page = 1, PageSize = 1, SortBy = UserSortBy.Email },
+            new UserFilter { PageSize = 1, SortBy = UserSortBy.Email },
             cancellationToken);
         return page.Items.Count > 0 ? page.Items[0] : null;
     }

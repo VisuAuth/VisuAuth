@@ -27,10 +27,14 @@ namespace VisuAuth.EntraCore.Auditing;
 /// directory only; no action → both, merged by timestamp DESC.
 /// </para>
 /// <para>
-/// <b>Page-1 semantics.</b> Graph paginates with skip tokens, not numeric
-/// pages (same limitation as the Entra user list). <see cref="ListAsync"/>
-/// fetches up to <see cref="AuditFilter.PageSize"/> from each queried
-/// source, merges, sorts newest-first, and returns the top page. Actor
+/// <b>Single-page semantics.</b> <see cref="ListAsync"/> fetches up to
+/// <see cref="AuditFilter.PageSize"/> from each queried source, merges, sorts
+/// newest-first, and returns the top slice. It does not expose a forward
+/// cursor (<see cref="PagedResult{T}.NextCursor"/> is always
+/// <see langword="null"/>): the two Graph sources each have their own skip
+/// token and the results are interleaved client-side, so there's no single
+/// continuation token that would page the merged stream correctly. Operators
+/// narrow the window with the date / action / actor filters instead. Actor
 /// search is pushed to Graph for sign-ins (top-level
 /// <c>userPrincipalName</c>) and applied client-side for directory audits
 /// (whose initiator UPN is a nested path Graph won't reliably filter).
@@ -95,9 +99,11 @@ public sealed class EntraAuditReader(
         return new PagedResult<AuditEntryView>
         {
             Items = page,
-            Total = page.Count,
-            Page = 1,
-            PageSize = pageSize,
+            // Forward-only cursor doesn't fit a client-side merge of two
+            // independently-tokenised Graph sources, and Graph gives no cheap
+            // total — so this is a single page with no continuation.
+            NextCursor = null,
+            TotalCount = null,
         };
     }
 

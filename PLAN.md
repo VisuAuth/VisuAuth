@@ -85,24 +85,26 @@ immediate next step. Updated as PRs land. Long-term direction lives in
 
 ## In flight
 
-- **Multi-domain dropdown on `/admin/users/new`** (`feat/entra-multi-domain`)
-  — turns the single locked `EmailDomainSuffix` input into a domain
-  dropdown when an Entra tenant exposes two or more verified domains.
-  New optional `IEmailDomainSource` contract in `VisuAuth.Abstractions`;
-  the create-user page consults it async and renders a `<select>` of
-  verified domains (local-part input + `@` + dropdown) only when 2+ come
-  back. `EntraEmailDomainSource` (in `VisuAuth.Entra`, registered
-  singleton) backs it via Graph `/domains`, cached for the process
-  lifetime (empty results aren't cached so a missing `Domain.Read.All`
-  retries). The chosen domain is validated server-side against the
-  rendered choices so a tampered POST can't inject an arbitrary domain;
-  a full address typed with `@` always passes through untouched, and with
-  no source registered (ASP.NET Identity, single-domain tenants) the
-  existing locked-suffix / free-text UX is unchanged. i18n keys for both
-  cultures. Tests: `EntraEmailDomainSource` over `FakeGraphHandler`
-  (projection, 403 degrade, cache + no-cache-on-empty), the DI
-  registration, and `NewModel` email resolution (dropdown wins, tampered
-  domain rejected, full address untouched, suffix fallback).
+- **Cursor-based pagination** (`feat/cursor-pagination`) — replaces the
+  numeric `PagedResult.Page` / `PageSize` / `TotalPages` contract with a
+  forward, opaque `NextCursor` (string) plus an optional `TotalCount`
+  (int?). EF stores (`AspNetIdentityUserStore`, `EfCoreAuditStore`) encode
+  the next offset as the cursor and still supply a real `COUNT`; the Graph
+  user stores (`EntraUserStore`, `EntraExternalUserStore`) now follow
+  Graph's `@odata.nextLink` natively (no more "every call is page 1") with
+  `TotalCount` null. `EntraAuditReader` stays a single page (no cursor)
+  because it merges two independently-tokenised Graph sources client-side.
+  `UserFilter` / `AuditFilter` swap `Page` for `Cursor`. A new SSRF-safe
+  `GraphPageCursor` (EntraCore) validates a decoded continuation link
+  resolves to the configured Graph origin before `WithUrl(...)` is called,
+  so a tampered cursor can't redirect a bearer-token request off-host; EF
+  stores use an `OffsetCursor` codec that decodes garbage to page 1. Admin
+  pagers: "Next" follows the cursor (htmx + `hx-push-url`), "Previous"
+  steps back through browser history, and the count line shows the real
+  total when known or a per-page count otherwise. Tests: `OffsetCursor` +
+  `GraphPageCursor` codecs (round-trip, tamper/SSRF rejection), EF audit
+  cursor round-trip, Graph skiptoken round-trip + off-origin rejection.
+  **Breaking** on `VisuAuth.Abstractions` — flagged in CHANGELOG.
 
 ---
 
@@ -114,8 +116,8 @@ customization"*. The External adapter shipped across PRs A/B/C
 (#36 EntraCore extraction, #37 CRUD adapter, #38 OIDC sign-in) plus two
 admin-robustness fixes (#39 roles, #40 external-providers) and PR D
 (#41 profile sync). Follow-ups #42 (ResetTwoFactor), #43 (sign-in audit
-reader) and #44 (directoryAudits merge) also landed. Other concrete
-ideas surfaced during v0.2:
+reader), #44 (directoryAudits merge) and #45 (multi-domain create-user
+dropdown) also landed. Other concrete ideas surfaced during v0.2:
 
 1. **User-flow management admin UI** *(blocked on Graph v1.0)* — the
    originally-envisioned `/visuauth/admin/entra-external/user-flows`
@@ -133,11 +135,6 @@ ideas surfaced during v0.2:
    Graph call without restart. Possibly generalised to
    `VisuAuthAdapterConfigs` (section/key/value/isSecret) so future
    adapters (LDAP, Cognito, …) get the same admin surface for free.
-3. **Cursor-based pagination** — `PagedResult` evolves from numeric
-   pages to an opaque cursor (string) so Entra `@odata.nextLink` and
-   future stores with the same shape work natively. Breaking change
-   on the abstraction; flagged for v0.3 since the v0.2 surface is now
-   public.
 
 No branches queued yet — each item lands as its own feature branch +
 PR per CLAUDE.md §11. Owner picks order.

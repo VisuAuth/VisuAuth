@@ -223,7 +223,7 @@ Every method returns either `RedirectToExternalProvider` (`SignInWithPasswordAsy
 |---|---|---|
 | Identities / UPN / mail not editable from the admin UI | Rewriting a customer's identity from a generic admin form would lock them out of their own account | A dedicated email-change flow with verification mail is on the v0.4 roadmap. For now, edit identities in the Entra portal |
 | `signInActivity` is not in the default user `$select` | Field needs `AuditLog.Read.All` + Entra ID P1 license; free External tenants get a 403 on the whole list call | `UserSummary.LastSignInAt` stays null; UI renders "—". Subclass / override the store if you're on a paid tier |
-| Pagination treats every list call as page 1 | Graph paginates with `@odata.nextLink` cursors, not numeric pages; the v0.3 `PagedResult.Page` contract is 1-based | Use search / filter to refine. v0.4 adds cursor-based paging shared with the Workforce adapter |
+| User list shows no total count | Graph doesn't return a total alongside a page (a `$count` call is a separate round-trip) | `PagedResult.TotalCount` is null; the admin UI shows a per-page count and a working "Next" (cursor-based, following `@odata.nextLink`) instead of "page N of M" |
 | End-user `/visuauth/login` needs the OIDC wiring | The hosted sign-in button is wired by `VisuAuth.EntraExternal.Web` | Add the `VisuAuth.EntraExternal.Web` package + `AddVisuAuthEntraExternalSignIn(...)` (see its README) |
 | Federated identities (Google, Facebook, Apple) not surfaced in the admin UI | The `identities[]` array can hold multiple entries; v0.3 detail page renders only the local-account one | Configure providers in the Entra portal's "Identity providers" blade; v0.4+ may render the full identities list on the detail page |
 

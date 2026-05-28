@@ -145,8 +145,8 @@ public sealed class EntraExternalUserStoreGraphTests
         page.Items[0].Email.Should().Be("alice@personal.example",
             "list projection prefers identities over cpim UPN, same as the detail/summary paths");
         page.Items[1].IsEnabled.Should().BeFalse("bob's accountEnabled is false in the fixture");
-        page.Page.Should().Be(1);
-        page.PageSize.Should().Be(50);
+        page.TotalCount.Should().BeNull("Graph doesn't return a cheap total alongside a page");
+        page.NextCursor.Should().BeNull("the fixture has no @odata.nextLink, so this is the last page");
 
         var listRequest = handler.RecordedRequests.Single();
         var decoded = Uri.UnescapeDataString(listRequest.RequestUri!.Query);
@@ -169,7 +169,32 @@ public sealed class EntraExternalUserStoreGraphTests
 
         page.Items.Should().BeEmpty(
             "Graph failures degrade gracefully — empty page beats a 500 for the admin UI");
-        page.Total.Should().Be(0);
+        page.NextCursor.Should().BeNull();
+        page.TotalCount.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task ListAsync_WhenGraphReturnsNextLink_ExposesCursor_AndFollowingItReplaysTheSkiptokenUrl()
+    {
+        const string firstPageJson = """
+            {
+              "@odata.nextLink": "https://graph.microsoft.com/v1.0/users?$skiptoken=EXT_OPAQUE_456",
+              "value": [
+                { "id": "u-1", "userPrincipalName": "cpim_a@contoso.onmicrosoft.com", "accountEnabled": true, "createdDateTime": "2026-01-01T00:00:00Z" }
+              ]
+            }
+            """;
+        var handler = new FakeGraphHandler().SetupGet("/users", firstPageJson);
+        var sut = BuildStore(handler);
+
+        var first = await sut.ListAsync(new UserFilter { PageSize = 1 });
+        first.NextCursor.Should().NotBeNull("Graph returned an @odata.nextLink, so a cursor must be surfaced");
+
+        await sut.ListAsync(new UserFilter { PageSize = 1, Cursor = first.NextCursor });
+
+        var followUp = handler.RecordedRequests[^1];
+        Uri.UnescapeDataString(followUp.RequestUri!.Query)
+            .Should().Contain("$skiptoken=EXT_OPAQUE_456");
     }
 
     [Fact]

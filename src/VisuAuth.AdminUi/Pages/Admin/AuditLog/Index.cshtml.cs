@@ -43,12 +43,19 @@ public sealed class IndexModel(IAuditReader? auditReader = null) : PageModel
     [BindProperty(SupportsGet = true, Name = "to")]
     public DateTime? To { get; set; }
 
-    [BindProperty(SupportsGet = true, Name = "page")]
-    public int PageNumber { get; set; } = 1;
+    /// <summary>Opaque forward cursor from the previous page's NextCursor. Empty on the first page.</summary>
+    [BindProperty(SupportsGet = true, Name = "cursor")]
+    public string? Cursor { get; set; }
 
     public static int PageSize => DefaultPageSize;
 
-    public PagedResult<AuditEntryView> Result { get; private set; } = PagedResult<AuditEntryView>.Empty(pageSize: DefaultPageSize);
+    public PagedResult<AuditEntryView> Result { get; private set; } = PagedResult<AuditEntryView>.Empty();
+
+    /// <summary>
+    /// True when the current request carried a cursor (we're past the first
+    /// page). Drives the "Previous" control, which steps back through history.
+    /// </summary>
+    public bool HasPrevious => !string.IsNullOrEmpty(Cursor);
 
     /// <summary>Distinct action codes pulled from the store — feeds the filter dropdown.</summary>
     public IReadOnlyList<string> AvailableActions { get; private set; } = [];
@@ -83,7 +90,7 @@ public sealed class IndexModel(IAuditReader? auditReader = null) : PageModel
             From = From is { } from ? new DateTimeOffset(DateTime.SpecifyKind(from, DateTimeKind.Utc)) : null,
             To = To is { } to ? new DateTimeOffset(DateTime.SpecifyKind(to, DateTimeKind.Utc).AddDays(1).AddTicks(-1)) : null,
             Outcome = outcome,
-            Page = PageNumber < 1 ? 1 : PageNumber,
+            Cursor = Cursor,
             PageSize = DefaultPageSize,
         };
 

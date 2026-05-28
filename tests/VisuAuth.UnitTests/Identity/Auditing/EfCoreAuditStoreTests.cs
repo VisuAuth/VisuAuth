@@ -138,17 +138,22 @@ public sealed class EfCoreAuditStoreTests : IDisposable
 
         // Filter by action — only the 3 failures come back.
         var failures = await _store.ListAsync(new AuditFilter { Action = AuditActions.LoginFailed });
-        failures.Total.Should().Be(3);
+        failures.TotalCount.Should().Be(3);
         failures.Items.Should().OnlyContain(e => e.Action == AuditActions.LoginFailed);
 
-        // Pagination — page 2 of 5-each gives entries 6..7 (1-indexed) which
-        // is the older 2 entries in DESC order.
-        var page1 = await _store.ListAsync(new AuditFilter { Page = 1, PageSize = 5 });
+        // Cursor pagination — first page of 5 (of 7 total) hands back a cursor.
+        var page1 = await _store.ListAsync(new AuditFilter { PageSize = 5 });
         page1.Items.Should().HaveCount(5);
-        page1.Total.Should().Be(7);
-        page1.TotalPages.Should().Be(2);
+        page1.TotalCount.Should().Be(7);
+        page1.NextCursor.Should().NotBeNull("7 entries at a page size of 5 leaves a second page");
         // Newest first → first item is the LATEST failure entry.
         page1.Items[0].TargetId.Should().Be("f-2");
+
+        // Following the cursor returns the remaining 2 (oldest) entries and
+        // exhausts the set — no further cursor.
+        var page2 = await _store.ListAsync(new AuditFilter { PageSize = 5, Cursor = page1.NextCursor });
+        page2.Items.Should().HaveCount(2);
+        page2.NextCursor.Should().BeNull("the second page consumes the last of the 7 entries");
     }
 
     public void Dispose() => _db.Dispose();

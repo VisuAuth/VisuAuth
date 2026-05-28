@@ -22,13 +22,13 @@ public sealed class GraphPageCursorTests
     }
 
     [Fact]
-    public void EncodeThenDecode_SameOrigin_RoundTripsTheLink()
+    public void EncodeThenDecode_SameOriginAndResource_RoundTripsTheLink()
     {
         const string nextLink = "https://graph.microsoft.com/v1.0/users?$skiptoken=ABC123";
         var cursor = GraphPageCursor.Encode(nextLink);
 
         cursor.Should().NotBeNull();
-        GraphPageCursor.TryDecode(cursor, GraphBase, out var decoded).Should().BeTrue();
+        GraphPageCursor.TryDecode(cursor, GraphBase, "users", out var decoded).Should().BeTrue();
         decoded.Should().Be(nextLink);
     }
 
@@ -40,8 +40,23 @@ public sealed class GraphPageCursorTests
     {
         var cursor = GraphPageCursor.Encode(nextLink);
 
-        GraphPageCursor.TryDecode(cursor, GraphBase, out var decoded).Should().BeFalse(
+        GraphPageCursor.TryDecode(cursor, GraphBase, "users", out var decoded).Should().BeFalse(
             "a cursor that doesn't resolve to the configured Graph origin must never be followed");
+        decoded.Should().BeEmpty();
+    }
+
+    [Theory]
+    [InlineData("https://graph.microsoft.com/v1.0/groups?$skiptoken=ABC")]      // different collection
+    [InlineData("https://graph.microsoft.com/beta/users?$skiptoken=ABC")]       // different base path
+    [InlineData("https://graph.microsoft.com/v1.0/usersExtra?$skiptoken=ABC")]  // prefix-but-not-segment
+    public void TryDecode_SameOriginButWrongEndpoint_ReturnsFalse(string nextLink)
+    {
+        // Origin alone isn't enough — a same-origin cursor pointed at another
+        // Graph endpoint would still travel with the app bearer token.
+        var cursor = GraphPageCursor.Encode(nextLink);
+
+        GraphPageCursor.TryDecode(cursor, GraphBase, "users", out var decoded).Should().BeFalse(
+            "the cursor path must be pinned to the configured base path + expected collection");
         decoded.Should().BeEmpty();
     }
 
@@ -51,7 +66,7 @@ public sealed class GraphPageCursorTests
     [InlineData("not-valid-base64-%%%")]
     public void TryDecode_NullEmptyOrMalformed_ReturnsFalse(string? cursor)
     {
-        GraphPageCursor.TryDecode(cursor, GraphBase, out var decoded).Should().BeFalse();
+        GraphPageCursor.TryDecode(cursor, GraphBase, "users", out var decoded).Should().BeFalse();
         decoded.Should().BeEmpty();
     }
 }

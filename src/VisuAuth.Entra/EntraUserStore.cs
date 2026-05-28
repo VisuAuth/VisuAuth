@@ -153,7 +153,7 @@ public sealed class EntraUserStore(
         try
         {
             UserCollectionResponse? response;
-            if (GraphPageCursor.TryDecode(filter.Cursor, _options.GraphBaseUrl, out var nextLink))
+            if (GraphPageCursor.TryDecode(filter.Cursor, _options.GraphBaseUrl, "users", out var nextLink))
             {
                 // Continuation request: the skiptoken URL already carries the
                 // original $top / $filter / $select, so we replay it as-is and

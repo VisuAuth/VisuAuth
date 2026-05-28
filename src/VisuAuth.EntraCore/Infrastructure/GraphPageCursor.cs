@@ -39,11 +39,21 @@ public static class GraphPageCursor
 
     /// <summary>
     /// Decodes a cursor to a Graph continuation URL, but only when it resolves
-    /// to an HTTPS URL on the same origin as <paramref name="graphBaseUrl"/>.
-    /// Returns <see langword="false"/> for a null/empty/malformed/tampered or
-    /// off-origin cursor without throwing.
+    /// to an HTTPS URL on the same origin as <paramref name="graphBaseUrl"/>
+    /// <b>and</b> targets the expected resource collection
+    /// (<paramref name="expectedResource"/>, e.g. <c>"users"</c>). Returns
+    /// <see langword="false"/> for a null/empty/malformed/tampered, off-origin,
+    /// or off-endpoint cursor without throwing.
     /// </summary>
-    public static bool TryDecode(string? cursor, string graphBaseUrl, out string nextLink)
+    /// <remarks>
+    /// Origin (scheme + host + port) alone isn't enough: the cursor arrives in
+    /// the query string, so a hand-crafted same-origin link to a different
+    /// Graph endpoint (e.g. <c>/v1.0/groups</c> or <c>/beta/...</c>) would
+    /// otherwise be followed with the app's bearer token. Pinning the path to
+    /// the configured base path plus the expected collection keeps a tampered
+    /// cursor from re-pointing the request at another endpoint.
+    /// </remarks>
+    public static bool TryDecode(string? cursor, string graphBaseUrl, string expectedResource, out string nextLink)
     {
         nextLink = string.Empty;
 
@@ -73,6 +83,16 @@ public static class GraphPageCursor
         if (!string.Equals(candidate.Scheme, Uri.UriSchemeHttps, StringComparison.Ordinal) ||
             !string.Equals(candidate.Host, baseUri.Host, StringComparison.OrdinalIgnoreCase) ||
             candidate.Port != baseUri.Port)
+        {
+            return false;
+        }
+
+        // Pin the path to "<base path>/<resource>" so a same-origin cursor
+        // can't redirect the call to a different Graph endpoint.
+        var expectedPrefix = baseUri.AbsolutePath.TrimEnd('/') + "/" + expectedResource.Trim('/');
+        var path = candidate.AbsolutePath;
+        if (!path.Equals(expectedPrefix, StringComparison.OrdinalIgnoreCase) &&
+            !path.StartsWith(expectedPrefix + "/", StringComparison.OrdinalIgnoreCase))
         {
             return false;
         }

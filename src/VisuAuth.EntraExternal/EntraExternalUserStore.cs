@@ -158,7 +158,7 @@ public sealed class EntraExternalUserStore(
         try
         {
             UserCollectionResponse? response;
-            if (GraphPageCursor.TryDecode(filter.Cursor, _options.GraphBaseUrl, out var nextLink))
+            if (GraphPageCursor.TryDecode(filter.Cursor, _options.GraphBaseUrl, "users", out var nextLink))
             {
                 // Continuation: the skiptoken URL already carries the original
                 // $top / $filter / $select. Replay it and re-assert the

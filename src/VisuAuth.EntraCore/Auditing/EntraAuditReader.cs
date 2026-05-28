@@ -122,12 +122,12 @@ public sealed class EntraAuditReader(
                 rc.QueryParameters.Select = ["activityDisplayName"];
             }, cancellationToken);
 
-            foreach (var audit in response?.Value ?? [])
+            var activityNames = (response?.Value ?? [])
+                .Select(a => a.ActivityDisplayName)
+                .Where(name => !string.IsNullOrEmpty(name));
+            foreach (var name in activityNames)
             {
-                if (!string.IsNullOrEmpty(audit.ActivityDisplayName))
-                {
-                    actions.Add(audit.ActivityDisplayName);
-                }
+                actions.Add(name!);
             }
         }
         catch (ODataError ex)
@@ -148,8 +148,8 @@ public sealed class EntraAuditReader(
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(action);
 
-        // Only the login codes are charted (the dashboard's logins-per-day);
-        // they're backed by sign-ins. Anything else has no day-rollup here.
+        // Only the login codes are charted by the dashboard, and those are
+        // backed by sign-ins. Any other action has no day rollup here.
         var graphFilter = EntraSignInAuditMapper.BuildCountFilter(action, fromInclusive, toInclusive);
         if (graphFilter is null)
         {

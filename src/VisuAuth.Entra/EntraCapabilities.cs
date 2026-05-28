@@ -102,11 +102,12 @@ internal static class EntraCapabilities
         SupportsRegistration = true,
         SupportsPasswordReset = true,
         SupportsTwoFactor = false,
-        // v0.2 scope: per-method DELETE in Graph requires a typed builder
-        // per subtype (microsoftAuthenticatorMethods, fido2Methods, …).
-        // Until we cover them all, the adapter's ResetTwoFactorAsync throws
-        // NotSupported and the admin UI hides the button. Slated for v0.3.
-        SupportsTwoFactorReset = false,
+        // EntraUserStore.ResetTwoFactorAsync deletes the user's registered
+        // authentication methods via Graph (per-subtype typed DELETE,
+        // shared with the External adapter through EntraTwoFactorReset), so
+        // the admin "reset 2FA" button surfaces and works in Entra mode.
+        // Needs UserAuthenticationMethod.ReadWrite.All on the app.
+        SupportsTwoFactorReset = true,
         SupportsLockout = false,
         SupportsEmailConfirmation = false,
         SupportsRoleManagement = true,

@@ -301,6 +301,50 @@ public sealed class EntraUserStoreGraphTests
         result.Error.Should().Contain("complexity");
     }
 
+    [Fact]
+    public async Task ResetTwoFactorAsync_DeletesAuthMethods_ReturnsSuccess()
+    {
+        var handler = new FakeGraphHandler()
+            .SetupGet("/users/u-1/authentication/methods", """
+                { "value": [ { "@odata.type": "#microsoft.graph.phoneAuthenticationMethod", "id": "phone-1" } ] }
+                """)
+            .SetupDelete("/authentication/phoneMethods/phone-1");
+        var sut = BuildStore(handler);
+
+        var result = await sut.ResetTwoFactorAsync("u-1");
+
+        result.IsSuccess.Should().BeTrue();
+        result.UserId.Should().Be("u-1");
+    }
+
+    [Fact]
+    public async Task ResetTwoFactorAsync_OnNotFound_ReturnsUserNotFound()
+    {
+        var handler = new FakeGraphHandler()
+            .SetupError(HttpMethod.Get, "/users/missing/authentication/methods", HttpStatusCode.NotFound,
+                "Request_ResourceNotFound", "x");
+        var sut = BuildStore(handler);
+
+        var result = await sut.ResetTwoFactorAsync("missing");
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Be("User not found.");
+    }
+
+    [Fact]
+    public async Task ResetTwoFactorAsync_OnError_ReturnsFailureWithGraphMessage()
+    {
+        var handler = new FakeGraphHandler()
+            .SetupError(HttpMethod.Get, "/users/u-1/authentication/methods", HttpStatusCode.Forbidden,
+                "Authorization_RequestDenied", "Requires UserAuthenticationMethod.ReadWrite.All");
+        var sut = BuildStore(handler);
+
+        var result = await sut.ResetTwoFactorAsync("u-1");
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("UserAuthenticationMethod");
+    }
+
     private static EntraUserStore BuildStore(FakeGraphHandler handler)
     {
         // Inject the fake handler via a real Kiota HttpClient request

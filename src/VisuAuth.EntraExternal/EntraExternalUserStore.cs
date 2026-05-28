@@ -6,6 +6,7 @@ using Microsoft.Graph.Models.ODataErrors;
 using VisuAuth.Abstractions.Capabilities;
 using VisuAuth.Abstractions.Common;
 using VisuAuth.Abstractions.Users;
+using VisuAuth.EntraCore.Infrastructure;
 using VisuAuth.EntraCore.Security;
 using VisuAuth.EntraExternal.Configuration;
 using VisuAuth.EntraExternal.Internal;
@@ -332,19 +333,29 @@ public sealed class EntraExternalUserStore(
 
     /// <inheritdoc />
     /// <remarks>
-    /// Not supported by the v0.3 Entra External adapter (see
-    /// <see cref="EntraExternalCapabilities"/> —
-    /// <c>SupportsTwoFactorReset = false</c>). Per-method DELETE on Graph
-    /// requires a typed builder per subtype
-    /// (microsoftAuthenticatorMethods, fido2Methods, etc.) — same scope
-    /// limit as the Workforce adapter. The admin UI hides the button when
-    /// the capability flag is off, so this code path is reached only when
-    /// a caller bypasses the UI.
+    /// Deletes every removable authentication method the customer has
+    /// registered so they must re-enrol. Shared with the Workforce adapter
+    /// through <see cref="EntraTwoFactorReset"/> (the Graph surface is
+    /// identical across tenant families). Requires the registered app to
+    /// hold <c>UserAuthenticationMethod.ReadWrite.All</c>.
     /// </remarks>
-    public Task<UserResult> ResetTwoFactorAsync(string id, CancellationToken cancellationToken = default)
-        => throw new NotSupportedException(
-            "Reset two-factor is not supported on the v0.3 Microsoft Entra External adapter. "
-            + "Use the Entra portal's 'Authentication methods' blade for the user.");
+    public async Task<UserResult> ResetTwoFactorAsync(string id, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(id);
+        try
+        {
+            await EntraTwoFactorReset.RemoveAllAsync(_graph, id, cancellationToken);
+            return UserResult.Success(id);
+        }
+        catch (ODataError ex) when (IsNotFound(ex))
+        {
+            return UserResult.Failure(UserNotFoundMessage);
+        }
+        catch (ODataError ex)
+        {
+            return UserResult.Failure(GraphMessage(ex, "Failed to reset two-factor."));
+        }
+    }
 
     /// <inheritdoc />
     public async Task<UserResult> RevokeSessionsAsync(string id, CancellationToken cancellationToken = default)

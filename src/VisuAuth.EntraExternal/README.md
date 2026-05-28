@@ -74,7 +74,7 @@ No `AddIdentity`, no `AddDbContext`, no JWT issuer, no OAuth providers. Everythi
 | `SupportsRegistration` | `true` | Admin Create at `/admin/users/new` works through Graph `POST /users` with an `identities[]` array. End-user self-service signup is hosted by Microsoft and wired via `Microsoft.Identity.Web` in v0.3 PR-C. |
 | `SupportsPasswordReset` | `true` | Admin reset issues a temporary password via Graph `PATCH /users/{id}` (passwordProfile). End-user SSPR lives on the hosted Microsoft surface. |
 | `SupportsTwoFactor` | `false` | Multi-factor enrolment happens on Microsoft's hosted surfaces. VisuAuth's TOTP pages don't apply. |
-| `SupportsTwoFactorReset` | `false` *(v0.3 scope)* | Per-method DELETE in Graph needs typed builders per subtype. v0.4 covers it (shared with the Workforce adapter). |
+| `SupportsTwoFactorReset` | `true` | Admin "reset 2FA" deletes the customer's registered authentication methods via Graph (shared with the Workforce adapter through `EntraTwoFactorReset`). Needs `UserAuthenticationMethod.ReadWrite.All`. |
 | `SupportsLockout` | `false` | Entra has smart lockout that admins don't toggle per-user. Admin "lock" is `SetEnabled(false)` instead. |
 | `SupportsEmailConfirmation` | `false` | Microsoft validates emails during the hosted signup flow. |
 | `SupportsRoleManagement` | `true` | App roles via Graph. Create/Rename/Delete throw NotSupported (declared in the application manifest); List + Assign + Remove work. |
@@ -205,7 +205,7 @@ Both register the same service graph (TryAdd, so a consumer-registered test doub
 | `SetEnabledAsync` | ✅ | `PATCH /users/{id}` (`accountEnabled`) |
 | `ResetPasswordAsync` | ✅ | `PATCH /users/{id}` (`passwordProfile` with `forceChangePasswordNextSignIn = true`) |
 | `RevokeSessionsAsync` | ✅ | `POST /users/{id}/revokeSignInSessions` |
-| `ResetTwoFactorAsync` | ❌ throws NotSupported (v0.4) | Per-method DELETE needs typed builders per auth-method subtype |
+| `ResetTwoFactorAsync` | ✅ | Lists `GET /users/{id}/authentication/methods` and deletes each removable method via its typed endpoint (password left in place). Needs `UserAuthenticationMethod.ReadWrite.All`. |
 
 ### `IRoleStore` (app role management)
 
@@ -224,8 +224,7 @@ Every method returns either `RedirectToExternalProvider` (`SignInWithPasswordAsy
 | Identities / UPN / mail not editable from the admin UI | Rewriting a customer's identity from a generic admin form would lock them out of their own account | A dedicated email-change flow with verification mail is on the v0.4 roadmap. For now, edit identities in the Entra portal |
 | `signInActivity` is not in the default user `$select` | Field needs `AuditLog.Read.All` + Entra ID P1 license; free External tenants get a 403 on the whole list call | `UserSummary.LastSignInAt` stays null; UI renders "—". Subclass / override the store if you're on a paid tier |
 | Pagination treats every list call as page 1 | Graph paginates with `@odata.nextLink` cursors, not numeric pages; the v0.3 `PagedResult.Page` contract is 1-based | Use search / filter to refine. v0.4 adds cursor-based paging shared with the Workforce adapter |
-| `ResetTwoFactorAsync` throws | Per-method DELETE needs typed builders per auth-method subtype | Use the Entra portal's Authentication methods blade for the user |
-| End-user `/visuauth/login` shows "use external provider" with no provider button | v0.3 PR-B doesn't ship the OIDC wiring | v0.3 PR-C adds `Microsoft.Identity.Web` integration and a real "Sign in with Microsoft" button |
+| End-user `/visuauth/login` needs the OIDC wiring | The hosted sign-in button is wired by `VisuAuth.EntraExternal.Web` | Add the `VisuAuth.EntraExternal.Web` package + `AddVisuAuthEntraExternalSignIn(...)` (see its README) |
 | Federated identities (Google, Facebook, Apple) not surfaced in the admin UI | The `identities[]` array can hold multiple entries; v0.3 detail page renders only the local-account one | Configure providers in the Entra portal's "Identity providers" blade; v0.4+ may render the full identities list on the detail page |
 
 ---

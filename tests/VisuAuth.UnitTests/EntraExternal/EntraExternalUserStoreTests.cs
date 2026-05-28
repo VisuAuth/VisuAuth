@@ -53,15 +53,6 @@ public sealed class EntraExternalUserStoreTests
             "the same flag bag must serve every facet of the adapter — single source of truth modulo per-options overlay");
     }
 
-    [Fact]
-    public async Task ResetTwoFactorAsync_ThrowsNotSupported_WithActionableMessage()
-    {
-        var sut = BuildStore();
-        var act = () => sut.ResetTwoFactorAsync("u-1", CancellationToken.None);
-        var ex = await act.Should().ThrowAsync<NotSupportedException>();
-        ex.WithMessage("*Entra portal*",
-            "operators reaching this branch need to know where the real fix lives — the Entra portal");
-    }
 
     [Fact]
     public async Task CreateAsync_BlankEmail_FailsBeforeCallingGraph()
@@ -168,15 +159,14 @@ public sealed class EntraExternalUserStoreTests
     [Theory]
     [InlineData(null)]
     [InlineData("")]
-    public async Task ResetTwoFactorAsync_BlankId_StillThrowsNotSupported(string? id)
+    [InlineData("   ")]
+    public async Task ResetTwoFactorAsync_BlankId_ThrowsArgumentException(string? id)
     {
-        // ResetTwoFactor is unconditional NotSupported — the arg validation
-        // doesn't even run (the method throws synchronously). We still
-        // assert here so a future "lift the capability" PR remembers to
-        // add the arg guard back.
+        // Now implemented (deletes auth methods via Graph) — validates the
+        // id up front like the other store methods.
         var sut = BuildStore();
         var act = () => sut.ResetTwoFactorAsync(id!);
-        await act.Should().ThrowAsync<NotSupportedException>();
+        await act.Should().ThrowAsync<ArgumentException>();
     }
 
     [Fact]
@@ -227,7 +217,7 @@ public sealed class EntraExternalUserStoreTests
         var caps = BuildStore().Capabilities;
         caps.SupportsLocalLogin.Should().BeFalse();
         caps.SupportsTwoFactor.Should().BeFalse();
-        caps.SupportsTwoFactorReset.Should().BeFalse();
+        caps.SupportsTwoFactorReset.Should().BeTrue();
         caps.SupportsRoleManagement.Should().BeTrue();
         caps.SupportsSessionRevocation.Should().BeTrue();
         caps.SupportsExternalProviders.Should().BeFalse();

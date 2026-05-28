@@ -64,11 +64,11 @@ public sealed class EntraCapabilitiesTests
     }
 
     [Fact]
-    public void TwoFactorReset_IsFalse_InV02_DocumentedScopeLimitation()
+    public void TwoFactorReset_IsTrue_AdminCanWipeAuthenticationMethods()
     {
-        EntraCapabilities.Value.SupportsTwoFactorReset.Should().BeFalse(
-            "per-method DELETE in Graph requires a typed builder per auth-method subtype; deferred to v0.3");
+        EntraCapabilities.Value.SupportsTwoFactorReset.Should().BeTrue(
+            "EntraUserStore.ResetTwoFactorAsync deletes the user's registered auth methods via Graph (per-subtype DELETE)");
         EntraCapabilities.Value.SupportsTwoFactor.Should().BeFalse(
-            "TOTP setup pages don't apply — Entra users enrol authenticators through Microsoft's own UX");
+            "TOTP setup pages still don't apply — Entra users enrol authenticators through Microsoft's own UX");
     }
 }

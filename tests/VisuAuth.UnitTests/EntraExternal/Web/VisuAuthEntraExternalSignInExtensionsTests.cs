@@ -160,6 +160,31 @@ public sealed class VisuAuthEntraExternalSignInExtensionsTests
     }
 
     [Fact]
+    public void AddVisuAuthEntraExternalSignIn_PinsAuthorizationCodeFlow_NotHybridImplicit()
+    {
+        // Regression pin for AADSTS700054 (caught in manual smoke against a
+        // real External tenant): the OpenIdConnect handler's hybrid default
+        // ("code id_token") fails because External app registrations don't
+        // enable the implicit id_token response type by default. Forcing
+        // response_type=code keeps the id_token on the back channel (token
+        // endpoint exchange) — the secure, CIAM-recommended flow — and
+        // works against a fresh tenant with no extra portal toggle.
+        var services = BaseServices();
+        services.AddVisuAuthEntraExternalSignIn(o =>
+        {
+            o.TenantSubdomain = "contoso";
+            o.TenantId = "t";
+            o.ClientId = "c";
+        });
+
+        using var sp = services.BuildServiceProvider();
+        var oidc = sp.GetRequiredService<IOptionsMonitor<OpenIdConnectOptions>>()
+            .Get(EntraExternalLoginFlow.ProviderScheme);
+        oidc.ResponseType.Should().Be("code",
+            "External ID rejects implicit/hybrid id_token (AADSTS700054) — the handler must use pure auth-code flow");
+    }
+
+    [Fact]
     public void AddVisuAuthEntraExternalSignIn_DoesNotRequireConfiguredUserStore_AtRegistrationTime()
     {
         // Registration must succeed even when no IUserStore is in DI yet

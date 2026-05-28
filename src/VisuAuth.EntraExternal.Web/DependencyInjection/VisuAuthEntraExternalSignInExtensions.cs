@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Identity.Web;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using VisuAuth.Abstractions.Authentication;
 using VisuAuth.EntraExternal.Web.Configuration;
 
@@ -137,6 +138,18 @@ public static class VisuAuthEntraExternalSignInExtensions
         services.PostConfigure<OpenIdConnectOptions>(EntraExternalLoginFlow.ProviderScheme, oidc =>
         {
             oidc.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+            // Force the authorization-code flow. Entra External ID does NOT
+            // enable the implicit / hybrid `id_token` response type on app
+            // registrations by default (Microsoft's CIAM guidance is
+            // code-flow + PKCE only), so the OpenIdConnect handler's hybrid
+            // default ("code id_token") fails the authorize request with
+            // AADSTS700054 "response_type 'id_token' is not enabled for the
+            // application". Pinning ResponseType = code means the id_token
+            // comes back from the token endpoint (exchanged with the client
+            // secret we already configure) instead of the front channel —
+            // the secure, recommended path, and it works against a fresh
+            // External tenant with no extra portal toggle.
+            oidc.ResponseType = OpenIdConnectResponseType.Code;
             // Map the "name" claim so HttpContext.User.Identity.Name reads
             // naturally on the End-user UI. Identity.Web's default is the
             // long URI form; the short name is friendlier downstream.

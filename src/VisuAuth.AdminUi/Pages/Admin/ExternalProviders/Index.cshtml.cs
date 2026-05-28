@@ -26,11 +26,29 @@ namespace VisuAuth.AdminUi.Pages.Admin.ExternalProviders;
 /// activate" snippet), and <c>Orphan</c> (DB row for a scheme the host no
 /// longer wires — warning + Delete button).
 /// </summary>
+/// <remarks>
+/// <para>
+/// The four external-provider services this page drives
+/// (<see cref="IExternalProviderConfigStore"/>,
+/// <see cref="IExternalProviderRegistry"/>,
+/// <see cref="IExternalProviderOptionsCacheInvalidator"/>,
+/// <see cref="IExternalProviderStaticConfigSnapshot"/>) are only registered
+/// when the consumer opts in via
+/// <c>AddVisuAuthExternalProviderConfigStore()</c> + the dynamic-options
+/// extensions — typically alongside the ASP.NET Identity adapter. An
+/// Entra / Entra External deployment (Microsoft owns the providers) never
+/// wires them, so they're injected as <b>optional</b> here: without them
+/// the page renders an "not available for this backend" card via
+/// <see cref="ProviderConfigAvailable"/> instead of crashing on
+/// activation with an unresolved-service exception. The sidebar link is
+/// hidden in the same case (see <c>_Layout.cshtml</c>).
+/// </para>
+/// </remarks>
 public sealed class IndexModel(
-    IExternalProviderConfigStore configStore,
-    IExternalProviderRegistry registry,
-    IExternalProviderOptionsCacheInvalidator cacheInvalidator,
-    IExternalProviderStaticConfigSnapshot staticSnapshot,
+    IExternalProviderConfigStore? configStore,
+    IExternalProviderRegistry? registry,
+    IExternalProviderOptionsCacheInvalidator? cacheInvalidator,
+    IExternalProviderStaticConfigSnapshot? staticSnapshot,
     IAuditWriter auditWriter,
     IStringLocalizer<AdminSharedResources> localizer) : PageModel
 {
@@ -39,12 +57,30 @@ public sealed class IndexModel(
     // place (csharpsquid:S1192).
     private const string MissingSchemeKey = "ExternalProviders.Error.MissingScheme";
 
-    private readonly IExternalProviderConfigStore _configStore = configStore ?? throw new ArgumentNullException(nameof(configStore));
-    private readonly IExternalProviderRegistry _registry = registry ?? throw new ArgumentNullException(nameof(registry));
-    private readonly IExternalProviderOptionsCacheInvalidator _cacheInvalidator = cacheInvalidator ?? throw new ArgumentNullException(nameof(cacheInvalidator));
-    private readonly IExternalProviderStaticConfigSnapshot _staticSnapshot = staticSnapshot ?? throw new ArgumentNullException(nameof(staticSnapshot));
+    private readonly IExternalProviderConfigStore? _configStore = configStore;
+    private readonly IExternalProviderRegistry? _registry = registry;
+    private readonly IExternalProviderOptionsCacheInvalidator? _cacheInvalidator = cacheInvalidator;
+    private readonly IExternalProviderStaticConfigSnapshot? _staticSnapshot = staticSnapshot;
     private readonly IAuditWriter _audit = auditWriter ?? throw new ArgumentNullException(nameof(auditWriter));
     private readonly IStringLocalizer<AdminSharedResources> _l = localizer ?? throw new ArgumentNullException(nameof(localizer));
+
+    /// <summary>
+    /// True when the external-provider config infrastructure is registered
+    /// (the consumer wired <c>AddVisuAuthExternalProviderConfigStore()</c>).
+    /// When false the page is read-only-unavailable: every handler bails to
+    /// the "not available" card and never touches the (absent) services.
+    /// </summary>
+    public bool ProviderConfigAvailable => _configStore is not null;
+
+    // Non-null accessors for the use sites. Every call site runs AFTER a
+    // ProviderConfigAvailable (i.e. _configStore is not null) check — the
+    // four infra services are always registered together — so the
+    // null-forgiving operator is sound here. Centralising it on these four
+    // accessors keeps the ~18 use sites free of inline `!` noise.
+    private IExternalProviderConfigStore ConfigStore => _configStore!;
+    private IExternalProviderRegistry Registry => _registry!;
+    private IExternalProviderOptionsCacheInvalidator CacheInvalidator => _cacheInvalidator!;
+    private IExternalProviderStaticConfigSnapshot StaticSnapshot => _staticSnapshot!;
 
     [BindProperty]
     public EditForm EditFields { get; set; } = new();
@@ -73,17 +109,28 @@ public sealed class IndexModel(
 
     public async Task<IActionResult> OnGetAsync(CancellationToken cancellationToken)
     {
-        await LoadAsync(cancellationToken);
+        // No infra wired (Entra / Entra External, or Identity without the
+        // opt-in config store) → render the "not available" card. The
+        // partial branches on ProviderConfigAvailable; LoadAsync is skipped
+        // so the absent services are never touched.
+        if (ProviderConfigAvailable)
+        {
+            await LoadAsync(cancellationToken);
+        }
         return RenderResult();
     }
 
     public async Task<IActionResult> OnGetEditAsync(string? scheme, CancellationToken cancellationToken)
     {
+        if (!ProviderConfigAvailable)
+        {
+            return RenderResult();
+        }
         if (string.IsNullOrWhiteSpace(scheme))
         {
             ActionErrors = [_l[MissingSchemeKey].Value];
         }
-        else if (!_registry.IsRegistered(scheme))
+        else if (!Registry.IsRegistered(scheme))
         {
             // Edit is meaningless for un-wired schemes — the save would succeed
             // but the login page still wouldn't show the button. Surface as an
@@ -100,18 +147,22 @@ public sealed class IndexModel(
 
     public async Task<IActionResult> OnPostSaveAsync(string? scheme, CancellationToken cancellationToken)
     {
+        if (!ProviderConfigAvailable)
+        {
+            return RenderResult();
+        }
         var guard = await GuardSaveAsync(scheme, cancellationToken);
         if (guard is not null)
         {
             return guard;
         }
 
-        var existing = await _configStore.GetAsync(scheme!, tenantId: null, cancellationToken);
+        var existing = await ConfigStore.GetAsync(scheme!, tenantId: null, cancellationToken);
         var catalogue = KnownProviderCatalog.Find(scheme!);
         var displayName = catalogue?.DisplayName ?? existing?.DisplayName ?? scheme!;
         var secretToSave = ResolveSecretToSave();
 
-        var result = await _configStore.SaveAsync(new SaveExternalProviderConfigCommand
+        var result = await ConfigStore.SaveAsync(new SaveExternalProviderConfigCommand
         {
             Scheme = scheme!,
             DisplayName = displayName,
@@ -139,7 +190,7 @@ public sealed class IndexModel(
             await LoadAsync(cancellationToken);
             return RenderResult();
         }
-        if (!_registry.IsRegistered(scheme))
+        if (!Registry.IsRegistered(scheme))
         {
             ActionErrors = [_l["ExternalProviders.Error.SchemeNotRegistered", scheme].Value];
             await LoadAsync(cancellationToken);
@@ -199,7 +250,7 @@ public sealed class IndexModel(
             return;
         }
 
-        _cacheInvalidator.Invalidate(scheme);
+        CacheInvalidator.Invalidate(scheme);
         ActionMessage = _l["ExternalProviders.Action.Saved", scheme].Value;
 
         await _audit.WriteAsync(new AuditEvent
@@ -226,6 +277,10 @@ public sealed class IndexModel(
 
     public async Task<IActionResult> OnPostBulkEnableAsync(CancellationToken cancellationToken)
     {
+        if (!ProviderConfigAvailable)
+        {
+            return RenderResult();
+        }
         await BulkSetEnabledAsync(true, cancellationToken);
         ActionMessage = _l["ExternalProviders.Action.BulkEnabled"].Value;
 
@@ -242,6 +297,10 @@ public sealed class IndexModel(
 
     public async Task<IActionResult> OnPostBulkDisableAsync(CancellationToken cancellationToken)
     {
+        if (!ProviderConfigAvailable)
+        {
+            return RenderResult();
+        }
         await BulkSetEnabledAsync(false, cancellationToken);
         ActionMessage = _l["ExternalProviders.Action.BulkDisabled"].Value;
 
@@ -264,13 +323,17 @@ public sealed class IndexModel(
     /// </summary>
     public async Task<IActionResult> OnPostDeleteOrphanAsync(string? scheme, CancellationToken cancellationToken)
     {
+        if (!ProviderConfigAvailable)
+        {
+            return RenderResult();
+        }
         if (string.IsNullOrWhiteSpace(scheme))
         {
             ActionErrors = [_l[MissingSchemeKey].Value];
             await LoadAsync(cancellationToken);
             return RenderResult();
         }
-        var result = await _configStore.DeleteAsync(scheme, tenantId: null, cancellationToken);
+        var result = await ConfigStore.DeleteAsync(scheme, tenantId: null, cancellationToken);
         if (!result.IsSuccess)
         {
             ActionErrors = [result.Error ?? _l["ExternalProviders.Error.DeleteFailed"].Value];
@@ -286,7 +349,7 @@ public sealed class IndexModel(
         }
         else
         {
-            _cacheInvalidator.Invalidate(scheme);
+            CacheInvalidator.Invalidate(scheme);
             ActionMessage = _l["ExternalProviders.Action.OrphanDeleted", scheme].Value;
 
             await _audit.WriteAsync(new AuditEvent
@@ -303,13 +366,17 @@ public sealed class IndexModel(
 
     private async Task<IActionResult> ToggleAsync(string? scheme, bool isEnabled, CancellationToken cancellationToken)
     {
+        if (!ProviderConfigAvailable)
+        {
+            return RenderResult();
+        }
         if (string.IsNullOrWhiteSpace(scheme))
         {
             ActionErrors = [_l[MissingSchemeKey].Value];
             await LoadAsync(cancellationToken);
             return RenderResult();
         }
-        var result = await _configStore.SetEnabledAsync(scheme, tenantId: null, isEnabled, cancellationToken);
+        var result = await ConfigStore.SetEnabledAsync(scheme, tenantId: null, isEnabled, cancellationToken);
         var toggleAction = isEnabled
             ? AuditActions.ExternalProviderEnabled
             : AuditActions.ExternalProviderDisabled;
@@ -328,7 +395,7 @@ public sealed class IndexModel(
         }
         else
         {
-            _cacheInvalidator.Invalidate(scheme);
+            CacheInvalidator.Invalidate(scheme);
             ActionMessage = isEnabled
                 ? _l["ExternalProviders.Action.Enabled", scheme].Value
                 : _l["ExternalProviders.Action.Disabled", scheme].Value;
@@ -352,26 +419,26 @@ public sealed class IndexModel(
     /// </summary>
     private async Task BulkSetEnabledAsync(bool isEnabled, CancellationToken cancellationToken)
     {
-        var all = await _configStore.ListAsync(tenantId: null, cancellationToken);
+        var all = await ConfigStore.ListAsync(tenantId: null, cancellationToken);
         foreach (var row in all)
         {
-            if (!_registry.IsRegistered(row.Scheme) || row.IsEnabled == isEnabled)
+            if (!Registry.IsRegistered(row.Scheme) || row.IsEnabled == isEnabled)
             {
                 continue;
             }
-            var result = await _configStore.SetEnabledAsync(row.Scheme, tenantId: null, isEnabled, cancellationToken);
+            var result = await ConfigStore.SetEnabledAsync(row.Scheme, tenantId: null, isEnabled, cancellationToken);
             if (result.IsSuccess)
             {
-                _cacheInvalidator.Invalidate(row.Scheme);
+                CacheInvalidator.Invalidate(row.Scheme);
             }
         }
     }
 
     private async Task LoadAsync(CancellationToken cancellationToken)
     {
-        var dbRows = await _configStore.ListAsync(tenantId: null, cancellationToken);
+        var dbRows = await ConfigStore.ListAsync(tenantId: null, cancellationToken);
         var dbBySchema = dbRows.ToDictionary(r => r.Scheme, StringComparer.Ordinal);
-        var registeredSchemes = _registry.Registrations
+        var registeredSchemes = Registry.Registrations
             .Select(r => r.Scheme)
             .ToHashSet(StringComparer.Ordinal);
 
@@ -380,12 +447,12 @@ public sealed class IndexModel(
         // the scheme. ToLookup keeps the original registration order
         // within each bucket, which is what the UI wants (matches
         // Program.cs ordering).
-        var buckets = _registry.Registrations
+        var buckets = Registry.Registrations
             .Select(reg =>
             {
                 dbBySchema.TryGetValue(reg.Scheme, out var view);
                 var cat = KnownProviderCatalog.Find(reg.Scheme);
-                var staticView = _staticSnapshot.GetForScheme(reg.Scheme);
+                var staticView = StaticSnapshot.GetForScheme(reg.Scheme);
                 return new ProviderRow(
                     reg.Scheme,
                     cat?.DisplayName ?? view?.DisplayName ?? reg.Scheme,

@@ -1,5 +1,23 @@
 @model VisuAuth.AdminUi.Pages.Admin.ExternalProviders.IndexModel
 
+@if (!Model.ProviderConfigAvailable)
+{
+    @* The runtime external-provider config infrastructure isn't wired
+       (typically an Entra / Entra External deployment, where Microsoft
+       owns the providers, or an Identity app that didn't opt into
+       AddVisuAuthExternalProviderConfigStore). Render an explanatory card
+       instead of a config table that has nothing to manage. The sidebar
+       link is hidden in the same case; this card is the safety net for a
+       direct navigation. *@
+    <section class="va-card va-detail-card">
+        <div class="va-detail-card-header">
+            <h2>@Ls["ExternalProviders.Unavailable.Heading"]</h2>
+        </div>
+        <p class="va-muted">@L["ExternalProviders.Unavailable.Body"]</p>
+    </section>
+    return;
+}
+
 @if (Model.ActionErrors.Count > 0)
 {
     <div class="va-alert va-alert-danger" role="alert">

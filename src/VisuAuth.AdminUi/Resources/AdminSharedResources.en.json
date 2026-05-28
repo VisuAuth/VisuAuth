@@ -243,6 +243,8 @@
   "ExternalProviders.PageTitle": "External providers — VisuAuth",
   "ExternalProviders.Title": "External providers",
   "ExternalProviders.Subtitle": "Edit OAuth credentials at runtime — overrides appsettings / user-secrets without an app restart. Active providers are the schemes your host wired with AddVisuAuthDynamicExternalProviderOptions<TOptions>; the Available section lists popular providers you could add to Program.cs.",
+  "ExternalProviders.Unavailable.Heading": "External provider configuration isn't available",
+  "ExternalProviders.Unavailable.Body": "This backend doesn't manage OAuth provider credentials here. For Microsoft Entra and Entra External, identity providers are configured in the Entra portal. To manage them from VisuAuth, use the ASP.NET Core Identity adapter and wire <code>AddVisuAuthExternalProviderConfigStore()</code> in your app.",
   "ExternalProviders.ActionFailed": "Action failed.",
   "ExternalProviders.Empty": "No external providers wired yet. Pick one from the Available section below and follow the install snippet to add it to Program.cs.",
   "ExternalProviders.Section.Active": "Active providers",

@@ -108,6 +108,15 @@ public sealed class EntraExternalWebOptions
     public string? SignInUserFlow { get; set; }
 
     /// <summary>
+    /// Optional "map id_token claims onto the Graph user profile on
+    /// sign-in" behaviour. Off by default — see
+    /// <see cref="EntraExternalProfileSyncOptions"/>. Bound from the
+    /// <c>ProfileSync</c> sub-section
+    /// (<c>VisuAuth:EntraExternal:Web:ProfileSync</c>).
+    /// </summary>
+    public EntraExternalProfileSyncOptions ProfileSync { get; } = new();
+
+    /// <summary>
     /// Computed OIDC authority URL — the issuer Microsoft.Identity.Web
     /// uses to discover the OpenID configuration document. External
     /// tenants use <c>https://{tenant}.ciamlogin.com/{tenant-id}/v2.0</c>,

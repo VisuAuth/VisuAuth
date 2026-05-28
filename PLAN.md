@@ -85,57 +85,29 @@ immediate next step. Updated as PRs land. Long-term direction lives in
 
 ## In flight
 
-- **`VisuAuth.EntraExternal.Web` package — PR C of 3** (`feat/entra-external-oidc-signin`)
-  — the End-user OIDC sign-in foundation for the EntraExternal adapter.
-  Ships a sixth NuGet package (`VisuAuth.EntraExternal.Web`) that wraps
-  `Microsoft.Identity.Web` against the External tenant authority
-  (`{tenant}.ciamlogin.com`) and replaces the no-op
-  `IExternalLoginFlow` stub from EntraCore with a real implementation.
-  The "Sign in with Microsoft" button on `/visuauth/login` now actually
-  works — clicks redirect to the hosted Microsoft page, callback
-  validates + writes the Cookies session cookie, and the existing
-  EndUserUi `Callback` page picks up via `CompleteSignInAsync` to
-  verify the user against Graph and surface Success. Capability
-  overlay flips `SupportsExternalProviders = true` at this layer (the
-  CRUD-only adapter singleton stays false). Wraps two app
-  registrations: the CRUD app remains app-only / client-credentials
-  for Graph; this layer adds a second public OIDC client for the
-  hosted sign-in. Scope deliberately stops short of user-flow
-  selection + attribute mapping — those land in PR D (queued).
-  Sample wired (`samples/Sample.EntraExternalWebApp`) with both
-  configuration sections documented. Tests: 3 new files
-  (~29 unit tests) covering options validation, the flow's full
-  branch surface (no session / missing oid claim / happy path /
-  AutoCreate vs Confirm strategies / pending info fallbacks), and DI
-  registration semantics (lambda + IConfiguration overloads, Replace
-  vs TryAdd, OIDC scheme registration, post-configure pinning).
-  Pulls in 4 transitive-pin bumps (`Microsoft.Identity.Web 4.10`
-  required them): `Microsoft.Extensions.Logging.Abstractions` /
-  `Microsoft.Extensions.DependencyInjection.Abstractions` 10.0.0 →
-  10.0.7, `System.IdentityModel.Tokens.Jwt` 8.14.0 → 8.18.0,
-  `Azure.Identity` 1.13.1 → 1.17.2. All patch-level safe.
-
-- **`VisuAuth.EntraExternal` adapter — PR B of 3** (`feat/entra-external-adapter`)
-  — the customer-facing CRUD adapter. Ships
-  `src/VisuAuth.EntraExternal/` (Options, Capabilities, UserStore,
-  RoleStore, AuthenticationFlow, UserMapper, DI extension), wires the
-  shared `VisuAuth.EntraCore` from PR A for the Graph factory + no-op
-  stubs, and adds `samples/Sample.EntraExternalWebApp/` — the
-  minimalist ~30-line `Program.cs` Entra-External-only reference,
-  mirroring `Sample.EntraWebApp` for easy A/B comparison. Capability
-  surface matches Workforce except for the `identities[]`-driven user
-  shape: Create mints `signInType = emailAddress` with the configured
-  `TenantDomain` as `issuer`; List / Detail prefer the customer-typed
-  email from identities over the auto-generated `cpim_{guid}` UPN.
-  Update deliberately leaves identities / UPN / mail untouched — a
-  generic admin save can't lock a customer out of their own login.
-  Tests: 6 new files (~93 unit tests) covering Capabilities, Options
-  validation (incl. the new required `TenantDomain`), the mapper's
-  identities-aware Create + read fallback chain + identities-aware
-  search predicate, store synchronous defences, role store NotSupported
-  branches, and the DI extension's both overloads + TryAdd semantics.
-  PR C (next) wires `Microsoft.Identity.Web` for the actual hosted
-  OIDC redirect at `/visuauth/login`.
+- **EntraExternal PR D — profile attribute sync** (`feat/entra-external-profile-sync`)
+  — the signup-customization half of the v0.3 EntraExternal work, scoped
+  down after discovering the user-flow management Graph API is
+  **beta-only** (not in the v1.0 `Microsoft.Graph` 5.95 SDK the adapter
+  uses). Instead of a user-flow admin page, this maps OIDC id_token
+  claims onto the Graph user on sign-in: a sign-up user flow that emits
+  attributes as claims now lands them on the directory user via the
+  stable v1.0 `PATCH /users/{id}`. Adds
+  `EntraExternalProfileSyncOptions` (off by default; a
+  claim-type → Graph-property map seeded with
+  `given_name`→`givenName`, `family_name`→`surname`) under
+  `VisuAuth:EntraExternal:Web:ProfileSync`, an `IEntraExternalProfileSync`
+  service (best-effort — a Graph failure never blocks sign-in; restricts
+  writes to a known allow-list of standard `User` properties), and a
+  call from `EntraExternalLoginFlow.CompleteSignInAsync` on the happy
+  path. No new dependency, no admin page, no `Microsoft.Graph.Beta`.
+  Tests: profile-sync behaviour via the shared `FakeGraphHandler`
+  (disabled no-op, mapped-claim PATCH, only-present-properties, custom
+  mapping, unsupported-target skip, SOAP-URI alias, Graph-error
+  swallowed), + LoginFlow assertions that sync fires on success / not on
+  the user-missing path, + the DI registration. The
+  `FakeGraphHandler` gained request-body capture so the PATCH payload is
+  assertable.
 
 ---
 
@@ -143,19 +115,19 @@ immediate next step. Updated as PRs land. Long-term direction lives in
 
 Roadmap row from CLAUDE.md §13 is *"Microsoft Entra External ID
 adapter, profile / sessions management, bulk operations, view-level
-customization"*. The External adapter is split across PRs A/B/C
-(A merged as #36, B in flight, C pending). Other concrete ideas
-surfaced during v0.2:
+customization"*. The External adapter shipped across PRs A/B/C
+(#36 EntraCore extraction, #37 CRUD adapter, #38 OIDC sign-in) plus two
+admin-robustness fixes (#39 roles, #40 external-providers); PR D
+(profile sync) is in flight. Other concrete ideas surfaced during v0.2:
 
-1. **EntraExternal PR D — signup customization** — builds on PR C's
-   `VisuAuth.EntraExternal.Web` package. Adds a `Graph`-backed reader
-   for the tenant's user flows (sign-up vs sign-in flow selection),
-   an admin UI page at `/visuauth/admin/entra-external/user-flows`
-   to pick which flow the "Sign in with Microsoft" button invokes,
-   and an attribute-mapping layer that pushes user-flow-collected
-   attributes (firstName, country, custom fields) back into the
-   Graph user resource on first sign-in. Estimated ~1000 lines + 2-3
-   new admin pages. Mergeable after PR C lands.
+1. **User-flow management admin UI** *(blocked on Graph v1.0)* — the
+   originally-envisioned `/visuauth/admin/entra-external/user-flows`
+   page (list / pick / edit sign-up + sign-in flows and their collected
+   attributes) needs the `b2cUserFlow` / `authenticationEventsFlow` /
+   `userFlowAttribute` resources, which are **beta-only** in Microsoft
+   Graph. Parked until either those graduate to v1.0 or we decide to
+   take a dependency on `Microsoft.Graph.Beta`. PR D delivered the
+   attribute-mapping value (claims → Graph user) without it.
 2. **DB-backed adapter config UI** — `/visuauth/admin/entra-config`
    (and similar for future adapters). Pattern reuses the existing
    External Providers infrastructure: `IConfigureOptions<TOptions>`

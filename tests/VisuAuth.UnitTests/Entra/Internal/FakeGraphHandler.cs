@@ -31,6 +31,16 @@ internal sealed class FakeGraphHandler : HttpMessageHandler
 
     public List<HttpRequestMessage> RecordedRequests { get; } = [];
 
+    /// <summary>
+    /// Request bodies captured at send time, index-aligned with
+    /// <see cref="RecordedRequests"/>. Buffered DURING SendAsync because
+    /// HttpClient disposes the request content once the call returns —
+    /// reading <c>request.Content</c> afterwards yields nothing. Null for
+    /// bodyless requests (GET / DELETE). Lets a test assert on the exact
+    /// JSON a store / sync serialised onto the wire.
+    /// </summary>
+    public List<string?> RecordedRequestBodies { get; } = [];
+
     public FakeGraphHandler Setup(HttpMethod method, string pathSubstring, HttpStatusCode status, string body = "")
     {
         _routes.Add(new Route(method, pathSubstring, status, body));
@@ -64,6 +74,10 @@ internal sealed class FakeGraphHandler : HttpMessageHandler
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         RecordedRequests.Add(request);
+        // Buffer the body now — the content stream is disposed once this
+        // returns, so a later test read would come back empty.
+        RecordedRequestBodies.Add(
+            request.Content?.ReadAsStringAsync(cancellationToken).GetAwaiter().GetResult());
         var path = request.RequestUri?.PathAndQuery ?? string.Empty;
         var match = _routes.FirstOrDefault(r =>
             r.Method == request.Method

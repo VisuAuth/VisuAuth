@@ -143,6 +143,25 @@ public sealed class VisuAuthEntraExternalSignInExtensionsTests
     }
 
     [Fact]
+    public void AddVisuAuthEntraExternalSignIn_RegistersProfileSync()
+    {
+        // EntraExternalLoginFlow takes IEntraExternalProfileSync — the DI
+        // extension must register it or scope resolution of the flow fails.
+        var services = BaseServices();
+        services.AddVisuAuthEntraExternalSignIn(o =>
+        {
+            o.TenantSubdomain = "contoso";
+            o.TenantId = "t";
+            o.ClientId = "c";
+        });
+
+        using var sp = services.BuildServiceProvider();
+        using var scope = sp.CreateScope();
+        scope.ServiceProvider.GetService<IEntraExternalProfileSync>()
+            .Should().BeOfType<EntraExternalProfileSync>();
+    }
+
+    [Fact]
     public void AddVisuAuthEntraExternalSignIn_RegistersHttpContextAccessor()
     {
         // EntraExternalLoginFlow reads the authenticated principal off
@@ -241,7 +260,18 @@ public sealed class VisuAuthEntraExternalSignInExtensionsTests
         // ctor logic doesn't throw on null.
         services.AddSingleton(Mock.Of<IUserStore>(s =>
             s.Capabilities == new UserBackendCapabilities()));
+        // The flow also transitively needs a GraphServiceClient (via
+        // IEntraExternalProfileSync) — the real AddVisuAuthEntraExternal
+        // registers it; here an offline client (a credential we never call)
+        // is enough for DI resolution.
+        services.AddSingleton(BuildOfflineGraphClient());
         return services;
+    }
+
+    private static Microsoft.Graph.GraphServiceClient BuildOfflineGraphClient()
+    {
+        Azure.Core.TokenCredential offline = new Azure.Identity.ClientSecretCredential("tenant", "client", "secret");
+        return new Microsoft.Graph.GraphServiceClient(offline);
     }
 
     private static void AssertSignInSurfaceRegistered(IServiceCollection services)

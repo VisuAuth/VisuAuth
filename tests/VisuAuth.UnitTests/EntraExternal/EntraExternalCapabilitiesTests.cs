@@ -60,12 +60,12 @@ public sealed class EntraExternalCapabilitiesTests
     }
 
     [Fact]
-    public void TwoFactorReset_IsFalse_InV03_SharedLimitationWithWorkforce()
+    public void TwoFactorReset_IsTrue_SharedWithWorkforceViaEntraTwoFactorReset()
     {
-        EntraExternalCapabilities.Value.SupportsTwoFactorReset.Should().BeFalse(
-            "per-method DELETE in Graph needs typed builders per auth-method subtype; deferred to v0.4 with the Workforce adapter");
+        EntraExternalCapabilities.Value.SupportsTwoFactorReset.Should().BeTrue(
+            "EntraExternalUserStore.ResetTwoFactorAsync deletes the customer's auth methods via the shared EntraTwoFactorReset helper");
         EntraExternalCapabilities.Value.SupportsTwoFactor.Should().BeFalse(
-            "multi-factor enrolment pages don't apply — External customers enrol via Microsoft's hosted surfaces");
+            "multi-factor enrolment pages still don't apply — External customers enrol via Microsoft's hosted surfaces");
     }
 
     [Fact]

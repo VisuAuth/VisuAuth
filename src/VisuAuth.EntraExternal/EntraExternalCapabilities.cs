@@ -55,9 +55,11 @@ namespace VisuAuth.EntraExternal;
 ///     own UX.
 ///   </item>
 ///   <item>
-///     <b>SupportsTwoFactorReset = false</b> — same v0.2 limitation as
-///     the Workforce adapter: per-method DELETE in Graph requires a typed
-///     builder per subtype. Slated for v0.4.
+///     <b>SupportsTwoFactorReset = true</b> — the admin can wipe a
+///     customer's registered authentication methods (forces re-enrolment)
+///     via Graph, shared with the Workforce adapter through
+///     <c>EntraTwoFactorReset</c>. Needs
+///     <c>UserAuthenticationMethod.ReadWrite.All</c>.
 ///   </item>
 ///   <item>
 ///     <b>SupportsLockout = false</b> — Entra uses smart lockout that
@@ -115,7 +117,11 @@ internal static class EntraExternalCapabilities
         SupportsRegistration = true,
         SupportsPasswordReset = true,
         SupportsTwoFactor = false,
-        SupportsTwoFactorReset = false,
+        // EntraExternalUserStore.ResetTwoFactorAsync deletes the customer's
+        // registered authentication methods via Graph (shared with
+        // Workforce through EntraTwoFactorReset). Needs
+        // UserAuthenticationMethod.ReadWrite.All on the app.
+        SupportsTwoFactorReset = true,
         SupportsLockout = false,
         SupportsEmailConfirmation = false,
         SupportsRoleManagement = true,

@@ -85,29 +85,19 @@ immediate next step. Updated as PRs land. Long-term direction lives in
 
 ## In flight
 
-- **EntraExternal PR D — profile attribute sync** (`feat/entra-external-profile-sync`)
-  — the signup-customization half of the v0.3 EntraExternal work, scoped
-  down after discovering the user-flow management Graph API is
-  **beta-only** (not in the v1.0 `Microsoft.Graph` 5.95 SDK the adapter
-  uses). Instead of a user-flow admin page, this maps OIDC id_token
-  claims onto the Graph user on sign-in: a sign-up user flow that emits
-  attributes as claims now lands them on the directory user via the
-  stable v1.0 `PATCH /users/{id}`. Adds
-  `EntraExternalProfileSyncOptions` (off by default; a
-  claim-type → Graph-property map seeded with
-  `given_name`→`givenName`, `family_name`→`surname`) under
-  `VisuAuth:EntraExternal:Web:ProfileSync`, an `IEntraExternalProfileSync`
-  service (best-effort — a Graph failure never blocks sign-in; restricts
-  writes to a known allow-list of standard `User` properties), and a
-  call from `EntraExternalLoginFlow.CompleteSignInAsync` on the happy
-  path. No new dependency, no admin page, no `Microsoft.Graph.Beta`.
-  Tests: profile-sync behaviour via the shared `FakeGraphHandler`
-  (disabled no-op, mapped-claim PATCH, only-present-properties, custom
-  mapping, unsupported-target skip, SOAP-URI alias, Graph-error
-  swallowed), + LoginFlow assertions that sync fires on success / not on
-  the user-missing path, + the DI registration. The
-  `FakeGraphHandler` gained request-body capture so the PATCH payload is
-  assertable.
+- **Entra two-factor reset** (`feat/entra-reset-twofactor`) — implements
+  `ResetTwoFactorAsync` on both Entra adapters (Workforce + External),
+  flipping `SupportsTwoFactorReset` from false to true so the admin
+  user-detail "reset 2FA" button surfaces and works in Entra mode.
+  Shared `VisuAuth.EntraCore.Infrastructure.EntraTwoFactorReset` lists
+  `/authentication/methods` and deletes each removable method via its
+  typed Graph endpoint (microsoftAuthenticator / fido2 / phone /
+  softwareOath / windowsHelloForBusiness / email), leaving the password
+  method in place. Needs `UserAuthenticationMethod.ReadWrite.All`.
+  Tests: the helper's per-subtype DELETE dispatch + password-skip via
+  the shared `FakeGraphHandler`, plus each store's happy-path / 404 /
+  forbidden mapping; the stale NotSupported / capability-false unit
+  assertions were updated.
 
 ---
 
@@ -136,11 +126,7 @@ admin-robustness fixes (#39 roles, #40 external-providers); PR D
    Graph call without restart. Possibly generalised to
    `VisuAuthAdapterConfigs` (section/key/value/isSecret) so future
    adapters (LDAP, Cognito, …) get the same admin surface for free.
-3. **Entra `ResetTwoFactor`** — per-method DELETE through typed
-   builders (microsoftAuthenticatorMethods, fido2Methods, …). Flips
-   `EntraCapabilities.SupportsTwoFactorReset` from false to true,
-   surfaces the button on the user detail page in Entra mode.
-4. **`IAuditReader` wrapper for Entra `auditLogs`** — surfaces Entra
+3. **`IAuditReader` wrapper for Entra `auditLogs`** — surfaces Entra
    sign-in / directory audit logs on `/admin/audit-log` for
    Entra-mode deployments. Today the page renders the "plugin not
    enabled" hint because the Identity-only `EfCoreAuditStore` isn't

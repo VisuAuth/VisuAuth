@@ -18,6 +18,24 @@ Working toward [`0.2.0`](#020--planned). `<VersionPrefix>` in
 
 ### Added
 
+- **Two-factor reset for the Entra adapters.** `ResetTwoFactorAsync` is now
+  implemented on both `VisuAuth.Entra` (Workforce) and
+  `VisuAuth.EntraExternal` — it lists the user's
+  `/authentication/methods` and deletes every removable method via its
+  typed Graph endpoint (Microsoft Authenticator, FIDO2, phone, software
+  OATH, Windows Hello, email), leaving the password method in place so
+  the user keeps their account but must re-enrol their second factor.
+  Both adapters flip `SupportsTwoFactorReset = true`, so the admin
+  user-detail "reset 2FA" button now surfaces and works in Entra mode
+  (previously it threw `NotSupportedException` and the button was
+  hidden). The shared logic lives in
+  `VisuAuth.EntraCore.Infrastructure.EntraTwoFactorReset` — the Graph
+  surface is identical across tenant families. Requires the registered
+  app to hold `UserAuthenticationMethod.ReadWrite.All`. Tests cover the
+  helper's per-subtype DELETE dispatch (+ password-skip) via the shared
+  `FakeGraphHandler`, plus each store's happy-path / 404 / forbidden
+  mapping.
+
 - **Entra External profile attribute sync** (`VisuAuth.EntraExternal.Web`).
   Opt-in: when an Entra External sign-up user flow collects attributes and
   emits them as id_token claims, VisuAuth copies them onto the directory

@@ -118,6 +118,31 @@ public sealed class VisuAuthEntraExternalSignInExtensionsTests
     }
 
     [Fact]
+    public void AddVisuAuthEntraExternalSignIn_DecoratesAuthenticationFlow_SoLogoutClearsTheCookie()
+    {
+        // The CRUD adapter's EntraExternalAuthenticationFlow.SignOutAsync is
+        // a no-op (no HttpContext in that package), so /visuauth/logout
+        // wouldn't actually sign the user out in External mode. The sign-in
+        // package must Replace IAuthenticationFlow with the decorator that
+        // clears the cookie. Pin that here so a refactor can't silently
+        // regress logout.
+        var services = BaseServices();
+        services.AddScoped<IAuthenticationFlow>(_ => Mock.Of<IAuthenticationFlow>());
+        services.AddVisuAuthEntraExternalSignIn(o =>
+        {
+            o.TenantSubdomain = "contoso";
+            o.TenantId = "t";
+            o.ClientId = "c";
+        });
+
+        using var sp = services.BuildServiceProvider();
+        using var scope = sp.CreateScope();
+        scope.ServiceProvider.GetRequiredService<IAuthenticationFlow>()
+            .Should().BeOfType<EntraExternalWebAuthenticationFlow>(
+                "logout has to clear the OIDC cookie — the decorator is what makes /visuauth/logout work in External mode");
+    }
+
+    [Fact]
     public void AddVisuAuthEntraExternalSignIn_RegistersHttpContextAccessor()
     {
         // EntraExternalLoginFlow reads the authenticated principal off

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -167,6 +168,18 @@ public static class VisuAuthEntraExternalSignInExtensions
         // shouldn't survive once we have a real one.
         services.Replace(
             ServiceDescriptor.Scoped<IExternalLoginFlow, EntraExternalLoginFlow>());
+
+        // Decorate the IAuthenticationFlow so /visuauth/logout actually
+        // clears the OIDC session cookie. The CRUD adapter's
+        // EntraExternalAuthenticationFlow can't (no HttpContext in that
+        // package), so its SignOutAsync is a no-op — wrapping it here is
+        // what makes "Sign out" work in External mode. The inner instance
+        // is constructed directly (parameterless ctor) so we don't depend
+        // on resolution order with AddVisuAuthEntraExternal.
+        services.Replace(ServiceDescriptor.Scoped<IAuthenticationFlow>(sp =>
+            new EntraExternalWebAuthenticationFlow(
+                new EntraExternalAuthenticationFlow(),
+                sp.GetRequiredService<IHttpContextAccessor>())));
 
         return services;
     }

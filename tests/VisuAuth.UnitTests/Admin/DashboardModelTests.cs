@@ -108,9 +108,8 @@ public sealed class DashboardModelTests
                         TargetLabel = "alice@example.com",
                     },
                 },
-                Total = 1,
-                Page = 1,
-                PageSize = DashboardModel.RecentActivityCount,
+                TotalCount = 1,
+                NextCursor = null,
             });
 
         var page = new DashboardModel(users.Object, roles.Object, tenants.Object, services);
@@ -199,9 +198,8 @@ public sealed class DashboardModelTests
     private static PagedResult<UserSummary> EmptyUserPage(int total) => new()
     {
         Items = Array.Empty<UserSummary>(),
-        Total = total,
-        Page = 1,
-        PageSize = 1,
+        TotalCount = total,
+        NextCursor = null,
     };
 #pragma warning restore CA1859
 }

@@ -21,9 +21,9 @@
     var hasResults = result.Items.Count > 0;
     var showTenantColumn = TenantContext.IsMultiTenancyEnabled;
 
-    string PageLink(int page)
+    string NextLink(string cursor)
     {
-        var qs = new List<string> { $"page={page}" };
+        var qs = new List<string> { $"cursor={Uri.EscapeDataString(cursor)}" };
         if (!string.IsNullOrEmpty(Model.SearchTerm)) qs.Add($"q={Uri.EscapeDataString(Model.SearchTerm)}");
         if (!string.IsNullOrEmpty(Model.RoleFilter)) qs.Add($"role={Uri.EscapeDataString(Model.RoleFilter)}");
         if (!string.IsNullOrEmpty(Model.StatusFilter)) qs.Add($"status={Uri.EscapeDataString(Model.StatusFilter)}");
@@ -101,26 +101,28 @@
 
         <div class="va-pagination">
             <div>
-                @Ls["Users.PaginationShowing", ((result.Page - 1) * result.PageSize) + 1, Math.Min(result.Page * result.PageSize, result.Total), result.Total]
+                @if (result.TotalCount is { } total)
+                {
+                    @Ls["Users.PaginationTotal", total]
+                }
+                else
+                {
+                    @Ls["Users.PaginationShowingCount", result.Items.Count]
+                }
             </div>
             <div>
-                @if (result.HasPrevious)
+                @if (Model.HasPrevious)
                 {
-                    <a href="@PageLink(result.Page - 1)"
-                       hx-get="@PageLink(result.Page - 1)"
-                       hx-target="#va-users-table"
-                       hx-swap="outerHTML"
-                       hx-push-url="true">@Ls["Common.Previous"]</a>
+                    <button type="button" class="va-pagination-prev" onclick="history.back();return false;">@Ls["Common.Previous"]</button>
                 }
                 else
                 {
                     <span class="va-disabled">@Ls["Common.Previous"]</span>
                 }
-                <span class="va-muted">@Ls["Common.PageNofTotal", result.Page, Math.Max(result.TotalPages, 1)]</span>
-                @if (result.HasNext)
+                @if (result.HasMore)
                 {
-                    <a href="@PageLink(result.Page + 1)"
-                       hx-get="@PageLink(result.Page + 1)"
+                    <a href="@NextLink(result.NextCursor!)"
+                       hx-get="@NextLink(result.NextCursor!)"
                        hx-target="#va-users-table"
                        hx-swap="outerHTML"
                        hx-push-url="true">@Ls["Common.Next"]</a>

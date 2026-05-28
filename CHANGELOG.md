@@ -279,6 +279,32 @@ Working toward [`0.2.0`](#020--planned). `<VersionPrefix>` in
 
 ### Changed
 
+- **BREAKING — pagination is now cursor-based** (`VisuAuth.Abstractions`).
+  `PagedResult<T>` drops `Page`, `PageSize`, `TotalPages`, `HasNext`, and
+  `HasPrevious` in favour of a forward, opaque `string? NextCursor`
+  (`HasMore` derives from it) plus an optional `int? TotalCount`.
+  `UserFilter` and `AuditFilter` drop `Page` for an opaque `string? Cursor`.
+  Callers paginate by passing the previous result's `NextCursor` back as the
+  filter's `Cursor`; the token is a black box and must not be parsed.
+  - **Why:** Microsoft Graph paginates with `@odata.nextLink` skip tokens,
+    not numeric pages, so the Entra user stores previously couldn't page
+    past "page 1". They now follow Graph's continuation link natively, while
+    EF-backed stores (`AspNetIdentityUserStore`, `EfCoreAuditStore`) encode
+    the next offset into the same cursor shape and still report a real
+    `TotalCount`.
+  - `TotalCount` is `null` for cursor-only backends (Graph) that don't return
+    a count alongside a page; the admin UI then shows a per-page count
+    instead of "of N".
+  - `EntraAuditReader` returns a single page with no cursor: it merges two
+    independently-tokenised Graph sources client-side, which a single forward
+    token can't page correctly. Narrow with the date / action / actor filters.
+  - **Security:** the new `GraphPageCursor` (in `VisuAuth.EntraCore`) only
+    follows a decoded continuation link when it resolves to the same HTTPS
+    origin as the configured Graph base URL, so a tampered `?cursor=` can't
+    redirect a bearer-token request to an attacker host.
+  - **Admin UI:** "Next" follows the cursor (htmx + `hx-push-url`);
+    "Previous" steps back through browser history; the "Page N of M" label is
+    gone (a forward cursor has no page count).
 - **Sample.WebApp now uses EF Core migrations** instead of
   `Database.EnsureCreated()`. New `Data/Migrations/` folder with the
   initial migration covers every Identity + VisuAuth table (10 total).

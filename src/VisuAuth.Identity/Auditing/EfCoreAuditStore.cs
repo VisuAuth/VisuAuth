@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using VisuAuth.Abstractions.Auditing;
 using VisuAuth.Abstractions.Common;
 using VisuAuth.Abstractions.Tenancy;
+using VisuAuth.Identity.Common;
 using VisuAuth.Identity.MultiTenancy;
 
 namespace VisuAuth.Identity.Auditing;
@@ -94,7 +95,6 @@ public sealed class EfCoreAuditStore(
     {
         ArgumentNullException.ThrowIfNull(filter);
 
-        var page = Math.Max(1, filter.Page);
         var pageSize = Math.Clamp(filter.PageSize, 1, MaxPageSize);
 
         // Start from the IQueryable so EF can push every predicate to SQL.
@@ -132,20 +132,25 @@ public sealed class EfCoreAuditStore(
 
         var total = await query.CountAsync(cancellationToken);
 
+        // The opaque cursor carries the offset of the page to fetch — an
+        // absent or tampered one decodes to zero. Ordering by timestamp and
+        // then id stays deterministic across pages.
+        var offset = OffsetCursor.Decode(filter.Cursor);
+
         var rows = await query
             .OrderByDescending(e => e.Timestamp)
             .ThenByDescending(e => e.Id)
-            .Skip((page - 1) * pageSize)
+            .Skip(offset)
             .Take(pageSize)
             .Select(e => ToView(e))
             .ToListAsync(cancellationToken);
 
+        var nextOffset = offset + rows.Count;
         return new PagedResult<AuditEntryView>
         {
             Items = rows,
-            Total = total,
-            Page = page,
-            PageSize = pageSize,
+            NextCursor = nextOffset < total ? OffsetCursor.Encode(nextOffset) : null,
+            TotalCount = total,
         };
     }
 

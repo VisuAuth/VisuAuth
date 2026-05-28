@@ -150,8 +150,11 @@ public sealed class EntraAuditReaderTests
     }
 
     [Fact]
-    public async Task ListAsync_ClampsPageSizeTo200()
+    public async Task ListAsync_WithOversizedPageSize_ReturnsSinglePageWithNoCursor()
     {
+        // The reader clamps page size internally; it's no longer surfaced on
+        // PagedResult, so we assert the observable contract instead: a huge
+        // page size is handled gracefully and the merged view never paginates.
         var handler = new FakeGraphHandler()
             .SetupGet("/auditLogs/signIns", EmptyJson)
             .SetupGet("/auditLogs/directoryAudits", EmptyJson);
@@ -159,7 +162,9 @@ public sealed class EntraAuditReaderTests
 
         var page = await reader.ListAsync(new AuditFilter { PageSize = 5000 });
 
-        page.PageSize.Should().Be(200);
+        page.Items.Should().BeEmpty();
+        page.NextCursor.Should().BeNull("the client-side merge of two Graph sources isn't forward-pageable");
+        page.TotalCount.Should().BeNull("Graph returns no cheap total");
     }
 
     [Fact]
@@ -173,7 +178,8 @@ public sealed class EntraAuditReaderTests
         var page = await reader.ListAsync(new AuditFilter());
 
         page.Items.Should().BeEmpty();
-        page.Total.Should().Be(0);
+        page.NextCursor.Should().BeNull();
+        page.TotalCount.Should().BeNull();
     }
 
     [Fact]

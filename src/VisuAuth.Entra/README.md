@@ -267,7 +267,7 @@ Every method returns either `RedirectToExternalProvider` (`SignInWithPasswordAsy
 |---|---|---|
 | `UPN` / `mail` not editable from the admin UI | Graph rejects PATCH on these for B2B externals (`*#EXT#@*`) with 403, even with `User.ReadWrite.All` | Edit in the Entra portal, or POST `PATCH /users/{id}` from custom code that branches on member-vs-guest |
 | `signInActivity` is not in the default user `$select` | Field requires `AuditLog.Read.All` + Entra ID P1 license; free tenants get a 403 on the whole list call | `UserSummary.LastSignInAt` stays null; UI renders "—". Subclass / override the store if you're on P1+ |
-| Pagination treats every list call as page 1 | Graph paginates with `@odata.nextLink` cursors, not numeric pages; the v0.2 `PagedResult.Page` contract is 1-based | Use search / filter to refine. v0.3 adds cursor-based paging |
+| User list shows no total count | Graph doesn't return a total alongside a page (a `$count` call is a separate round-trip) | `PagedResult.TotalCount` is null; the admin UI shows a per-page count and a working "Next" (cursor-based, following `@odata.nextLink`) instead of "page N of M" |
 | Single-domain UI locks ONE suffix | With exactly one verified domain the form binds a single fixed suffix | Multi-domain tenants get a dropdown automatically (needs `Domain.Read.All`); or pass a full email in `CreateUserCommand.Email` to override |
 | End-user `/visuauth/login` shows "use external provider" with no provider button | VisuAuth.Entra doesn't implement OIDC — the consumer wires `Microsoft.Identity.Web` to host the actual login | Add `Microsoft.Identity.Web` and configure a sign-in route (`/signin-microsoft` etc.). The VisuAuth login page is a hint, not the auth surface |
 

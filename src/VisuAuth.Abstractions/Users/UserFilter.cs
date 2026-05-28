@@ -26,7 +26,12 @@ public sealed record UserFilter
     /// <summary>If set, filters by two-factor enrolment.</summary>
     public bool? TwoFactorEnabled { get; init; }
 
-    public int Page { get; init; } = 1;
+    /// <summary>
+    /// Opaque forward cursor from a previous <see cref="Common.PagedResult{T}.NextCursor"/>.
+    /// Null/empty requests the first page. Treat as a black box — never build
+    /// it by hand.
+    /// </summary>
+    public string? Cursor { get; init; }
 
     public int PageSize { get; init; } = 25;
 

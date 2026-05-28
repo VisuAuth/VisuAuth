@@ -29,12 +29,20 @@ public sealed class IndexModel(IUserStore userStore, IRoleStore roleStore) : Pag
     [BindProperty(SupportsGet = true, Name = "twofa")]
     public string? TwoFactorFilter { get; set; }
 
-    [BindProperty(SupportsGet = true, Name = "page")]
-    public int PageNumber { get; set; } = 1;
+    /// <summary>Opaque forward cursor from the previous page's NextCursor. Empty on the first page.</summary>
+    [BindProperty(SupportsGet = true, Name = "cursor")]
+    public string? Cursor { get; set; }
 
     public int PageSize { get; private set; } = 25;
 
     public PagedResult<UserSummary> Result { get; private set; } = PagedResult<UserSummary>.Empty();
+
+    /// <summary>
+    /// True when the current request carried a cursor, i.e. we're past the
+    /// first page. Drives the "Previous" control, which steps back through the
+    /// browser history (each page push stores its cursor in the URL).
+    /// </summary>
+    public bool HasPrevious => !string.IsNullOrEmpty(Cursor);
 
     /// <summary>Role catalogue used to populate the filter dropdown.</summary>
     public IReadOnlyList<RoleSummary> AvailableRoles { get; private set; } = [];
@@ -48,7 +56,7 @@ public sealed class IndexModel(IUserStore userStore, IRoleStore roleStore) : Pag
             IsLockedOut = ParseLockedOut(StatusFilter),
             EmailConfirmed = ParseBool(VerifiedFilter),
             TwoFactorEnabled = ParseBool(TwoFactorFilter),
-            Page = PageNumber < 1 ? 1 : PageNumber,
+            Cursor = Cursor,
             PageSize = PageSize,
             SortBy = UserSortBy.Email,
             Descending = false,

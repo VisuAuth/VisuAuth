@@ -205,6 +205,7 @@ body {
 }
 
 .va-pagination a,
+.va-pagination button.va-pagination-prev,
 .va-pagination span.va-disabled {
     color: var(--visuauth-primary);
     text-decoration: none;
@@ -212,12 +213,22 @@ body {
     border-radius: var(--visuauth-radius);
 }
 
+/* "Previous" is a real <button> (it walks the browser history rather than
+   navigating to a URL) styled to match its link siblings. */
+.va-pagination button.va-pagination-prev {
+    border: none;
+    background: none;
+    font: inherit;
+    cursor: pointer;
+}
+
 .va-pagination span.va-disabled {
     color: var(--visuauth-muted);
     pointer-events: none;
 }
 
-.va-pagination a:hover {
+.va-pagination a:hover,
+.va-pagination button.va-pagination-prev:hover {
     background: var(--visuauth-border);
 }
 

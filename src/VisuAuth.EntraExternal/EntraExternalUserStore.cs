@@ -41,12 +41,13 @@ namespace VisuAuth.EntraExternal;
 /// <see cref="NotSupportedException"/> per the IUserStore contract.
 /// </para>
 /// <para>
-/// <b>Pagination caveat:</b> same as the Workforce adapter — Graph
-/// paginates with <c>@odata.nextLink</c> cursors, not numeric pages, so
-/// this implementation honours <see cref="UserFilter.PageSize"/> exactly
-/// and treats every call as page 1. The admin UI's search + filter push
-/// down to Graph for refinement. Cursor-based paging is on the v0.4
-/// roadmap (shared with the Workforce adapter).
+/// <b>Pagination:</b> same as the Workforce adapter — Graph's
+/// <c>@odata.nextLink</c> continuation maps onto the cursor-based
+/// <see cref="PagedResult{T}"/>. The first call applies
+/// <see cref="UserFilter.PageSize"/> as <c>$top</c>; the returned
+/// <see cref="PagedResult{T}.NextCursor"/> wraps Graph's (origin-validated)
+/// continuation link, and <see cref="PagedResult{T}.TotalCount"/> stays
+/// <see langword="null"/> because Graph returns no count alongside a page.
 /// </para>
 /// <para>
 /// <b>Failure mapping:</b> Graph errors arrive as
@@ -156,22 +157,36 @@ public sealed class EntraExternalUserStore(
 
         try
         {
-            var response = await _graph.Users.GetAsync(rc =>
+            UserCollectionResponse? response;
+            if (GraphPageCursor.TryDecode(filter.Cursor, _options.GraphBaseUrl, "users", out var nextLink))
             {
-                rc.QueryParameters.Top = pageSize;
-                rc.QueryParameters.Select = EntraExternalUserMapper.SummarySelect.Split(',');
-                var graphFilter = EntraExternalUserMapper.BuildGraphFilter(filter);
-                if (graphFilter is not null)
+                // Continuation: the skiptoken URL already carries the original
+                // $top / $filter / $select. Replay it and re-assert the
+                // consistency level (a header, not part of the URL) since the
+                // External search clause is identities-aware.
+                response = await _graph.Users
+                    .WithUrl(nextLink)
+                    .GetAsync(rc => rc.Headers.Add("ConsistencyLevel", "eventual"), cancellationToken);
+            }
+            else
+            {
+                response = await _graph.Users.GetAsync(rc =>
                 {
-                    rc.QueryParameters.Filter = graphFilter;
-                    // Advanced query capabilities (filter, count, search) AND
-                    // any predicate against identities/* require the
-                    // ConsistencyLevel: eventual header. The mapper's search
-                    // clause is identities-aware, so the header is always
-                    // needed once a filter is present.
-                    rc.Headers.Add("ConsistencyLevel", "eventual");
-                }
-            }, cancellationToken);
+                    rc.QueryParameters.Top = pageSize;
+                    rc.QueryParameters.Select = EntraExternalUserMapper.SummarySelect.Split(',');
+                    var graphFilter = EntraExternalUserMapper.BuildGraphFilter(filter);
+                    if (graphFilter is not null)
+                    {
+                        rc.QueryParameters.Filter = graphFilter;
+                        // Advanced query capabilities (filter, count, search) AND
+                        // any predicate against identities/* require the
+                        // ConsistencyLevel: eventual header. The mapper's search
+                        // clause is identities-aware, so the header is always
+                        // needed once a filter is present.
+                        rc.Headers.Add("ConsistencyLevel", "eventual");
+                    }
+                }, cancellationToken);
+            }
 
             var items = (response?.Value ?? [])
                 .Select(EntraExternalUserMapper.ToSummary)
@@ -180,19 +195,17 @@ public sealed class EntraExternalUserStore(
             return new PagedResult<UserSummary>
             {
                 Items = items,
-                // Same v0.2-era trade-off as the Workforce store: no
-                // separate $count call, so total = page-size for honest
-                // "showing N" display. v0.4 cursor-based paging will
-                // replace this.
-                Total = items.Count,
-                Page = 1,
-                PageSize = pageSize,
+                // Graph's continuation link becomes our opaque cursor; no
+                // cheap total is available, so TotalCount stays null and the
+                // UI renders a count-only "showing N" line.
+                NextCursor = GraphPageCursor.Encode(response?.OdataNextLink),
+                TotalCount = null,
             };
         }
         catch (ODataError ex)
         {
             _logger.GraphListFailed(ex, ex.Error?.Message);
-            return PagedResult<UserSummary>.Empty(1, pageSize);
+            return PagedResult<UserSummary>.Empty();
         }
     }
 

@@ -88,24 +88,24 @@ public sealed class DashboardModel(
         // Counts: one ListAsync per KPI with PageSize=1. Reuses the
         // store's existing query path so multi-tenant filtering applies
         // automatically — no new abstraction to teach every adapter.
-        TotalUsers = await CountAsync(new UserFilter { Page = 1, PageSize = 1 }, cancellationToken);
+        TotalUsers = await CountAsync(new UserFilter { PageSize = 1 }, cancellationToken);
 
         if (Capabilities.SupportsLockout)
         {
             LockedUsers = await CountAsync(
-                new UserFilter { IsLockedOut = true, Page = 1, PageSize = 1 },
+                new UserFilter { IsLockedOut = true, PageSize = 1 },
                 cancellationToken);
         }
         if (Capabilities.SupportsEmailConfirmation)
         {
             PendingConfirmUsers = await CountAsync(
-                new UserFilter { EmailConfirmed = false, Page = 1, PageSize = 1 },
+                new UserFilter { EmailConfirmed = false, PageSize = 1 },
                 cancellationToken);
         }
         if (Capabilities.SupportsTwoFactor)
         {
             TwoFactorUsers = await CountAsync(
-                new UserFilter { TwoFactorEnabled = true, Page = 1, PageSize = 1 },
+                new UserFilter { TwoFactorEnabled = true, PageSize = 1 },
                 cancellationToken);
         }
 
@@ -125,7 +125,10 @@ public sealed class DashboardModel(
     private async Task<int> CountAsync(UserFilter filter, CancellationToken cancellationToken)
     {
         var page = await _users.ListAsync(filter, cancellationToken);
-        return page.Total;
+        // EF stores supply a real total; cursor-only backends (Graph) leave it
+        // null, so fall back to the (tiny, PageSize=1) page count — the same
+        // best-effort number those backends surfaced before.
+        return page.TotalCount ?? page.Items.Count;
     }
 
     private async Task LoadAuditSectionsAsync(CancellationToken cancellationToken)
@@ -141,7 +144,7 @@ public sealed class DashboardModel(
         AuditPluginEnabled = true;
 
         var recent = await reader.ListAsync(
-            new AuditFilter { Page = 1, PageSize = RecentActivityCount },
+            new AuditFilter { PageSize = RecentActivityCount },
             cancellationToken);
         RecentActivity = recent.Items;
 

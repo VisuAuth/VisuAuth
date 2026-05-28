@@ -19,7 +19,6 @@
   "Common.No": "Não",
   "Common.Off": "Desligado",
   "Common.On": "Ligado",
-  "Common.PageNofTotal": "Página {0} de {1}",
   "Common.Pending": "Pendente",
   "Common.Previous": "‹ Anterior",
   "Common.Rename": "Renomear",
@@ -58,7 +57,8 @@
   "Users.Col.Tenant": "Tenant",
   "Users.Col.Username": "Usuário",
   "Users.Col.Verified": "Verificado",
-  "Users.PaginationShowing": "Exibindo {0}–{1} de {2}",
+  "Users.PaginationTotal": "{0} usuários",
+  "Users.PaginationShowingCount": "Exibindo {0}",
   "Users.EmptyNoMatch": "Nenhum usuário corresponde a <strong>{0}</strong>.",
   "Users.EmptyNone": "Nenhum usuário ainda.",
 

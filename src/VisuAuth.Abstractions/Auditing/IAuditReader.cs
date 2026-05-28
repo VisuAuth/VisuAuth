@@ -72,8 +72,12 @@ public sealed record AuditFilter
     /// <summary>Filter by outcome (success / failure). Null = both.</summary>
     public AuditOutcome? Outcome { get; init; }
 
-    /// <summary>1-based page number. Defaults to 1.</summary>
-    public int Page { get; init; } = 1;
+    /// <summary>
+    /// Opaque forward cursor from a previous <see cref="PagedResult{T}.NextCursor"/>.
+    /// Null/empty requests the first page. Treat as a black box. Cursor-only
+    /// backends (Microsoft Graph) may return a single page with no cursor.
+    /// </summary>
+    public string? Cursor { get; init; }
 
     /// <summary>Items per page. Defaults to 50; capped by the store at 200.</summary>
     public int PageSize { get; init; } = 50;

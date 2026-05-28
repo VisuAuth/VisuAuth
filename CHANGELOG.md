@@ -18,6 +18,36 @@ Working toward [`0.2.0`](#020--planned). `<VersionPrefix>` in
 
 ### Added
 
+- **Entra sign-in audit reader** (`VisuAuth.EntraCore`). Opt-in
+  `IAuditReader` over Microsoft Entra's `/auditLogs/signIns`: call
+  `services.AddVisuAuthEntraSignInAuditLog()` (after `AddVisuAuthEntra` /
+  `AddVisuAuthEntraExternal`) to surface the directory's sign-in events on
+  `/visuauth/admin/audit-log` and feed the dashboard "logins per day"
+  chart — instead of the "audit plugin not enabled" hint that shows when
+  no `IAuditReader` is registered.
+  - `EntraSignInAuditReader` maps each Graph `signIn` onto an
+    `AuditEntryView` (actor UPN, IP, app, outcome, failure reason,
+    timestamp), using the canonical `LoginSucceeded` / `LoginFailed`
+    action codes so the chart's `CountByDayAsync(LoginSucceeded)` and the
+    filter dropdown line up. `ListAsync` pushes the `AuditFilter` down as
+    an OData `$filter` (date range, actor `startswith`, outcome →
+    `status/errorCode`); `CountByDayAsync` follows `@odata.nextLink`
+    (bounded) to roll sign-ins into UTC-day buckets.
+  - **Requires `AuditLog.Read.All` + an Entra ID P1 licence.** Without
+    them Graph returns 403 and the reader degrades to an empty view
+    (logs a warning) — never a 500. Opt-in rather than auto-wired
+    precisely so a consumer lacking the licence keeps the "not enabled"
+    hint instead of a perpetually-empty page.
+  - **Scope: sign-ins only.** Entra's `directoryAudits` (the
+    admin-action trail) has a different shape and is a documented
+    follow-up.
+  - Both Entra samples (`Sample.EntraWebApp`, `Sample.EntraExternalWebApp`)
+    wire the opt-in with a note about the extra Graph permission. Tests:
+    the pure `EntraSignInAuditMapper` (projection + `$filter`), the reader
+    over the shared `FakeGraphHandler` (mapping, page-size clamp, filter
+    push-down, 403 degradation, day-rollup with next-link paging), and the
+    DI extension.
+
 - **Two-factor reset for the Entra adapters.** `ResetTwoFactorAsync` is now
   implemented on both `VisuAuth.Entra` (Workforce) and
   `VisuAuth.EntraExternal` — it lists the user's

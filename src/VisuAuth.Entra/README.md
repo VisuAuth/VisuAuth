@@ -80,7 +80,7 @@ No `AddIdentity`, no `AddDbContext`, no JWT issuer, no OAuth providers. Everythi
 | `SupportsSessionRevocation` | `true` | Graph `revokeSignInSessions` invalidates every refresh token. |
 | `SupportsExternalProviders` | `false` | Entra IS the IdP — the providers admin page would be circular. |
 | `SupportsCustomClaims` | `true` | Graph extension properties (v0.3 surfaces them in the UI). |
-| `SupportsAuditLog` | `true` | Entra has its own auditLogs API. Opt in with `AddVisuAuthEntraSignInAuditLog()` to surface sign-in events on `/admin/audit-log` (needs `AuditLog.Read.All` + Entra ID P1). |
+| `SupportsAuditLog` | `true` | Entra has its own auditLogs API. Opt in with `AddVisuAuthEntraAuditLog()` to surface sign-in + directory-change events on `/admin/audit-log` (needs `AuditLog.Read.All` + Entra ID P1). |
 | `EmailDomainSuffix` | from `EntraOptions.DefaultEmailDomain` | When set, locks the Create-User email input to that suffix. Bypasses Graph's "domain must be verified" 400. |
 
 Every flag above is a real decision point in the UI — flipping one reshapes what the admin sees.

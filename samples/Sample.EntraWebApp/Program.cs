@@ -46,12 +46,13 @@ builder.Services
 // a singleton GraphServiceClient backed by app-only (client credentials) auth.
 builder.Services.AddVisuAuthEntra(builder.Configuration);
 
-// Opt-in: surface the tenant's Entra sign-in events on /visuauth/admin/audit-log
-// (and the dashboard "logins per day" chart). Needs Microsoft Graph
+// Opt-in: surface the tenant's Entra audit events — sign-ins AND directory
+// changes (user CRUD, role assignments) — on /visuauth/admin/audit-log, and
+// feed the dashboard "logins per day" chart. Needs Microsoft Graph
 // AuditLog.Read.All (admin-consented) + an Entra ID P1 licence; degrades to
 // an empty audit view without them. Drop this line to keep the "not enabled"
 // hint on the audit page.
-builder.Services.AddVisuAuthEntraSignInAuditLog();
+builder.Services.AddVisuAuthEntraAuditLog();
 
 var app = builder.Build();
 

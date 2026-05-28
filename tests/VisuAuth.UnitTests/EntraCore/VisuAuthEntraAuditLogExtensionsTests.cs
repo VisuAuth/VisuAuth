@@ -12,7 +12,7 @@ using Xunit;
 namespace VisuAuth.UnitTests.EntraCore;
 
 /// <summary>
-/// Verifies <see cref="VisuAuthEntraAuditLogExtensions.AddVisuAuthEntraSignInAuditLog"/>
+/// Verifies <see cref="VisuAuthEntraAuditLogExtensions.AddVisuAuthEntraAuditLog"/>
 /// registers the Entra sign-in reader as <see cref="IAuditReader"/> — that
 /// registration is what flips the admin audit-log page from its "not
 /// enabled" state to live Entra data.
@@ -20,26 +20,26 @@ namespace VisuAuth.UnitTests.EntraCore;
 public sealed class VisuAuthEntraAuditLogExtensionsTests
 {
     [Fact]
-    public void AddVisuAuthEntraSignInAuditLog_RegistersTheReader()
+    public void AddVisuAuthEntraAuditLog_RegistersTheReader()
     {
         var services = BaseServices();
-        services.AddVisuAuthEntraSignInAuditLog();
+        services.AddVisuAuthEntraAuditLog();
 
         using var sp = services.BuildServiceProvider();
         using var scope = sp.CreateScope();
         scope.ServiceProvider.GetService<IAuditReader>()
-            .Should().BeOfType<EntraSignInAuditReader>();
+            .Should().BeOfType<EntraAuditReader>();
     }
 
     [Fact]
-    public void AddVisuAuthEntraSignInAuditLog_TryAdd_KeepsAPreRegisteredReader()
+    public void AddVisuAuthEntraAuditLog_TryAdd_KeepsAPreRegisteredReader()
     {
         // A consumer who ALSO wired an EF-backed reader (hybrid deployment)
         // keeps it — TryAdd is first-wins.
         var services = BaseServices();
         var custom = Mock4Reader();
         services.AddScoped(_ => custom);
-        services.AddVisuAuthEntraSignInAuditLog();
+        services.AddVisuAuthEntraAuditLog();
 
         using var sp = services.BuildServiceProvider();
         using var scope = sp.CreateScope();

@@ -85,22 +85,24 @@ immediate next step. Updated as PRs land. Long-term direction lives in
 
 ## In flight
 
-- **Entra sign-in audit reader** (`feat/entra-audit-reader`) — opt-in
-  `IAuditReader` over Microsoft Entra's `/auditLogs/signIns`, so an
-  Entra / Entra External deployment can surface the directory's sign-in
-  events on `/visuauth/admin/audit-log` (and feed the dashboard
-  "logins per day" chart) instead of the "plugin not enabled" hint.
-  Lives in `VisuAuth.EntraCore` (`Auditing.EntraSignInAuditReader` +
-  pure `EntraSignInAuditMapper`); registered by the new opt-in
-  `AddVisuAuthEntraSignInAuditLog()`. Sign-ins map onto the canonical
-  `LoginSucceeded` / `LoginFailed` codes so the chart + filter dropdown
-  line up. Needs `AuditLog.Read.All` + an Entra ID P1 licence; degrades
-  to an empty view (logs a warning) on 403 rather than erroring.
-  Scope is sign-ins only — `directoryAudits` (the admin-action trail)
-  is a documented follow-up. Both Entra samples wire the opt-in. Tests:
-  pure mapper (projection + `$filter` construction), reader over the
-  `FakeGraphHandler` (mapping, page-size clamp, filter push-down, 403
-  degradation, day-rollup with next-link paging), and the DI extension.
+- **Entra audit reader — directoryAudits** (`feat/entra-directory-audit`)
+  — completes the audit reader shipped in #43 (which was sign-ins only).
+  `EntraAuditReader` (renamed from `EntraSignInAuditReader`, pre-release
+  so safe) now merges BOTH `/auditLogs/signIns` and
+  `/auditLogs/directoryAudits` (user CRUD, role assignments — including
+  VisuAuth's own admin operations as Graph logs them) onto
+  `/visuauth/admin/audit-log`. Action-aware source routing: a login code
+  → sign-ins only; any other action → directory only; no action → both,
+  merged newest-first (page-1 semantics). Sign-in actor search is pushed
+  to Graph; directory actor search is client-side (nested
+  `initiatedBy/user` path isn't reliably filterable). `ListDistinctActions`
+  unions the two login codes with the distinct directory activity names
+  from a bounded scan. The opt-in extension is renamed
+  `AddVisuAuthEntraSignInAuditLog` → `AddVisuAuthEntraAuditLog`. New pure
+  `EntraDirectoryAuditMapper`. Both Entra samples updated. Tests: the new
+  mapper + a comprehensive reader suite (merge ordering, action routing,
+  client-side actor filter, per-source 403 degradation, distinct-action
+  union, day rollup).
 
 ---
 
@@ -129,15 +131,7 @@ admin-robustness fixes (#39 roles, #40 external-providers); PR D
    Graph call without restart. Possibly generalised to
    `VisuAuthAdapterConfigs` (section/key/value/isSecret) so future
    adapters (LDAP, Cognito, …) get the same admin surface for free.
-3. **Entra `directoryAudits` in the audit reader** — the sign-in half
-   shipped (in flight above). The remaining piece surfaces Entra's
-   directory-change trail (`/auditLogs/directoryAudits`: user
-   created/updated/deleted, role assignments — including VisuAuth's own
-   admin operations as Graph logs them) on `/admin/audit-log`. Different
-   shape (collection target resources, user-or-app initiators), so it's
-   its own mapping; likely merged with sign-ins by timestamp behind a
-   composite `IAuditReader`.
-4. **Cursor-based pagination** — `PagedResult` evolves from numeric
+3. **Cursor-based pagination** — `PagedResult` evolves from numeric
    pages to an opaque cursor (string) so Entra `@odata.nextLink` and
    future stores with the same shape work natively. Breaking change
    on the abstraction; flagged for v0.3 since the v0.2 surface is now

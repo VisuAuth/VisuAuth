@@ -18,35 +18,39 @@ Working toward [`0.2.0`](#020--planned). `<VersionPrefix>` in
 
 ### Added
 
-- **Entra sign-in audit reader** (`VisuAuth.EntraCore`). Opt-in
-  `IAuditReader` over Microsoft Entra's `/auditLogs/signIns`: call
-  `services.AddVisuAuthEntraSignInAuditLog()` (after `AddVisuAuthEntra` /
-  `AddVisuAuthEntraExternal`) to surface the directory's sign-in events on
+- **Entra audit reader** (`VisuAuth.EntraCore`). Opt-in `IAuditReader`
+  over Microsoft Entra's audit logs: call
+  `services.AddVisuAuthEntraAuditLog()` (after `AddVisuAuthEntra` /
+  `AddVisuAuthEntraExternal`) to surface the tenant's audit events on
   `/visuauth/admin/audit-log` and feed the dashboard "logins per day"
   chart — instead of the "audit plugin not enabled" hint that shows when
   no `IAuditReader` is registered.
-  - `EntraSignInAuditReader` maps each Graph `signIn` onto an
-    `AuditEntryView` (actor UPN, IP, app, outcome, failure reason,
-    timestamp), using the canonical `LoginSucceeded` / `LoginFailed`
-    action codes so the chart's `CountByDayAsync(LoginSucceeded)` and the
-    filter dropdown line up. `ListAsync` pushes the `AuditFilter` down as
-    an OData `$filter` (date range, actor `startswith`, outcome →
-    `status/errorCode`); `CountByDayAsync` follows `@odata.nextLink`
-    (bounded) to roll sign-ins into UTC-day buckets.
+  - `EntraAuditReader` merges two Graph sources: `/auditLogs/signIns`
+    (logins → the canonical `LoginSucceeded` / `LoginFailed` codes, so the
+    chart's `CountByDayAsync(LoginSucceeded)` and the filter dropdown line
+    up) and `/auditLogs/directoryAudits` (the directory-change trail —
+    user CRUD, role assignments, including VisuAuth's own admin operations
+    as Graph logs them, surfaced under their raw Entra activity names).
+  - **Action-aware routing.** With no action filter both sources are
+    queried and merged newest-first; a login-code filter queries sign-ins
+    only; any other action queries directory only. Page-1 semantics
+    (Graph paginates with skip tokens). Sign-in actor search is pushed to
+    Graph; directory actor search is client-side (the nested
+    `initiatedBy/user` path isn't reliably filterable). `CountByDayAsync`
+    follows `@odata.nextLink` (bounded) to roll sign-ins into UTC-day
+    buckets.
   - **Requires `AuditLog.Read.All` + an Entra ID P1 licence.** Without
-    them Graph returns 403 and the reader degrades to an empty view
-    (logs a warning) — never a 500. Opt-in rather than auto-wired
+    them Graph returns 403 and the reader degrades to an empty view per
+    source (logs a warning) — never a 500. Opt-in rather than auto-wired
     precisely so a consumer lacking the licence keeps the "not enabled"
     hint instead of a perpetually-empty page.
-  - **Scope: sign-ins only.** Entra's `directoryAudits` (the
-    admin-action trail) has a different shape and is a documented
-    follow-up.
   - Both Entra samples (`Sample.EntraWebApp`, `Sample.EntraExternalWebApp`)
     wire the opt-in with a note about the extra Graph permission. Tests:
-    the pure `EntraSignInAuditMapper` (projection + `$filter`), the reader
-    over the shared `FakeGraphHandler` (mapping, page-size clamp, filter
-    push-down, 403 degradation, day-rollup with next-link paging), and the
-    DI extension.
+    the pure `EntraSignInAuditMapper` + `EntraDirectoryAuditMapper`
+    (projection + `$filter`), the reader over the shared `FakeGraphHandler`
+    (two-source merge ordering, action routing, client-side actor filter,
+    per-source 403 degradation, distinct-action union, day-rollup with
+    next-link paging), and the DI extension.
 
 - **Two-factor reset for the Entra adapters.** `ResetTwoFactorAsync` is now
   implemented on both `VisuAuth.Entra` (Workforce) and

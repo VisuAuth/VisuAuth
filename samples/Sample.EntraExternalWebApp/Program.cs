@@ -1,5 +1,6 @@
 using Sample.EntraExternalWebApp.Home;
 using VisuAuth;
+using VisuAuth.EntraCore.DependencyInjection;
 using VisuAuth.EntraExternal.DependencyInjection;
 using VisuAuth.EntraExternal.Web.DependencyInjection;
 
@@ -68,6 +69,14 @@ builder.Services.AddVisuAuthEntraExternal(builder.Configuration);
 // registrations. See src/VisuAuth.EntraExternal.Web/README.md for the
 // two-app rationale and setup walkthrough.
 builder.Services.AddVisuAuthEntraExternalSignIn(builder.Configuration);
+
+// Opt-in: surface the tenant's Entra sign-in events on /visuauth/admin/audit-log
+// (and the dashboard "logins per day" chart). Needs the registered app to
+// hold Microsoft Graph AuditLog.Read.All (admin-consented) AND the tenant
+// to have an Entra ID P1 licence — without either, the page degrades to an
+// empty audit view rather than erroring. Drop this line to keep the audit
+// page showing the "not enabled" hint instead.
+builder.Services.AddVisuAuthEntraSignInAuditLog();
 
 var app = builder.Build();
 

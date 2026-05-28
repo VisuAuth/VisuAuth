@@ -1,6 +1,7 @@
 using Sample.EntraWebApp.Home;
 using VisuAuth;
 using VisuAuth.Entra.DependencyInjection;
+using VisuAuth.EntraCore.DependencyInjection;
 
 // Minimalist reference for VisuAuth + Microsoft Entra ID.
 //
@@ -44,6 +45,13 @@ builder.Services
 // registers EntraUserStore + EntraRoleStore + EntraAuthenticationFlow against
 // a singleton GraphServiceClient backed by app-only (client credentials) auth.
 builder.Services.AddVisuAuthEntra(builder.Configuration);
+
+// Opt-in: surface the tenant's Entra sign-in events on /visuauth/admin/audit-log
+// (and the dashboard "logins per day" chart). Needs Microsoft Graph
+// AuditLog.Read.All (admin-consented) + an Entra ID P1 licence; degrades to
+// an empty audit view without them. Drop this line to keep the "not enabled"
+// hint on the audit page.
+builder.Services.AddVisuAuthEntraSignInAuditLog();
 
 var app = builder.Build();
 

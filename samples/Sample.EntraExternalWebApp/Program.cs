@@ -1,6 +1,7 @@
 using Sample.EntraExternalWebApp.Home;
 using VisuAuth;
 using VisuAuth.EntraExternal.DependencyInjection;
+using VisuAuth.EntraExternal.Web.DependencyInjection;
 
 // Minimalist reference for VisuAuth + Microsoft Entra External ID.
 //
@@ -22,13 +23,21 @@ using VisuAuth.EntraExternal.DependencyInjection;
 //      on Microsoft Graph with admin consent: User.Read.All,
 //      User.ReadWrite.All, AppRoleAssignment.ReadWrite.All,
 //      Application.Read.All.
-//   2. Populate the four required secrets:
+//   2. Populate the four admin (Graph) secrets:
 //        cd samples/Sample.EntraExternalWebApp
 //        dotnet user-secrets set "VisuAuth:EntraExternal:TenantId"     "<guid>"
 //        dotnet user-secrets set "VisuAuth:EntraExternal:ClientId"     "<guid>"
 //        dotnet user-secrets set "VisuAuth:EntraExternal:ClientSecret" "<value>"
 //        dotnet user-secrets set "VisuAuth:EntraExternal:TenantDomain" "<tenant>.onmicrosoft.com"
-//   3. dotnet run
+//   3. For End-user OIDC sign-in (optional but ships in PR C of v0.3),
+//      register a SECOND app in the same tenant with a redirect URI of
+//      https://localhost:7260/signin-oidc and populate:
+//        dotnet user-secrets set "VisuAuth:EntraExternal:Web:TenantSubdomain" "<tenant>"
+//        dotnet user-secrets set "VisuAuth:EntraExternal:Web:TenantId"        "<guid>"
+//        dotnet user-secrets set "VisuAuth:EntraExternal:Web:ClientId"        "<guid>"
+//        dotnet user-secrets set "VisuAuth:EntraExternal:Web:ClientSecret"    "<value>"
+//      Skip step 3 if you only want admin CRUD against the directory.
+//   4. dotnet run
 //
 // That's it. Browse http://localhost:5260 and follow the links.
 
@@ -43,11 +52,22 @@ builder.Services
     .AddAdminUi()
     .AddEndUserUi();
 
-// The single External-specific call. Binds VisuAuth:EntraExternal:* from
-// configuration, registers EntraExternalUserStore + EntraExternalRoleStore +
+// The single External-specific call for the admin surface. Binds
+// VisuAuth:EntraExternal:* from configuration, registers
+// EntraExternalUserStore + EntraExternalRoleStore +
 // EntraExternalAuthenticationFlow against a singleton GraphServiceClient
 // backed by app-only (client credentials) auth.
 builder.Services.AddVisuAuthEntraExternal(builder.Configuration);
+
+// Opt-in End-user OIDC sign-in: wires Microsoft.Identity.Web so the
+// /visuauth/login page renders a working "Sign in with Microsoft" button
+// that round-trips through the External tenant's hosted login at
+// {tenant}.ciamlogin.com. Binds VisuAuth:EntraExternal:Web:* from
+// configuration — separate from the admin section above because admin
+// (app-only) and end-user (OIDC) typically use different app
+// registrations. See src/VisuAuth.EntraExternal.Web/README.md for the
+// two-app rationale and setup walkthrough.
+builder.Services.AddVisuAuthEntraExternalSignIn(builder.Configuration);
 
 var app = builder.Build();
 

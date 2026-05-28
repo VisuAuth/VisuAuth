@@ -23,6 +23,9 @@
          "admin UI against a real Microsoft Entra External ID tenant". -->
     <ProjectReference Include="..\..\src\VisuAuth\VisuAuth.csproj" />
     <ProjectReference Include="..\..\src\VisuAuth.EntraExternal\VisuAuth.EntraExternal.csproj" />
+    <!-- The opt-in OIDC sign-in package. Brings Microsoft.Identity.Web in
+         transitively — the CRUD-only adapter above stays free of it. -->
+    <ProjectReference Include="..\..\src\VisuAuth.EntraExternal.Web\VisuAuth.EntraExternal.Web.csproj" />
   </ItemGroup>
 
 </Project>

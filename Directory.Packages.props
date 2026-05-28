@@ -16,8 +16,14 @@
   </ItemGroup>
 
   <ItemGroup Label="Extensions">
-    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0" />
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.0" />
+    <!-- 10.0.7 pins are floor-bumped to satisfy Microsoft.Identity.Web 4.10's
+         transitive demand (it pulls Microsoft.AspNetCore.DataProtection
+         10.0.7 which in turn requires DI / Logging abstractions 10.0.7+).
+         Identical patch-level versions across the .NET 10 servicing branch
+         — no behaviour change for the packages that don't pull
+         MS.Identity.Web in. -->
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.7" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.7" />
     <PackageVersion Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.0" />
   </ItemGroup>
 
@@ -27,11 +33,12 @@
 
   <ItemGroup Label="JWT">
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.0" />
-    <!-- 8.14.0 minimum because AspNet.Security.OAuth.Apple 10.0.0 transitively
-         requires Microsoft.IdentityModel.Protocols.OpenIdConnect 8.14.0 which
-         pulls 8.14.0 of this package. Central Package Management requires us
-         to track the highest transitive constraint. -->
-    <PackageVersion Include="System.IdentityModel.Tokens.Jwt" Version="8.14.0" />
+    <!-- 8.18.0 minimum because Microsoft.Identity.Web 4.10 transitively
+         requires it. Previously pinned at 8.14.0 for AspNet.Security.OAuth.Apple
+         10.0.0; the bump is safe because 8.18 is fully backward-compatible
+         with 8.14 (servicing patches on the same major). Central Package
+         Management forces us to track the highest transitive constraint. -->
+    <PackageVersion Include="System.IdentityModel.Tokens.Jwt" Version="8.18.0" />
   </ItemGroup>
 
   <ItemGroup Label="External providers (sample only)">
@@ -55,7 +62,18 @@
          (client credentials) auth flow the Entra adapter uses. Both are
          scoped to VisuAuth.Entra; the Identity adapter does not pull them in. -->
     <PackageVersion Include="Microsoft.Graph" Version="5.95.0" />
-    <PackageVersion Include="Azure.Identity" Version="1.13.1" />
+    <!-- 1.17.2 floor needed by Microsoft.Identity.Web 4.10's transitive
+         Microsoft.Identity.Web.Certificate. Was 1.13.1 (the original Graph
+         adapter's pin); the bump is patch-level safe across the 1.x line
+         and unifies the credential implementation across both adapters. -->
+    <PackageVersion Include="Azure.Identity" Version="1.17.2" />
+    <!-- Microsoft.Identity.Web wraps OpenIdConnect + Cookies for sign-in
+         against Microsoft identity authorities (Workforce + External). Only
+         pulled in by VisuAuth.EntraExternal.Web (the opt-in sub-package
+         that ships the End-user OIDC bridge) — the CRUD-only Entra +
+         EntraExternal adapters stay free of it so consumers who don't need
+         the hosted login flow don't pay the dependency weight. -->
+    <PackageVersion Include="Microsoft.Identity.Web" Version="4.10.0" />
     <!-- Adds ValidateDataAnnotations() to OptionsBuilder. ASP.NET hosting
          pulls this in transitively in web apps; standalone class libraries
          like VisuAuth.Entra have to opt in. -->

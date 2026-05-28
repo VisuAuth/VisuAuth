@@ -11,6 +11,7 @@
     <Project Path="VisuAuth.Entra/VisuAuth.Entra.csproj" />
     <Project Path="VisuAuth.EntraCore/VisuAuth.EntraCore.csproj" />
     <Project Path="VisuAuth.EntraExternal/VisuAuth.EntraExternal.csproj" />
+    <Project Path="VisuAuth.EntraExternal.Web/VisuAuth.EntraExternal.Web.csproj" />
     <Project Path="VisuAuth.Identity/VisuAuth.Identity.csproj" />
     <Project Path="VisuAuth/VisuAuth.csproj" />
   </Folder>

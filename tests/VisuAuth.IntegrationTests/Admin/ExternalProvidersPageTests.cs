@@ -24,6 +24,25 @@ public sealed partial class ExternalProvidersPageTests(VisuAuthTestFactory facto
     private readonly VisuAuthTestFactory _factory = factory;
 
     [Fact]
+    public async Task GetIndex_IdentityBackend_ShowsSidebarLinkAndConfigTable_NotTheUnavailableCard()
+    {
+        // The Identity sample wires AddVisuAuthExternalProviderConfigStore,
+        // so the page is fully available: the sidebar link renders and the
+        // config table (not the "not available" card) is shown. This is the
+        // positive half of the availability gate added for Entra / Entra
+        // External deployments, which hide both.
+        using var client = CreateClient();
+        var response = await client.GetAsync(new Uri("/visuauth/admin/external-providers", UriKind.Relative));
+        var body = await response.Content.ReadAsStringAsync();
+
+        response.IsSuccessStatusCode.Should().BeTrue();
+        body.Should().Contain("href=\"/visuauth/admin/external-providers\"",
+            "the sidebar link must render when the config store is wired");
+        body.Should().NotContain("External provider configuration isn't available",
+            "the unavailable card is only for backends without the config store");
+    }
+
+    [Fact]
     public async Task GetIndex_RendersSeededProvidersFromTheStore()
     {
         using var client = CreateClient();

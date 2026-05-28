@@ -1,3 +1,4 @@
+@using VisuAuth.Abstractions.Authentication
 @using VisuAuth.Abstractions.Tenancy
 @inject ITenantContext TenantContext
 @inject IServiceProvider Services
@@ -14,6 +15,14 @@
         : (IReadOnlyList<TenantSummary>)await tenantStore.ListAsync();
     var currentPath = Context.Request.Path + Context.Request.QueryString;
     var pageLang = System.Globalization.CultureInfo.CurrentUICulture.Name;
+    // The External Providers admin page only works when the consumer wired
+    // the runtime config store (AddVisuAuthExternalProviderConfigStore) —
+    // typically the Identity adapter. Entra / Entra External deployments
+    // don't register it (Microsoft owns the providers), so hide the link
+    // there rather than send the operator to a "not available" card.
+    // Service-locator lookup mirrors the ITenantStore pattern above.
+    var externalProvidersAvailable =
+        Services.GetService(typeof(IExternalProviderConfigStore)) is not null;
 }<!doctype html>
 <html lang="@pageLang">
 <head>
@@ -65,7 +74,10 @@
                 {
                     <a href="#" aria-disabled="true" class="va-muted">@Ls["Sidebar.NavTenantsSoon"]</a>
                 }
-                <a href="/visuauth/admin/external-providers" class="@NavClass("/visuauth/admin/external-providers")">@Ls["Sidebar.NavExternalProviders"]</a>
+                @if (externalProvidersAvailable)
+                {
+                    <a href="/visuauth/admin/external-providers" class="@NavClass("/visuauth/admin/external-providers")">@Ls["Sidebar.NavExternalProviders"]</a>
+                }
                 <a href="/visuauth/admin/audit-log" class="@NavClass("/visuauth/admin/audit-log")">@Ls["Sidebar.NavAuditLog"]</a>
             </nav>
             @if (TenantContext.IsMultiTenancyEnabled)

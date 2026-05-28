@@ -243,6 +243,8 @@
   "ExternalProviders.PageTitle": "Provedores externos — VisuAuth",
   "ExternalProviders.Title": "Provedores externos",
   "ExternalProviders.Subtitle": "Edite credenciais OAuth em runtime — sobrescreve appsettings / user-secrets sem reiniciar a app. Os provedores ativos são os esquemas que o host registrou com AddVisuAuthDynamicExternalProviderOptions<TOptions>; a seção de disponíveis lista provedores populares que você pode adicionar no Program.cs.",
+  "ExternalProviders.Unavailable.Heading": "A configuração de provedores externos não está disponível",
+  "ExternalProviders.Unavailable.Body": "Este backend não gerencia credenciais OAuth aqui. No Microsoft Entra e Entra External, os provedores de identidade são configurados no portal do Entra. Para gerenciá-los pelo VisuAuth, use o adapter do ASP.NET Core Identity e registre <code>AddVisuAuthExternalProviderConfigStore()</code> na sua app.",
   "ExternalProviders.ActionFailed": "Falha na ação.",
   "ExternalProviders.Empty": "Nenhum provedor externo registrado ainda. Escolha um na seção Disponíveis abaixo e siga o snippet pra adicionar no Program.cs.",
   "ExternalProviders.Section.Active": "Provedores ativos",

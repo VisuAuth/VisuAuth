@@ -165,6 +165,8 @@ public sealed class EfCoreAuditStoreTests : IDisposable
         public DbSet<VisuAuth.Identity.MultiTenancy.VisuAuthExternalProviderConfig> VisuAuthExternalProviderConfigs
             => Set<VisuAuth.Identity.MultiTenancy.VisuAuthExternalProviderConfig>();
         public DbSet<VisuAuthAuditLogEntry> VisuAuthAuditLog => Set<VisuAuthAuditLogEntry>();
+        public DbSet<VisuAuth.Identity.MultiTenancy.VisuAuthAdapterConfig> VisuAuthAdapterConfigs
+            => Set<VisuAuth.Identity.MultiTenancy.VisuAuthAdapterConfig>();
     }
 
     private sealed class StubHttpContextAccessor(HttpContext context) : IHttpContextAccessor

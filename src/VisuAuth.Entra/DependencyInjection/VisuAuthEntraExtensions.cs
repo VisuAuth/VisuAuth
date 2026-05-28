@@ -104,19 +104,56 @@ public static class VisuAuthEntraExtensions
         return RegisterCore(services);
     }
 
+    /// <summary>
+    /// Opt-in: lets admins edit the Entra adapter's settings (TenantId,
+    /// ClientId, ClientSecret, …) from <c>/visuauth/admin/entra-config</c> and
+    /// persist them to the database, overlaid on top of the values bound from
+    /// code / appsettings / user-secrets. A save takes effect on the next Graph
+    /// call without a restart. Call AFTER <c>AddVisuAuthEntra</c>, and ensure
+    /// the DB store is registered via <c>AddVisuAuthAdapterConfigStore()</c>
+    /// (from <c>VisuAuth.Identity</c>) against the consumer's metadata DbContext.
+    /// </summary>
+    public static IServiceCollection AddVisuAuthEntraDbConfig(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.TryAddSingleton<EntraConfigStaticSnapshot>();
+        services.TryAddSingleton<EntraConfigChangeSignal>();
+
+        // The overlay must run AFTER the consumer's Bind/Configure so a DB
+        // value wins; registration order in the IConfigureOptions chain is
+        // preserved, and AddVisuAuthEntra (which binds) runs first.
+        services.AddSingleton<Microsoft.Extensions.Options.IConfigureOptions<EntraOptions>>(sp =>
+            new EntraDbConfigOverlay(
+                sp.GetRequiredService<IServiceScopeFactory>(),
+                sp.GetRequiredService<EntraConfigStaticSnapshot>()));
+
+        // Wiring the change-token source is what makes IOptionsMonitor recompute
+        // (and the Graph client rebuild) after a save.
+        services.AddSingleton<Microsoft.Extensions.Options.IOptionsChangeTokenSource<EntraOptions>>(sp =>
+            new EntraConfigChangeTokenSource(sp.GetRequiredService<EntraConfigChangeSignal>()));
+
+        // The admin page resolves IAdapterConfigSchema to render the editor.
+        services.AddSingleton<VisuAuth.Abstractions.Configuration.IAdapterConfigSchema, EntraAdapterConfigSchema>();
+
+        // The page calls this after a save to trigger the options recompute.
+        services.AddSingleton<VisuAuth.Abstractions.Configuration.IAdapterConfigChangeNotifier, EntraConfigChangeNotifier>();
+
+        return services;
+    }
+
     private static IServiceCollection RegisterCore(IServiceCollection services)
     {
-        // Singleton GraphServiceClient — Microsoft.Graph v5 supports
-        // concurrent use from multiple threads, and the wrapped
-        // ClientSecretCredential caches tokens for their lifetime, so the
-        // cost of building the client is paid once per process. Factory
-        // lives in VisuAuth.EntraCore so VisuAuth.EntraExternal can reuse
-        // it (both adapters auth the same way).
-        services.TryAddSingleton<GraphServiceClient>(sp =>
-        {
-            var opts = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<EntraOptions>>().Value;
-            return EntraGraphClientFactory.Create(opts.TenantId, opts.ClientId, opts.ClientSecret);
-        });
+        // The client is supplied by EntraGraphClientProvider, which reads
+        // IOptionsMonitor<EntraOptions> and rebuilds lazily when the effective
+        // options change. Without the DB-config opt-in there is no change-token
+        // source, so the monitor's value is stable and this behaves exactly
+        // like the previous build-once singleton. With AddVisuAuthEntraDbConfig
+        // wired, an admin save re-materializes the options and the next Graph
+        // call gets a client built from the new credentials — no restart.
+        services.TryAddSingleton<EntraGraphClientProvider>();
+        services.TryAddTransient<GraphServiceClient>(sp =>
+            sp.GetRequiredService<EntraGraphClientProvider>().GetClient());
 
         services.TryAddScoped<IUserStore, EntraUserStore>();
         services.TryAddScoped<IRoleStore, EntraRoleStore>();

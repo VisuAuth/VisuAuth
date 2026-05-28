@@ -39,6 +39,13 @@ public interface IVisuAuthMetadataDbContext
     /// </summary>
     DbSet<VisuAuthAuditLogEntry> VisuAuthAuditLog { get; }
 
+    /// <summary>
+    /// Backend-adapter settings managed by the admin UI
+    /// (<c>/visuauth/admin/entra-config</c>). Secret values are stored as
+    /// DataProtection ciphertext — never read directly, go through the store.
+    /// </summary>
+    DbSet<VisuAuthAdapterConfig> VisuAuthAdapterConfigs { get; }
+
     /// <summary>Save pending changes for the metadata tables.</summary>
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

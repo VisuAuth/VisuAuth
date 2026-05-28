@@ -18,6 +18,30 @@ Working toward [`0.2.0`](#020--planned). `<VersionPrefix>` in
 
 ### Added
 
+- **DB-backed adapter configuration UI** at `/visuauth/admin/entra-config`.
+  Operators can edit a backend adapter's settings (the Entra adapter's
+  TenantId / ClientId / ClientSecret / AppRoleResourceId / GraphBaseUrl /
+  DefaultEmailDomain) from the dashboard and persist them to the database,
+  overlaid on top of the values bound from code / appsettings / user-secrets.
+  - New `IAdapterConfigStore`, `IAdapterConfigSchema`, and
+    `IAdapterConfigChangeNotifier` contracts in `VisuAuth.Abstractions` keep
+    the AdminUi page adapter-agnostic.
+  - `EfCoreAdapterConfigStore` (`VisuAuth.Identity`, opt in with
+    `AddVisuAuthAdapterConfigStore()`) persists rows in a new generic
+    `VisuAuthAdapterConfigs` table (adapter / key / value / isSecret); secret
+    values are encrypted at rest via ASP.NET Core Data Protection and never
+    echoed back to the browser or written to the audit log.
+  - The Entra adapter opts in with `AddVisuAuthEntraDbConfig()`: a DB overlay
+    (`IConfigureOptions<EntraOptions>`) applies stored overrides after the
+    consumer's bind step, and the `GraphServiceClient` now comes from a
+    fingerprint-cached `EntraGraphClientProvider` that rebuilds when a save
+    fires an `IOptionsChangeTokenSource` — so a change **takes effect on the
+    next Graph call without an app restart**.
+  - The page shows "From DB" / "From code" source badges per setting,
+    write-only secret fields with a "clear" toggle, and a "not enabled"
+    explainer when the store/schema aren't wired. The sidebar link is hidden
+    in that case.
+
 - **Multi-domain email dropdown on `/admin/users/new`.** When the backend
   exposes two or more verified domains the create-user form now renders a
   local-part input plus a domain `<select>` instead of the single locked

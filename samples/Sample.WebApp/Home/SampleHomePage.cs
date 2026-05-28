@@ -86,6 +86,7 @@ internal static class SampleHomePage
         sb.Append("""
                 <li><a href="/visuauth/admin/roles"><code>/visuauth/admin/roles</code></a> &mdash; roles catalogue (member counts, inline create / rename / delete)</li>
                 <li><a href="/visuauth/admin/tenants"><code>/visuauth/admin/tenants</code></a> &mdash; tenants catalogue (member counts, inline create / rename / delete)</li>
+                <li><a href="/visuauth/admin/entra-config"><code>/visuauth/admin/entra-config</code></a> &mdash; edit the Entra adapter's settings and save them to the DB; changes apply without a restart (Entra backend only)</li>
               </ul>
 
               <h2>End-user UI</h2>

@@ -189,6 +189,19 @@ if (isEntra)
     // env vars in production). No DbContext, no Identity, no JWT issuer
     // — Microsoft owns the login UX and the directory entirely.
     builder.Services.AddVisuAuthEntra(builder.Configuration);
+
+    // DB-backed adapter configuration (opt-in). The
+    // /visuauth/admin/entra-config page edits the Entra credentials at runtime
+    // and persists them, overlaid on top of user-secrets / appsettings — a save
+    // takes effect on the next Graph call without a restart. Persisting the
+    // settings needs a metadata DbContext, so the Entra branch wires a minimal
+    // SQLite one purely for the VisuAuthAdapterConfigs table (the Identity
+    // tables the shared context also defines sit unused here).
+    var entraDbPath = Path.Combine(builder.Environment.ContentRootPath, "visuauth-sample-entra.db");
+    builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlite($"Data Source={entraDbPath}"));
+    builder.Services.AddScoped<IVisuAuthMetadataDbContext>(sp => sp.GetRequiredService<AppDbContext>());
+    builder.Services.AddVisuAuthAdapterConfigStore();
+    builder.Services.AddVisuAuthEntraDbConfig();
 }
 else
 {
@@ -203,6 +216,13 @@ if (!isEntra)
     // available in the Identity branch. Entra mode relies on whatever
     // the configured tenant already holds.
     await UserSeeder.SeedAsync(app.Services);
+}
+else
+{
+    // Apply migrations for the Entra branch's metadata DbContext so the
+    // VisuAuthAdapterConfigs table backing /visuauth/admin/entra-config exists.
+    using var scope = app.Services.CreateScope();
+    await scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.MigrateAsync();
 }
 
 app.UseStaticFiles();

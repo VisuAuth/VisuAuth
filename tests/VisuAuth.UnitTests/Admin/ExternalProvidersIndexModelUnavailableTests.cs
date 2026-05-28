@@ -66,6 +66,16 @@ public sealed class ExternalProvidersIndexModelUnavailableTests
         audit.Verify(a => a.WriteAsync(It.IsAny<AuditEvent>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
+    [Fact]
+    public async Task OnGetEdit_WhenInfraMissing_NoThrow_RendersUnavailable()
+    {
+        var page = BuildPage();
+        var act = () => page.OnGetEditAsync("Google", CancellationToken.None);
+        await act.Should().NotThrowAsync(
+            "the edit handler must bail to the unavailable card, not touch the null registry");
+        page.EditingScheme.Should().BeNull("nothing enters edit mode when the config infra is absent");
+    }
+
     [Theory]
     [InlineData("BulkEnable")]
     [InlineData("BulkDisable")]

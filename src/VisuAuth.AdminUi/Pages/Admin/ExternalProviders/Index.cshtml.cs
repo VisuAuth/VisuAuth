@@ -72,18 +72,15 @@ public sealed class IndexModel(
     /// </summary>
     public bool ProviderConfigAvailable => _configStore is not null;
 
-    // Guarded accessors — every call site runs AFTER a ProviderConfigAvailable
-    // check, so a null here is a programmer error (a handler that forgot to
-    // guard), not a runtime condition. The throw documents that invariant
-    // and keeps the use sites free of null-forgiving noise.
-    private IExternalProviderConfigStore ConfigStore =>
-        _configStore ?? throw new InvalidOperationException("IExternalProviderConfigStore is not registered.");
-    private IExternalProviderRegistry Registry =>
-        _registry ?? throw new InvalidOperationException("IExternalProviderRegistry is not registered.");
-    private IExternalProviderOptionsCacheInvalidator CacheInvalidator =>
-        _cacheInvalidator ?? throw new InvalidOperationException("IExternalProviderOptionsCacheInvalidator is not registered.");
-    private IExternalProviderStaticConfigSnapshot StaticSnapshot =>
-        _staticSnapshot ?? throw new InvalidOperationException("IExternalProviderStaticConfigSnapshot is not registered.");
+    // Non-null accessors for the use sites. Every call site runs AFTER a
+    // ProviderConfigAvailable (i.e. _configStore is not null) check — the
+    // four infra services are always registered together — so the
+    // null-forgiving operator is sound here. Centralising it on these four
+    // accessors keeps the ~18 use sites free of inline `!` noise.
+    private IExternalProviderConfigStore ConfigStore => _configStore!;
+    private IExternalProviderRegistry Registry => _registry!;
+    private IExternalProviderOptionsCacheInvalidator CacheInvalidator => _cacheInvalidator!;
+    private IExternalProviderStaticConfigSnapshot StaticSnapshot => _staticSnapshot!;
 
     [BindProperty]
     public EditForm EditFields { get; set; } = new();

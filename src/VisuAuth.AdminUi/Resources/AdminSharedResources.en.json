@@ -148,6 +148,9 @@
   "Roles.RenameAria": "Rename role {0}",
   "Roles.DeleteAria": "Delete role {0}",
   "Roles.DeleteConfirm": "Delete role '{0}'? Users currently in this role will lose it.",
+  "Roles.EmptyReadOnly": "No roles are defined in the identity provider yet.",
+  "Roles.MutationNotSupported.Heading": "Roles are managed by the identity provider",
+  "Roles.MutationNotSupported.Body": "This backend declares its roles externally — for Microsoft Entra, app roles live in the application registration manifest. You can list roles and assign or remove them from users here, but creating, renaming, and deleting roles must be done in the identity provider's portal.",
 
   "Tenants.Title": "Tenants",
   "Tenants.PageTitle": "Tenants — VisuAuth Admin",
@@ -174,6 +177,7 @@
   "Roles.Error.CreateFailed": "Failed to create role.",
   "Roles.Error.RenameFailed": "Failed to rename role.",
   "Roles.Error.DeleteFailed": "Failed to delete role.",
+  "Roles.Error.MutationNotSupported": "This backend doesn't allow creating, renaming, or deleting roles — they're declared by the identity provider.",
   "Tenants.Action.Created": "Tenant '{0}' created.",
   "Tenants.Action.Renamed": "Tenant '{0}' renamed.",
   "Tenants.Action.Deleted": "Tenant '{0}' deleted.",

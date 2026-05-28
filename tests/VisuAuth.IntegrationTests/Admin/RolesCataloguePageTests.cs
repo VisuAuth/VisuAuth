@@ -45,6 +45,27 @@ public sealed class RolesCataloguePageTests : IClassFixture<VisuAuthTestFactory>
     }
 
     [Fact]
+    public async Task Get_IdentityBackend_RendersCreateFormAndActionsColumn()
+    {
+        // The Identity adapter declares SupportsRoleMutation = true, so the
+        // create form + per-row rename/delete actions must render. This is
+        // the positive half of the capability gate added for the Graph
+        // adapters (which hide these). Pins that the gate didn't
+        // accidentally hide them for Identity too.
+        using var client = CreateClient();
+        var response = await client.GetAsync(new Uri("/visuauth/admin/roles", UriKind.Relative));
+        var body = await response.Content.ReadAsStringAsync();
+
+        response.IsSuccessStatusCode.Should().BeTrue();
+        body.Should().Contain("name=\"NewRoleName\"",
+            "Identity supports runtime role creation — the create form must render");
+        body.Should().Contain("handler=Delete",
+            "Identity supports delete — the per-row delete action must render");
+        body.Should().NotContain("Roles are managed by the identity provider",
+            "the read-only hint card is only for backends that can't mutate roles");
+    }
+
+    [Fact]
     public async Task PostCreate_WithValidName_AddsRoleAndRefreshesTable()
     {
         using var client = CreateClient();

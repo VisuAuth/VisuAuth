@@ -50,6 +50,13 @@ public sealed class EntraCapabilitiesTests
     }
 
     [Fact]
+    public void RoleMutation_IsFalse_BecauseAppRolesAreManifestDeclared()
+    {
+        EntraCapabilities.Value.SupportsRoleMutation.Should().BeFalse(
+            "app roles are declared in the app-registration manifest, not at runtime — the admin Roles page hides create/rename/delete so EntraRoleStore's NotSupported throw is never reached from the UI");
+    }
+
+    [Fact]
     public void Lockout_IsFalse_BecauseEntraOwnsItInternally()
     {
         EntraCapabilities.Value.SupportsLockout.Should().BeFalse(

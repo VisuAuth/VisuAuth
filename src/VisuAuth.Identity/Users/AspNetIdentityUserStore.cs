@@ -32,6 +32,7 @@ public sealed class AspNetIdentityUserStore<TUser>(
         SupportsImpersonation = true,
         SupportsCustomClaims = true,
         SupportsRoleManagement = true,
+        SupportsRoleMutation = true,     // Identity owns its AspNetRoles table — create/rename/delete all work
         SupportsAuditLog = false,        // Optional plugin
         SupportsBulkOperations = false,  // Coming in a follow-up PR
         SupportsSessionRevocation = true,

@@ -17,33 +17,49 @@ else if (Model.ActionMessage is { Length: > 0 } msg)
     <div class="va-alert va-alert-success" role="status">@msg</div>
 }
 
-<section class="va-card va-detail-card">
-    <div class="va-detail-card-header">
-        <h2>@Ls["Roles.CreateHeading"]</h2>
-    </div>
-    <form method="post"
-          hx-post="/visuauth/admin/roles?handler=Create"
-          hx-target="#va-roles-catalogue"
-          hx-swap="innerHTML"
-          class="va-inline-form">
-        <label class="va-field va-inline-field">
-            <span class="va-field-label">@Ls["Common.LabelName"]</span>
-            <input type="text"
-                   name="NewRoleName"
-                   value="@Model.NewRoleName"
-                   placeholder="@Ls["Roles.NamePlaceholder"]"
-                   class="va-input"
-                   required />
-        </label>
-        <button type="submit" class="va-btn va-btn-primary">@Ls["Roles.AddButton"]</button>
-    </form>
-</section>
+@if (Model.Capabilities.SupportsRoleMutation)
+{
+    <section class="va-card va-detail-card">
+        <div class="va-detail-card-header">
+            <h2>@Ls["Roles.CreateHeading"]</h2>
+        </div>
+        <form method="post"
+              hx-post="/visuauth/admin/roles?handler=Create"
+              hx-target="#va-roles-catalogue"
+              hx-swap="innerHTML"
+              class="va-inline-form">
+            <label class="va-field va-inline-field">
+                <span class="va-field-label">@Ls["Common.LabelName"]</span>
+                <input type="text"
+                       name="NewRoleName"
+                       value="@Model.NewRoleName"
+                       placeholder="@Ls["Roles.NamePlaceholder"]"
+                       class="va-input"
+                       required />
+            </label>
+            <button type="submit" class="va-btn va-btn-primary">@Ls["Roles.AddButton"]</button>
+        </form>
+    </section>
+}
+else
+{
+    @* Backends like Microsoft Entra declare roles externally (app
+       registration manifest), so create / rename / delete aren't
+       available here — only list + assign. Show an explanatory card
+       instead of a form that would fail on submit. *@
+    <section class="va-card va-detail-card">
+        <div class="va-detail-card-header">
+            <h2>@Ls["Roles.MutationNotSupported.Heading"]</h2>
+        </div>
+        <p class="va-muted">@L["Roles.MutationNotSupported.Body"]</p>
+    </section>
+}
 
 <section class="va-card">
     @if (Model.Roles.Count == 0)
     {
         <div class="va-empty">
-            <p>@Ls["Roles.Empty"]</p>
+            <p>@(Model.Capabilities.SupportsRoleMutation ? Ls["Roles.Empty"] : Ls["Roles.EmptyReadOnly"])</p>
         </div>
     }
     else
@@ -53,7 +69,10 @@ else if (Model.ActionMessage is { Length: > 0 } msg)
             <tr>
                 <th>@Ls["Common.LabelName"]</th>
                 <th>@Ls["Roles.Col.Members"]</th>
-                <th class="va-col-actions">@Ls["Common.Actions"]</th>
+                @if (Model.Capabilities.SupportsRoleMutation)
+                {
+                    <th class="va-col-actions">@Ls["Common.Actions"]</th>
+                }
             </tr>
             </thead>
             <tbody>
@@ -92,26 +111,29 @@ else if (Model.ActionMessage is { Length: > 0 } msg)
                     {
                         <td><strong>@role.Name</strong></td>
                         <td><span class="va-badge">@role.MemberCount</span></td>
-                        <td class="va-col-actions">
-                            <div class="va-row-actions">
-                                <button type="button"
-                                        class="va-btn va-btn-ghost va-btn-small"
-                                        hx-get="/visuauth/admin/roles?handler=EditRole&amp;id=@role.Id"
-                                        hx-target="#va-roles-catalogue"
-                                        hx-swap="innerHTML"
-                                        aria-label="@Ls["Roles.RenameAria", role.Name]">@Ls["Common.Rename"]</button>
-                                <form method="post"
-                                      hx-post="/visuauth/admin/roles?handler=Delete"
-                                      hx-target="#va-roles-catalogue"
-                                      hx-swap="innerHTML"
-                                      hx-confirm="@Ls["Roles.DeleteConfirm", role.Name]">
-                                    <input type="hidden" name="id" value="@role.Id" />
-                                    <button type="submit"
-                                            class="va-btn va-btn-danger va-btn-small"
-                                            aria-label="@Ls["Roles.DeleteAria", role.Name]">@Ls["Common.Delete"]</button>
-                                </form>
-                            </div>
-                        </td>
+                        @if (Model.Capabilities.SupportsRoleMutation)
+                        {
+                            <td class="va-col-actions">
+                                <div class="va-row-actions">
+                                    <button type="button"
+                                            class="va-btn va-btn-ghost va-btn-small"
+                                            hx-get="/visuauth/admin/roles?handler=EditRole&amp;id=@role.Id"
+                                            hx-target="#va-roles-catalogue"
+                                            hx-swap="innerHTML"
+                                            aria-label="@Ls["Roles.RenameAria", role.Name]">@Ls["Common.Rename"]</button>
+                                    <form method="post"
+                                          hx-post="/visuauth/admin/roles?handler=Delete"
+                                          hx-target="#va-roles-catalogue"
+                                          hx-swap="innerHTML"
+                                          hx-confirm="@Ls["Roles.DeleteConfirm", role.Name]">
+                                        <input type="hidden" name="id" value="@role.Id" />
+                                        <button type="submit"
+                                                class="va-btn va-btn-danger va-btn-small"
+                                                aria-label="@Ls["Roles.DeleteAria", role.Name]">@Ls["Common.Delete"]</button>
+                                    </form>
+                                </div>
+                            </td>
+                        }
                     }
                 </tr>
             }

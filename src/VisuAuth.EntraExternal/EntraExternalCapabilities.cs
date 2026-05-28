@@ -119,6 +119,10 @@ internal static class EntraExternalCapabilities
         SupportsLockout = false,
         SupportsEmailConfirmation = false,
         SupportsRoleManagement = true,
+        // Same as Workforce: app roles are manifest-declared, so
+        // EntraExternalRoleStore.Create/Rename/Delete throw NotSupported.
+        // The admin Roles page hides those controls when this is false.
+        SupportsRoleMutation = false,
         SupportsSessionRevocation = true,
         SupportsExternalProviders = false,
         SupportsImpersonation = false,

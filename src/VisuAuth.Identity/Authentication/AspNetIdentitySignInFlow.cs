@@ -37,6 +37,7 @@ public sealed class AspNetIdentitySignInFlow<TUser>(
         SupportsImpersonation = true,
         SupportsCustomClaims = true,
         SupportsRoleManagement = true,
+        SupportsRoleMutation = true,
         SupportsAuditLog = false,
         SupportsBulkOperations = false,
         SupportsSessionRevocation = true,

@@ -46,6 +46,13 @@ public sealed class EntraExternalCapabilitiesTests
     }
 
     [Fact]
+    public void RoleMutation_IsFalse_BecauseAppRolesAreManifestDeclared()
+    {
+        EntraExternalCapabilities.Value.SupportsRoleMutation.Should().BeFalse(
+            "same as Workforce — app roles are manifest-declared, so the admin Roles page hides create/rename/delete");
+    }
+
+    [Fact]
     public void Lockout_IsFalse_BecauseEntraSmartLockoutIsOpaque()
     {
         EntraExternalCapabilities.Value.SupportsLockout.Should().BeFalse(

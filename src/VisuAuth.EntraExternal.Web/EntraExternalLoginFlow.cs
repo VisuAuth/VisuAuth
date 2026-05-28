@@ -95,11 +95,16 @@ public sealed class EntraExternalLoginFlow : IExternalLoginFlow
 
     private readonly IHttpContextAccessor _http;
     private readonly IUserStore _userStore;
+    private readonly IEntraExternalProfileSync _profileSync;
 
-    public EntraExternalLoginFlow(IHttpContextAccessor httpContextAccessor, IUserStore userStore)
+    public EntraExternalLoginFlow(
+        IHttpContextAccessor httpContextAccessor,
+        IUserStore userStore,
+        IEntraExternalProfileSync profileSync)
     {
         _http = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
         _userStore = userStore ?? throw new ArgumentNullException(nameof(userStore));
+        _profileSync = profileSync ?? throw new ArgumentNullException(nameof(profileSync));
         // Reuses the External adapter's capability set and overlays
         // SupportsExternalProviders = true — once this flow is wired we
         // DO have a provider to surface. The EntraExternalCapabilities
@@ -185,9 +190,17 @@ public sealed class EntraExternalLoginFlow : IExternalLoginFlow
 
         // Happy path. The Cookies scheme cookie was set by
         // Microsoft.Identity.Web before we reached the Callback page, so
-        // the user is already authenticated locally. Return Success +
-        // the directory id so the audit log + return-url redirect can
-        // proceed.
+        // the user is already authenticated locally.
+
+        // Best-effort: copy any sign-up-flow-collected attributes off the
+        // token onto the Graph user profile (opt-in via
+        // EntraExternalWebOptions.ProfileSync). No-op when disabled; never
+        // throws — a profile-sync failure must not break a sign-in the
+        // user already completed.
+        await _profileSync.SyncAsync(principal, objectId, cancellationToken);
+
+        // Return Success + the directory id so the audit log + return-url
+        // redirect can proceed.
         return ExternalSignInResult.Success(user.Id);
     }
 

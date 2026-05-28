@@ -162,6 +162,13 @@ public static class VisuAuthEntraExternalSignInExtensions
         // because the consumer's app might already have it.
         services.AddHttpContextAccessor();
 
+        // Profile sync: maps id_token claims onto the Graph user on
+        // sign-in (opt-in via EntraExternalWebOptions.ProfileSync). Always
+        // registered so EntraExternalLoginFlow resolves; it no-ops when
+        // ProfileSync.Enabled is false. Depends on the singleton
+        // GraphServiceClient the EntraExternal adapter registers.
+        services.TryAddScoped<IEntraExternalProfileSync, EntraExternalProfileSync>();
+
         // Replace the EntraCore no-op IExternalLoginFlow with the real
         // implementation. Replace (not TryAddScoped) is the right verb
         // here — the no-op is a deliberately weak placeholder that

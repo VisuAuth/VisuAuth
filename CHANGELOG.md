@@ -18,6 +18,41 @@ Working toward [`0.2.0`](#020--planned). `<VersionPrefix>` in
 
 ### Added
 
+- **Entra External profile attribute sync** (`VisuAuth.EntraExternal.Web`).
+  Opt-in: when an Entra External sign-up user flow collects attributes and
+  emits them as id_token claims, VisuAuth copies them onto the directory
+  user on sign-in via the stable v1.0 `PATCH /users/{id}` — no Graph
+  claims-mapping policy and no beta API required.
+  - **`EntraExternalProfileSyncOptions`** (bound from
+    `VisuAuth:EntraExternal:Web:ProfileSync`): `Enabled` (default
+    `false`) + `ClaimToGraphProperty`, a claim-type → Graph-property map
+    seeded with `given_name`→`givenName` and `family_name`→`surname`.
+    Configuration adds to the defaults; map a default to `""` to drop it.
+    Target properties are an allow-list of standard `User` fields
+    (givenName, surname, displayName, jobTitle, department, companyName,
+    city, state, country, postalCode, streetAddress); unknown targets are
+    skipped and logged.
+  - **`IEntraExternalProfileSync` / `EntraExternalProfileSync`**: builds a
+    single `User` patch from the mapped claims present on the principal
+    and PATCHes it. Best-effort by contract — a Graph error is logged and
+    swallowed so it never breaks a sign-in the customer already completed.
+    Claim lookup is alias-aware (handles both short OIDC names and the
+    legacy SOAP-URI form for the built-in name claims).
+  - Wired into `EntraExternalLoginFlow.CompleteSignInAsync` on the
+    happy path (after the user is verified); registered in
+    `AddVisuAuthEntraExternalSignIn`.
+  - **Scope note:** this is the attribute-mapping half of the planned
+    signup customization. A user-flow management admin UI (list / pick /
+    edit flows) was dropped because the `b2cUserFlow` /
+    `authenticationEventsFlow` / `userFlowAttribute` Graph resources are
+    beta-only; the adapter stays on the v1.0 SDK. Manage flows in the
+    Entra portal — VisuAuth maps the resulting claims.
+  - Tests: profile-sync behaviour via the shared `FakeGraphHandler`
+    (now capturing request bodies so the PATCH payload is assertable),
+    LoginFlow integration (sync fires on success, not on the
+    user-missing path), and DI registration. Sample
+    `Sample.EntraExternalWebApp` documents the `ProfileSync` section.
+
 - **Microsoft Entra External ID End-user OIDC sign-in**
   (`VisuAuth.EntraExternal.Web` — new NuGet package). Opt-in sub-package
   that closes the customer sign-in loop for the EntraExternal adapter:

@@ -25,15 +25,28 @@ public sealed class EntraExternalLoginFlowTests
     [Fact]
     public void Ctor_NullHttpContextAccessor_Throws()
     {
-        var act = () => new EntraExternalLoginFlow(null!, Mock.Of<IUserStore>(s => s.Capabilities == new UserBackendCapabilities()));
+        var act = () => new EntraExternalLoginFlow(
+            null!,
+            Mock.Of<IUserStore>(s => s.Capabilities == new UserBackendCapabilities()),
+            NoOpProfileSync());
         act.Should().Throw<ArgumentNullException>().WithParameterName("httpContextAccessor");
     }
 
     [Fact]
     public void Ctor_NullUserStore_Throws()
     {
-        var act = () => new EntraExternalLoginFlow(Mock.Of<IHttpContextAccessor>(), null!);
+        var act = () => new EntraExternalLoginFlow(Mock.Of<IHttpContextAccessor>(), null!, NoOpProfileSync());
         act.Should().Throw<ArgumentNullException>().WithParameterName("userStore");
+    }
+
+    [Fact]
+    public void Ctor_NullProfileSync_Throws()
+    {
+        var act = () => new EntraExternalLoginFlow(
+            Mock.Of<IHttpContextAccessor>(),
+            Mock.Of<IUserStore>(s => s.Capabilities == new UserBackendCapabilities()),
+            null!);
+        act.Should().Throw<ArgumentNullException>().WithParameterName("profileSync");
     }
 
     [Fact]
@@ -50,7 +63,7 @@ public sealed class EntraExternalLoginFlowTests
             SupportsLocalLogin = false,
             SupportsRoleManagement = true,
         };
-        var sut = new EntraExternalLoginFlow(Mock.Of<IHttpContextAccessor>(), MockStore(storeCaps));
+        var sut = new EntraExternalLoginFlow(Mock.Of<IHttpContextAccessor>(), MockStore(storeCaps), NoOpProfileSync());
 
         sut.Capabilities.SupportsExternalProviders.Should().BeTrue(
             "wiring the sign-in package proves we have a real provider to surface");
@@ -111,13 +124,57 @@ public sealed class EntraExternalLoginFlowTests
         store.SetupGet(s => s.Capabilities).Returns(new UserBackendCapabilities());
         store.Setup(s => s.GetAsync(oid, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new UserSummary { Id = oid, Email = "alice@example.com" });
-        var sut = new EntraExternalLoginFlow(BuildHttpContextAccessor(principal), store.Object);
+        var sut = new EntraExternalLoginFlow(BuildHttpContextAccessor(principal), store.Object, NoOpProfileSync());
 
         var result = await sut.CompleteSignInAsync(ExternalLoginFirstTimeStrategy.AutoCreate);
 
         result.Outcome.Should().Be(ExternalSignInOutcome.Success);
         result.UserId.Should().Be(oid,
             "downstream audit + redirect logic uses the graph object id as the canonical user identifier");
+    }
+
+    [Fact]
+    public async Task CompleteSignInAsync_HappyPath_InvokesProfileSync_WithThePrincipalAndObjectId()
+    {
+        // The profile-sync step (PR D) runs on successful sign-in so
+        // sign-up-flow-collected attributes land on the Graph user. Pin
+        // that it's called with the authenticated principal + the resolved
+        // object id, after the user is verified.
+        var oid = Guid.NewGuid().ToString();
+        var principal = AuthenticatedPrincipal(("oid", oid), ("given_name", "Alice"));
+        var store = new Mock<IUserStore>();
+        store.SetupGet(s => s.Capabilities).Returns(new UserBackendCapabilities());
+        store.Setup(s => s.GetAsync(oid, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new UserSummary { Id = oid, Email = "alice@example.com" });
+        var profileSync = new Mock<IEntraExternalProfileSync>();
+        profileSync.Setup(s => s.SyncAsync(It.IsAny<ClaimsPrincipal>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        var sut = new EntraExternalLoginFlow(BuildHttpContextAccessor(principal), store.Object, profileSync.Object);
+
+        var result = await sut.CompleteSignInAsync(ExternalLoginFirstTimeStrategy.AutoCreate);
+
+        result.Outcome.Should().Be(ExternalSignInOutcome.Success);
+        profileSync.Verify(s => s.SyncAsync(principal, oid, It.IsAny<CancellationToken>()), Times.Once,
+            "successful sign-in must trigger the claims→Graph profile sync");
+    }
+
+    [Fact]
+    public async Task CompleteSignInAsync_UserMissing_DoesNotInvokeProfileSync()
+    {
+        // No verified user → no profile to sync. The sync must not run on
+        // the failure path (there's no directory user to PATCH).
+        var oid = Guid.NewGuid().ToString();
+        var principal = AuthenticatedPrincipal(("oid", oid));
+        var store = new Mock<IUserStore>();
+        store.SetupGet(s => s.Capabilities).Returns(new UserBackendCapabilities());
+        store.Setup(s => s.GetAsync(oid, It.IsAny<CancellationToken>())).ReturnsAsync((UserSummary?)null);
+        var profileSync = new Mock<IEntraExternalProfileSync>();
+        var sut = new EntraExternalLoginFlow(BuildHttpContextAccessor(principal), store.Object, profileSync.Object);
+
+        await sut.CompleteSignInAsync(ExternalLoginFirstTimeStrategy.AutoCreate);
+
+        profileSync.Verify(s => s.SyncAsync(It.IsAny<ClaimsPrincipal>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Fact]
@@ -133,7 +190,7 @@ public sealed class EntraExternalLoginFlowTests
         store.SetupGet(s => s.Capabilities).Returns(new UserBackendCapabilities());
         store.Setup(s => s.GetAsync(oid, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new UserSummary { Id = oid, Email = "alice@example.com" });
-        var sut = new EntraExternalLoginFlow(BuildHttpContextAccessor(principal), store.Object);
+        var sut = new EntraExternalLoginFlow(BuildHttpContextAccessor(principal), store.Object, NoOpProfileSync());
 
         var result = await sut.CompleteSignInAsync(ExternalLoginFirstTimeStrategy.AutoCreate);
 
@@ -155,7 +212,7 @@ public sealed class EntraExternalLoginFlowTests
         store.SetupGet(s => s.Capabilities).Returns(new UserBackendCapabilities());
         store.Setup(s => s.GetAsync(oid, It.IsAny<CancellationToken>()))
             .ReturnsAsync((UserSummary?)null);
-        var sut = new EntraExternalLoginFlow(BuildHttpContextAccessor(principal), store.Object);
+        var sut = new EntraExternalLoginFlow(BuildHttpContextAccessor(principal), store.Object, NoOpProfileSync());
 
         var result = await sut.CompleteSignInAsync(ExternalLoginFirstTimeStrategy.AutoCreate);
 
@@ -182,7 +239,7 @@ public sealed class EntraExternalLoginFlowTests
         store.SetupGet(s => s.Capabilities).Returns(new UserBackendCapabilities());
         store.Setup(s => s.GetAsync(oid, It.IsAny<CancellationToken>()))
             .ReturnsAsync((UserSummary?)null);
-        var sut = new EntraExternalLoginFlow(BuildHttpContextAccessor(principal), store.Object);
+        var sut = new EntraExternalLoginFlow(BuildHttpContextAccessor(principal), store.Object, NoOpProfileSync());
 
         var result = await sut.CompleteSignInAsync(strategy);
 
@@ -269,7 +326,16 @@ public sealed class EntraExternalLoginFlowTests
 
     private static EntraExternalLoginFlow BuildFlow(ClaimsPrincipal principal)
         => new(BuildHttpContextAccessor(principal),
-               MockStore(new UserBackendCapabilities()));
+               MockStore(new UserBackendCapabilities()),
+               NoOpProfileSync());
+
+    private static IEntraExternalProfileSync NoOpProfileSync()
+    {
+        var sync = new Mock<IEntraExternalProfileSync>();
+        sync.Setup(s => s.SyncAsync(It.IsAny<ClaimsPrincipal>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        return sync.Object;
+    }
 
     private static IUserStore MockStore(UserBackendCapabilities caps)
     {

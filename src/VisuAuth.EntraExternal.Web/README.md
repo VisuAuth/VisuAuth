@@ -54,7 +54,40 @@ The sign-in section binds from `VisuAuth:EntraExternal:Web` by default — disti
 | `ClientSecret` | ❌ * | null | Client secret for the end-user app registration. Required for confidential web clients; optional if the app is registered as public. |
 | `CallbackPath` | ❌ | `/signin-oidc` | OIDC callback path. Must match the redirect URI configured on the app registration EXACTLY. |
 | `SignedOutCallbackPath` | ❌ | `/signout-callback-oidc` | Post-logout redirect path. |
-| `SignInUserFlow` | ❌ | null | Reserved for v0.3 PR D (signup customization). v0.3 PR C uses the tenant's default flow. |
+| `SignInUserFlow` | ❌ | null | Hint for the sign-in user flow name; the hosted page uses the tenant's default binding when null. |
+| `ProfileSync:Enabled` | ❌ | `false` | Opt-in: copy id_token claims onto the Graph user on sign-in (see below). |
+| `ProfileSync:ClaimToGraphProperty` | ❌ | `given_name`→`givenName`, `family_name`→`surname` | Claim-type → Graph-property map. Config entries are added to the defaults. |
+
+### Profile attribute sync (claims → Graph user)
+
+When your sign-up user flow collects attributes and emits them as token claims, VisuAuth can copy them onto the directory user on each sign-in — no Graph claims-mapping policy or beta API needed. It's **off by default**; opt in:
+
+```jsonc
+"VisuAuth": {
+  "EntraExternal": {
+    "Web": {
+      "ProfileSync": {
+        "Enabled": true,
+        "ClaimToGraphProperty": {
+          // given_name -> givenName and family_name -> surname are always included.
+          // Add your custom-attribute claims here:
+          "extension_<appId>_country": "country",
+          "extension_<appId>_company": "companyName"
+        }
+      }
+    }
+  }
+}
+```
+
+On a successful sign-in, every mapped claim present on the token is PATCHed onto the user via the standard v1.0 `PATCH /users/{id}`. Notes:
+
+- **Supported target properties** (the map's values, case-insensitive): `givenName`, `surname`, `displayName`, `jobTitle`, `department`, `companyName`, `city`, `state`, `country`, `postalCode`, `streetAddress`. Unknown targets are skipped (logged), so a typo can't break sign-in.
+- **Best-effort**: a Graph PATCH failure is logged and swallowed — it never blocks a sign-in the customer already completed.
+- **Claims are the source of truth on each sign-in** while enabled: a mapped property is overwritten from the token whenever the claim is present. Properties with no corresponding claim are left untouched.
+- Custom directory **extension** properties (schema-qualified) are out of scope here — they need the schema extension registered first. This path writes only the standard `User` properties listed above.
+
+> **Why not a user-flow admin page?** Listing / editing user flows + their attributes lives in the **beta** Microsoft Graph API; this adapter stays on the stable v1.0 SDK. Manage the flows themselves in the Entra portal; VisuAuth maps the resulting claims.
 
 \* Required unless the app registration is a public client.
 
@@ -103,13 +136,13 @@ In practice, leave the default. v0.3 PR D adds the signup user-flow integration 
 
 ---
 
-## Known limitations (v0.3 PR C scope)
+## Known limitations
 
 | What | Why | Workaround |
 |---|---|---|
-| Only one user flow per app | The OIDC handler is configured against one authority + one default flow at startup | v0.3 PR D adds flow selection at request time |
-| No attribute mapping back to Graph | Collected user attributes (from sign-up flows) land in the id_token as claims, but this package doesn't push them into Graph User properties | v0.3 PR D adds the attribute mapping admin UI |
-| No admin UI for picking the active flow | Configuration today is appsettings / user-secrets only | v0.3 PR D adds `/visuauth/admin/entra-external/user-flows` |
+| Only one user flow per app | The OIDC handler is configured against one authority + one default flow at startup | Run multiple apps, or pick the flow in the Entra portal's policy binding |
+| No admin UI for listing / editing user flows | The user-flow + user-flow-attribute Graph APIs are beta-only; this adapter stays on the stable v1.0 SDK | Manage user flows in the Entra portal. VisuAuth maps the resulting token claims onto the Graph user (see [Profile attribute sync](#profile-attribute-sync-claims--graph-user)) |
+| Profile sync writes only standard `User` properties | Custom directory extension properties need a registered schema extension + their qualified names | Map collected attributes to the closest standard property (e.g. a "company" attribute → `companyName`) |
 
 ---
 

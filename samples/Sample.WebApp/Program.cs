@@ -72,21 +72,17 @@ visuAuthBuilder
     .AddAdminUi()
     .AddEndUserUi();
 
-// Programmatic theme override (CLAUDE.md §8.4 layer 2). The preset list
-// lives in Sample.WebApp.Theming.SampleThemes — swap the method group
-// below to recolour the entire admin + end-user UI without touching
-// anything else. Available presets:
+// Programmatic theme override (CLAUDE.md §8.4 layer 2). This is the no-flash
+// first-paint baseline for the brand/dark-mode theming kit: BrandTheme.Apply
+// sets the 11 core tokens server-side via the <va-theme-style /> tag helper,
+// and wwwroot/css/visuauth-brand.css (linked last by the layout overrides)
+// layers the full dark theme + component re-skins on top. Keep BrandTheme's
+// light-mode hexes identical to the :root block of visuauth-brand.css.
 //
-//   SampleThemes.Default   — stock indigo (no overrides emitted)
-//   SampleThemes.Purple    — purple primary only (lightest override)
-//   SampleThemes.Orange    — warm orange palette + matching neutrals
-//   SampleThemes.Forest    — green palette, keeps success badges coherent
-//   SampleThemes.Midnight  — full dark theme (bg / fg / surface flipped)
-//   SampleThemes.Serif     — Georgia + larger radius, leaves colours alone
-//
-// Production consumers replace this with their own brand palette, or drop
-// the call entirely to keep the stock theme.
-builder.Services.Configure<VisuAuthTheme>(SampleThemes.Purple);
+// SampleThemes (Default / Purple / Orange / Forest / Midnight / Serif) is the
+// older palette-only demo set — still in Sample.WebApp.Theming if you want to
+// swap back to a single-palette example without the dark-mode kit.
+builder.Services.Configure<VisuAuthTheme>(BrandTheme.Apply);
 
 // Theming layer 4 (CLAUDE.md §8.4) — per-tenant overrides. Sample maps
 // each seeded tenant id to a different palette so flipping the sidebar

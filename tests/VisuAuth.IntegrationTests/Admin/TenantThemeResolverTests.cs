@@ -21,17 +21,17 @@ public sealed partial class TenantThemeResolverTests(VisuAuthTestFactory factory
     [Fact]
     public async Task GetUsers_WithoutTenantCookie_FallsBackToGlobalThemePrimary()
     {
-        // No cookie → SampleTenantThemeResolver returns null → global
-        // SampleThemes.Purple wins. Pin the purple primary the sample
-        // configures in Program.cs.
+        // No cookie → SampleTenantThemeResolver returns null → the global
+        // theme wins. The sample configures BrandTheme (the brand/dark-mode
+        // kit's Layer-2 baseline) in Program.cs; pin its primary.
         using var client = factory.CreateClient();
 
         var response = await client.GetAsync(new Uri("/visuauth/admin/users", UriKind.Relative));
         var body = await response.Content.ReadAsStringAsync();
 
         response.IsSuccessStatusCode.Should().BeTrue();
-        body.Should().Contain("--visuauth-primary: #7c3aed",
-            "the sample app configures Purple as the global theme — that must apply when no tenant override matches");
+        body.Should().Contain("--visuauth-primary: #6366f1",
+            "the sample app configures BrandTheme as the global theme — that must apply when no tenant override matches");
     }
 
     [Fact]
@@ -39,8 +39,8 @@ public sealed partial class TenantThemeResolverTests(VisuAuthTestFactory factory
     {
         // acme → SampleThemes.Forest in SampleTenantThemeResolver.
         // After switching the cookie the next render must emit Forest's
-        // green primary AND the Purple props the override didn't touch
-        // (PrimaryFg) must still come through from the global theme.
+        // green primary AND the props the override didn't touch (PrimaryFg)
+        // must still come through from the global BrandTheme.
         using var client = await SwitchTenantAsync("acme");
 
         var response = await client.GetAsync(new Uri("/visuauth/admin/users", UriKind.Relative));
@@ -97,8 +97,8 @@ public sealed partial class TenantThemeResolverTests(VisuAuthTestFactory factory
         var response = await client.GetAsync(new Uri("/visuauth/admin/users", UriKind.Relative));
         var body = await response.Content.ReadAsStringAsync();
 
-        body.Should().Contain("--visuauth-primary: #7c3aed",
-            "an unknown tenant must fall through to the global SampleThemes.Purple");
+        body.Should().Contain("--visuauth-primary: #6366f1",
+            "an unknown tenant must fall through to the global BrandTheme");
     }
 
     private async Task<HttpClient> SwitchTenantAsync(string tenantId)

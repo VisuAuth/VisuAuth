@@ -1,41 +1,69 @@
 @*
-    Theming layer 3 demo (CLAUDE.md §8.4) — layout override.
+    VisuAuth end-user layout — CONSUMER OVERRIDE (Theming Layer 3).
 
-    Razor's view-engine search list is consulted whenever a layout is
-    resolved. Because /Views/VisuAuth/Shared/{name}.cshtml sits at the
-    top of the list (added by VisuAuthViewLocationExpander), this file
-    wins over the package's _EndUserLayout for every end-user page
-    (login, register, password reset, ...).
+    Place this file at:  /Views/VisuAuth/Shared/_EndUserLayout.cshtml
+    Wins over the package template via the same /Views/VisuAuth/ probe.
 
-    Structure-preserving copy of the package default — same stylesheet
-    + script references, same outer markup — plus a small banner so
-    the override is visibly active.
+    Package _EndUserLayout.cshtml VERBATIM, with the same brand additions as
+    the admin layout (each marked "+ BRAND" in an inline comment): no-flash
+    bootstrap, brand CSS link, theme script, and a theme toggle under the
+    language switcher.
 *@
 @{
     var title = ViewData["Title"] as string ?? "VisuAuth";
     var brand = ViewData["Brand"] as string ?? "VisuAuth";
     var pageLang = System.Globalization.CultureInfo.CurrentUICulture.Name;
+    var isAuthenticated = User?.Identity?.IsAuthenticated == true;
 }<!doctype html>
 <html lang="@pageLang">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>@title</title>
+    @* + BRAND: no-flash theme bootstrap. *@
+    <script>
+        (function () {
+            try {
+                var t = localStorage.getItem("va-theme");
+                if (!t) t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+                document.documentElement.setAttribute("data-theme", t);
+            } catch (e) {}
+        })();
+    </script>
     <link rel="stylesheet" href="/_content/VisuAuth.AdminUi/visuauth.css" asp-append-version="true" />
     <link rel="stylesheet" href="/_content/VisuAuth.EndUserUi/visuauth-enduser.css" asp-append-version="true" />
     <va-theme-style />
+    @* + BRAND: brand + dark-mode overrides, after both package sheets. *@
+    <link rel="stylesheet" href="~/css/visuauth-brand.css" asp-append-version="true" />
     <script src="/_content/VisuAuth.AdminUi/htmx.min.js" asp-append-version="true" defer></script>
     <script src="/_content/VisuAuth.AdminUi/visuauth.js" asp-append-version="true" defer></script>
+    @* + BRAND: theme-toggle behaviour. *@
+    <script src="~/js/visuauth-theme.js" asp-append-version="true" defer></script>
 </head>
 <body class="va-enduser-body" data-va-override="sample">
     <main class="va-enduser-shell">
         <div class="va-enduser-card">
             <a class="va-brand va-enduser-brand" href="/">@brand</a>
+            @* Sample's theming-layer-3 demo marker (kept from the stock sample
+               override so the ViewOverrideTests still see it). *@
             <p class="va-override-banner" style="margin:0 0 0.75rem;font-size:0.75rem;color:var(--visuauth-muted);text-align:center;">
                 Sample app override — <code>_EndUserLayout.cshtml</code>
             </p>
+            @if (isAuthenticated)
+            {
+                <nav class="va-enduser-account" aria-label="@Ls["Layout.AccountNav"]">
+                    <a href="/visuauth/two-factor/setup">@Ls["Layout.SetupTwoFactor"]</a>
+                    <a href="/visuauth/logout">@Ls["Layout.SignOut"]</a>
+                </nav>
+            }
             @RenderBody()
             <va-language-switcher class="va-enduser-lang" />
+            @* + BRAND: light/dark toggle under the language switcher. *@
+            <button type="button" class="va-theme-toggle va-enduser-theme-toggle" data-va-theme-toggle aria-label="Toggle dark mode">
+                <svg class="va-theme-toggle-icon va-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                <svg class="va-theme-toggle-icon va-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+                <span>Theme</span>
+            </button>
         </div>
     </main>
 </body>

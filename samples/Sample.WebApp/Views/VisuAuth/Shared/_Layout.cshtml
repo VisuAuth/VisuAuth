@@ -1,0 +1,140 @@
+@*
+    VisuAuth admin layout — CONSUMER OVERRIDE (Theming Layer 3).
+
+    Place this file at:  /Views/VisuAuth/Shared/_Layout.cshtml
+    The VisuAuthViewLocationExpander (registered by AddVisuAuth) probes
+    /Views/VisuAuth/ before the package's own templates, so this same-named
+    file wins automatically — no code change required.
+
+    This is the package _Layout.cshtml VERBATIM, with a few additions, each
+    marked "+ BRAND" in an inline comment below:
+      1. data-theme bootstrap in the head (no-flash) + the brand stylesheet link.
+      2. the theme-toggle script.
+      3. a theme-toggle button in the sidebar.
+
+    KEEP IN SYNC: if you upgrade VisuAuth and the package layout changes
+    (new nav links, etc.), re-copy it and re-apply the four marked additions.
+*@
+@using VisuAuth.Abstractions.Authentication
+@using VisuAuth.Abstractions.Tenancy
+@inject ITenantContext TenantContext
+@inject IServiceProvider Services
+@{
+    var title = ViewData["Title"] as string ?? Ls["Users.PageTitle"].Value;
+    var tenantStore = TenantContext.IsMultiTenancyEnabled
+        ? Services.GetService(typeof(ITenantStore)) as ITenantStore
+        : null;
+    var sidebarTenants = tenantStore is null
+        ? Array.Empty<TenantSummary>()
+        : (IReadOnlyList<TenantSummary>)await tenantStore.ListAsync();
+    var currentPath = Context.Request.Path + Context.Request.QueryString;
+    var pageLang = System.Globalization.CultureInfo.CurrentUICulture.Name;
+    var externalProvidersAvailable =
+        Services.GetService(typeof(IExternalProviderConfigStore)) is not null;
+    var adapterConfigAvailable =
+        Services.GetService(typeof(VisuAuth.Abstractions.Configuration.IAdapterConfigStore)) is not null
+        && Services.GetService(typeof(IEnumerable<VisuAuth.Abstractions.Configuration.IAdapterConfigSchema>))
+            is IEnumerable<VisuAuth.Abstractions.Configuration.IAdapterConfigSchema> schemas
+        && schemas.Any();
+}<!doctype html>
+<html lang="@pageLang">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@title</title>
+    @* + BRAND: set the stored theme before any CSS paints, so there's no
+       light-then-dark flash. Runs synchronously, intentionally tiny. *@
+    <script>
+        (function () {
+            try {
+                var t = localStorage.getItem("va-theme");
+                if (!t) t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+                document.documentElement.setAttribute("data-theme", t);
+            } catch (e) {}
+        })();
+    </script>
+    <link rel="stylesheet" href="/_content/VisuAuth.AdminUi/visuauth.css" asp-append-version="true" />
+    <va-theme-style />
+    @* + BRAND: brand + dark-mode overrides — MUST come after the package CSS
+       and after <va-theme-style /> so it wins on source order. *@
+    <link rel="stylesheet" href="~/css/visuauth-brand.css" asp-append-version="true" />
+    <script src="/_content/VisuAuth.AdminUi/htmx.min.js" asp-append-version="true" defer></script>
+    <script src="/_content/VisuAuth.AdminUi/visuauth.js" asp-append-version="true" defer></script>
+    @* + BRAND: theme-toggle behaviour. *@
+    <script src="~/js/visuauth-theme.js" asp-append-version="true" defer></script>
+</head>
+<body>
+    <div class="va-shell">
+        @{
+            var path = Context.Request.Path.Value ?? string.Empty;
+            string NavClass(string segment) =>
+                path.StartsWith(segment, StringComparison.OrdinalIgnoreCase) ? "va-active" : "";
+            string DashboardNavClass() =>
+                string.Equals(path, "/visuauth/admin", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(path, "/visuauth/admin/", StringComparison.OrdinalIgnoreCase)
+                    ? "va-active" : "";
+        }
+        <aside class="va-sidebar">
+            <a class="va-brand" href="/visuauth/admin">VisuAuth</a>
+            <nav class="va-nav">
+                <a href="/visuauth/admin" class="@DashboardNavClass()">@Ls["Sidebar.NavDashboard"]</a>
+                <a href="/visuauth/admin/users" class="@NavClass("/visuauth/admin/users")">@Ls["Sidebar.NavUsers"]</a>
+                <a href="/visuauth/admin/roles" class="@NavClass("/visuauth/admin/roles")">@Ls["Sidebar.NavRoles"]</a>
+                @if (TenantContext.IsMultiTenancyEnabled)
+                {
+                    <a href="/visuauth/admin/tenants" class="@NavClass("/visuauth/admin/tenants")">@Ls["Sidebar.NavTenants"]</a>
+                }
+                else
+                {
+                    <a href="#" aria-disabled="true" class="va-muted">@Ls["Sidebar.NavTenantsSoon"]</a>
+                }
+                @if (externalProvidersAvailable)
+                {
+                    <a href="/visuauth/admin/external-providers" class="@NavClass("/visuauth/admin/external-providers")">@Ls["Sidebar.NavExternalProviders"]</a>
+                }
+                @if (adapterConfigAvailable)
+                {
+                    <a href="/visuauth/admin/entra-config" class="@NavClass("/visuauth/admin/entra-config")">@Ls["Sidebar.NavAdapterConfig"]</a>
+                }
+                <a href="/visuauth/admin/audit-log" class="@NavClass("/visuauth/admin/audit-log")">@Ls["Sidebar.NavAuditLog"]</a>
+            </nav>
+            @if (TenantContext.IsMultiTenancyEnabled)
+            {
+                <form method="post"
+                      asp-page="/Admin/Tenants/Index"
+                      asp-page-handler="Switch"
+                      class="va-tenant-indicator">
+                    @Html.AntiForgeryToken()
+                    <span class="va-field-label">@Ls["Sidebar.TenantScope"]</span>
+                    <input type="hidden" name="returnUrl" value="@currentPath" />
+                    <select name="tenantId"
+                            class="va-input va-tenant-switcher"
+                            onchange="this.form.submit();">
+                        <option value="" selected="@(string.IsNullOrEmpty(TenantContext.CurrentTenantId) ? "selected" : null)">@Ls["Sidebar.TenantGlobal"]</option>
+                        @foreach (var tenant in sidebarTenants)
+                        {
+                            <option value="@tenant.Id" selected="@(string.Equals(tenant.Id, TenantContext.CurrentTenantId, StringComparison.Ordinal) ? "selected" : null)">
+                                @tenant.DisplayName
+                            </option>
+                        }
+                    </select>
+                    <noscript>
+                        <button type="submit" class="va-btn va-btn-small va-btn-ghost">@Ls["Sidebar.TenantApply"]</button>
+                    </noscript>
+                </form>
+            }
+            <va-language-switcher class="va-tenant-indicator" />
+            @* + BRAND: light/dark toggle. visuauth-theme.js handles the click
+               via the data-attribute, so no inline handler is needed. *@
+            <button type="button" class="va-theme-toggle" data-va-theme-toggle aria-label="Toggle dark mode">
+                <svg class="va-theme-toggle-icon va-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                <svg class="va-theme-toggle-icon va-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+                <span>Theme</span>
+            </button>
+        </aside>
+        <main class="va-main">
+            @RenderBody()
+        </main>
+    </div>
+</body>
+</html>

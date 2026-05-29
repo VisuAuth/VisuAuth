@@ -1,0 +1,247 @@
+/* ==========================================================================
+   VisuAuth — brand & dark-mode override
+   --------------------------------------------------------------------------
+   Layer 1 of the VisuAuth theming model (see README "Theming").
+
+   This file is loaded AFTER the package stylesheets:
+
+       /_content/VisuAuth.AdminUi/visuauth.css
+       /_content/VisuAuth.EndUserUi/visuauth-enduser.css
+       <va-theme-style />                ← Layer-2 inline overrides
+       THIS FILE                          ← wins on source order
+
+   It does three things the package CSS cannot do on its own:
+     1. Re-points every --visuauth-* token to your brand palette.
+     2. Defines a complete DARK theme under [data-theme="dark"] and as the
+        system-preference default.
+     3. Re-skins the handful of badge / alert / button rules in the package
+        that hard-code light hex values (so they don't glow white in dark).
+
+   EDITING: the only values you normally touch live in the ":root" block
+   below — every component reads from these tokens. Change a brand colour
+   there and the whole admin + end-user UI follows.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. BRAND TOKENS (light)  —  edit these
+   -------------------------------------------------------------------------- */
+:root {
+    /* Brand --------------------------------------------------------------- */
+    --visuauth-primary:    #6366f1;   /* ← your brand colour */
+    --visuauth-primary-fg: #ffffff;   /* text/icon on top of primary */
+
+    /* Neutrals ------------------------------------------------------------ */
+    --visuauth-bg:      #ffffff;      /* page + card surface */
+    --visuauth-fg:      #0f172a;      /* base text */
+    --visuauth-muted:   #64748b;      /* secondary text, labels */
+    --visuauth-border:  #e2e8f0;
+    --visuauth-surface: #f8fafc;      /* sidebar, table headers, hover rows */
+
+    /* Status -------------------------------------------------------------- */
+    --visuauth-danger:  #dc2626;
+    --visuauth-success: #16a34a;
+    --visuauth-warning: #b45309;      /* used by dashboard KPI "warn" state */
+
+    /* Shape & type -------------------------------------------------------- */
+    --visuauth-radius: 0.5rem;
+    --visuauth-font:   -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                       "Helvetica Neue", Arial, sans-serif;
+    --visuauth-mono:   ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+    /* Extended tokens the package references via var(..,<fallback>) but does
+       NOT declare in its :root. Declaring them here keeps light + dark in
+       sync and prevents the dashboard from falling back to baked-in hexes
+       (which would stay dark-on-dark in the dark theme). */
+    --visuauth-text:         var(--visuauth-fg);
+    --visuauth-bar-track:    #f1f5f9;
+    --visuauth-code-bg:      #f1f5f9;
+    --visuauth-row-hover:    #f8fafc;
+    --visuauth-success-soft: #d1fae5;
+    --visuauth-danger-soft:  #fee2e2;
+    --visuauth-muted-soft:   #f1f5f9;
+
+    /* Soft elevation tint reused by the override rules below. */
+    --visuauth-card-shadow: 0 12px 30px -18px rgba(15, 23, 42, 0.25);
+}
+
+/* --------------------------------------------------------------------------
+   2. DARK THEME
+   --------------------------------------------------------------------------
+   Applies in two situations:
+     • [data-theme="dark"] on <html>  — explicit user toggle (visuauth-theme.js)
+     • prefers-color-scheme: dark      — system default when no choice stored
+   Both resolve to the same token block, defined once below and shared.
+   -------------------------------------------------------------------------- */
+:root[data-theme="dark"] {
+    --visuauth-primary:    #818cf8;   /* lighter indigo reads better on dark */
+    --visuauth-primary-fg: #0b1020;
+
+    --visuauth-bg:      #10151f;      /* page + card surface */
+    --visuauth-fg:      #e7ebf3;
+    --visuauth-muted:   #97a2b6;
+    --visuauth-border:  #29313f;
+    --visuauth-surface: #181f2b;      /* sidebar, headers, hover */
+
+    --visuauth-danger:  #f87171;
+    --visuauth-success: #34d399;
+    --visuauth-warning: #fbbf24;
+
+    --visuauth-text:         var(--visuauth-fg);
+    --visuauth-bar-track:    #232c3a;
+    --visuauth-code-bg:      #1d2533;
+    --visuauth-row-hover:    #1b2330;
+    --visuauth-success-soft: rgba(52, 211, 153, 0.16);
+    --visuauth-danger-soft:  rgba(248, 113, 113, 0.16);
+    --visuauth-muted-soft:   #232c3a;
+
+    --visuauth-card-shadow: 0 12px 30px -18px rgba(0, 0, 0, 0.6);
+
+    color-scheme: dark;   /* native form controls, scrollbars follow */
+}
+
+/* Same palette when the OS asks for dark and the user hasn't chosen.
+   The explicit [data-theme="light"] guard lets a user force light even on a
+   dark-mode OS. */
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        --visuauth-primary:    #818cf8;
+        --visuauth-primary-fg: #0b1020;
+
+        --visuauth-bg:      #10151f;
+        --visuauth-fg:      #e7ebf3;
+        --visuauth-muted:   #97a2b6;
+        --visuauth-border:  #29313f;
+        --visuauth-surface: #181f2b;
+
+        --visuauth-danger:  #f87171;
+        --visuauth-success: #34d399;
+        --visuauth-warning: #fbbf24;
+
+        --visuauth-text:         var(--visuauth-fg);
+        --visuauth-bar-track:    #232c3a;
+        --visuauth-code-bg:      #1d2533;
+        --visuauth-row-hover:    #1b2330;
+        --visuauth-success-soft: rgba(52, 211, 153, 0.16);
+        --visuauth-danger-soft:  rgba(248, 113, 113, 0.16);
+        --visuauth-muted-soft:   #232c3a;
+
+        --visuauth-card-shadow: 0 12px 30px -18px rgba(0, 0, 0, 0.6);
+
+        color-scheme: dark;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   3. RE-SKIN HARD-CODED PACKAGE RULES FOR DARK
+   --------------------------------------------------------------------------
+   The package stylesheet bakes light hex values into a few status rules
+   (badges, alerts, the warning button, the danger-zone border). They have
+   no token to override, so we re-declare just those selectors when dark is
+   active. Light mode is untouched — these rules only exist inside the dark
+   guards.
+   -------------------------------------------------------------------------- */
+/* A grouped selector can't span a media query, so the dark re-skins are
+   written out twice below — once for the explicit [data-theme="dark"] toggle,
+   once for the prefers-color-scheme system default. A small SCSS-style mixin
+   would DRY this up if you adopt a build step; kept literal here so the file
+   is drop-in with no tooling. */
+
+/* ---- explicit toggle ---- */
+:root[data-theme="dark"] .va-badge.va-success { background: var(--visuauth-success-soft); border-color: transparent; }
+:root[data-theme="dark"] .va-badge.va-danger  { background: var(--visuauth-danger-soft);  border-color: transparent; }
+
+:root[data-theme="dark"] .va-alert-success { background: var(--visuauth-success-soft); border-color: transparent; color: #6ee7b7; }
+:root[data-theme="dark"] .va-alert-danger  { background: var(--visuauth-danger-soft);  border-color: transparent; color: #fca5a5; }
+:root[data-theme="dark"] .va-alert-info    { background: rgba(129,140,248,0.16); border-color: transparent; color: #c7d2fe; }
+:root[data-theme="dark"] .va-alert.va-alert-warning { background: rgba(251,191,36,0.14); border-color: transparent; color: #fcd34d; }
+
+:root[data-theme="dark"] .va-btn-warning  { background: rgba(251,191,36,0.16); color: #fcd34d; border-color: transparent; }
+:root[data-theme="dark"] .va-btn-warning:hover { background: rgba(251,191,36,0.26); }
+
+:root[data-theme="dark"] .va-copy-btn.va-copied { background: var(--visuauth-success-soft); border-color: transparent; color: var(--visuauth-success); }
+:root[data-theme="dark"] .va-danger-zone { border-color: rgba(248,113,113,0.4); }
+:root[data-theme="dark"] .va-pill-success { background: var(--visuauth-success-soft); color: #6ee7b7; }
+:root[data-theme="dark"] .va-pill-danger  { background: var(--visuauth-danger-soft);  color: #fca5a5; }
+:root[data-theme="dark"] .va-code-snippet { background: #0b101b; }
+:root[data-theme="dark"] .va-enduser-card { box-shadow: var(--visuauth-card-shadow); }
+
+/* ---- system default (no explicit choice) ---- */
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .va-badge.va-success { background: var(--visuauth-success-soft); border-color: transparent; }
+    :root:not([data-theme="light"]) .va-badge.va-danger  { background: var(--visuauth-danger-soft);  border-color: transparent; }
+    :root:not([data-theme="light"]) .va-alert-success { background: var(--visuauth-success-soft); border-color: transparent; color: #6ee7b7; }
+    :root:not([data-theme="light"]) .va-alert-danger  { background: var(--visuauth-danger-soft);  border-color: transparent; color: #fca5a5; }
+    :root:not([data-theme="light"]) .va-alert-info    { background: rgba(129,140,248,0.16); border-color: transparent; color: #c7d2fe; }
+    :root:not([data-theme="light"]) .va-alert.va-alert-warning { background: rgba(251,191,36,0.14); border-color: transparent; color: #fcd34d; }
+    :root:not([data-theme="light"]) .va-btn-warning  { background: rgba(251,191,36,0.16); color: #fcd34d; border-color: transparent; }
+    :root:not([data-theme="light"]) .va-btn-warning:hover { background: rgba(251,191,36,0.26); }
+    :root:not([data-theme="light"]) .va-copy-btn.va-copied { background: var(--visuauth-success-soft); border-color: transparent; color: var(--visuauth-success); }
+    :root:not([data-theme="light"]) .va-danger-zone { border-color: rgba(248,113,113,0.4); }
+    :root:not([data-theme="light"]) .va-pill-success { background: var(--visuauth-success-soft); color: #6ee7b7; }
+    :root:not([data-theme="light"]) .va-pill-danger  { background: var(--visuauth-danger-soft);  color: #fca5a5; }
+    :root:not([data-theme="light"]) .va-code-snippet { background: #0b101b; }
+    :root:not([data-theme="light"]) .va-enduser-card { box-shadow: var(--visuauth-card-shadow); }
+}
+
+/* --------------------------------------------------------------------------
+   4. OPTIONAL BRAND REFINEMENTS  (delete any you don't want)
+   --------------------------------------------------------------------------
+   Small, token-driven polish on top of the stock layout. Each rule degrades
+   gracefully and uses only --visuauth-* tokens, so it tracks light/dark and
+   your palette automatically.
+   -------------------------------------------------------------------------- */
+
+/* Active nav item: pill that uses a soft primary tint instead of a full
+   solid block — calmer in dense sidebars, and legible in both themes. */
+.va-nav a.va-active {
+    background: color-mix(in srgb, var(--visuauth-primary) 14%, transparent);
+    color: var(--visuauth-primary);
+    font-weight: 600;
+}
+
+/* Brand wordmark in the sidebar / card — slightly tighter tracking. */
+.va-brand { letter-spacing: -0.01em; }
+
+/* KPI tiles + cards pick up a soft shadow so they read as elevated surfaces
+   rather than flat outlines (matches the end-user card depth). */
+.va-kpi,
+.va-detail-card,
+.va-dashboard-chart,
+.va-dashboard-health,
+.va-dashboard-activity {
+    box-shadow: var(--visuauth-card-shadow);
+}
+
+/* Theme-toggle button injected by the layout overrides. Styled as a quiet,
+   full-width ghost control that sits with the sidebar nav. */
+.va-theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    margin-top: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    font: inherit;
+    font-size: 0.95rem;
+    color: var(--visuauth-fg);
+    background: transparent;
+    border: 1px solid var(--visuauth-border);
+    border-radius: var(--visuauth-radius);
+    cursor: pointer;
+    text-align: left;
+}
+.va-theme-toggle:hover { background: var(--visuauth-surface); }
+.va-theme-toggle:focus-visible { outline: 2px solid var(--visuauth-primary); outline-offset: 1px; }
+.va-theme-toggle .va-theme-toggle-icon { width: 16px; height: 16px; flex: 0 0 16px; }
+
+/* End-user variant: centered, sits under the language switcher. */
+.va-enduser-theme-toggle { margin-top: 1rem; justify-content: center; text-align: center; }
+
+/* Icon swap — show the moon in light (action: go dark), sun in dark. */
+.va-theme-toggle .va-icon-sun  { display: none; }
+:root[data-theme="dark"] .va-theme-toggle .va-icon-sun  { display: inline; }
+:root[data-theme="dark"] .va-theme-toggle .va-icon-moon { display: none; }
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .va-theme-toggle .va-icon-sun  { display: inline; }
+    :root:not([data-theme="light"]) .va-theme-toggle .va-icon-moon { display: none; }
+}

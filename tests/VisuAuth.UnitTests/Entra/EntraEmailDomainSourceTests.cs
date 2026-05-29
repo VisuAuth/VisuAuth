@@ -89,6 +89,6 @@ public sealed class EntraEmailDomainSourceTests
         var httpClient = new HttpClient(handler) { BaseAddress = new Uri("https://graph.microsoft.com/") };
         var adapter = new HttpClientRequestAdapter(new AnonymousAuthProvider(), httpClient: httpClient);
         var graph = new GraphServiceClient(adapter);
-        return new EntraEmailDomainSource(graph);
+        return new EntraEmailDomainSource(graph.AsEntraGraphClient());
     }
 }

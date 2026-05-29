@@ -408,6 +408,6 @@ public sealed class EntraUserStoreGraphTests
             ClientSecret = "fake",
             AppRoleResourceId = "00000000-0000-0000-0000-000000000003",
         });
-        return new EntraUserStore(graph, options, NullLogger<EntraUserStore>.Instance);
+        return new EntraUserStore(graph.AsEntraGraphClient(), options, NullLogger<EntraUserStore>.Instance);
     }
 }

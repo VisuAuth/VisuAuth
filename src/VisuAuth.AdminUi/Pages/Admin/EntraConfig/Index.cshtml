@@ -1,0 +1,106 @@
+@page "/visuauth/admin/entra-config"
+@model VisuAuth.AdminUi.Pages.Admin.EntraConfig.IndexModel
+@{
+    ViewData["Title"] = Ls["EntraConfig.PageTitle"].Value;
+}
+
+<div class="va-page-header">
+    <h1>@Ls["EntraConfig.Title"]</h1>
+</div>
+<p class="va-muted" style="margin-top:-0.5rem;">@Ls["EntraConfig.Subtitle"]</p>
+
+@if (!Model.ConfigAvailable)
+{
+    <section class="va-card" style="padding:1.5rem;">
+        <p>@L["EntraConfig.NotEnabled"]</p>
+    </section>
+}
+else
+{
+    if (Model.Errors.Count > 0)
+    {
+        <div class="va-alert va-alert-danger" role="alert">
+            <strong>@Ls["EntraConfig.SaveFailedHeading"]</strong>
+            <ul>
+                @foreach (var err in Model.Errors)
+                {
+                    <li>@err</li>
+                }
+            </ul>
+        </div>
+    }
+    else if (Model.ActionMessage is { Length: > 0 } msg)
+    {
+        <output class="va-alert va-alert-success">@msg</output>
+    }
+
+    foreach (var cfgSection in Model.Sections)
+    {
+        <section class="va-card va-detail-card">
+            <div class="va-detail-card-header">
+                <h2>@cfgSection.DisplayName</h2>
+            </div>
+            <form method="post" action="/visuauth/admin/entra-config?handler=Save" autocomplete="off">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="adapter" value="@cfgSection.Adapter" />
+                <div class="va-form-grid" style="padding:1rem;">
+                    @foreach (var fv in cfgSection.Fields)
+                    {
+                        var f = fv.Field;
+                        var inputId = $"cfg-{cfgSection.Adapter}-{f.Key}";
+                        <div class="va-field">
+                            <label class="va-field-label" for="@inputId">
+                                @f.Label
+                                @if (f.IsRequired)
+                                {
+                                    <span class="va-required">*</span>
+                                }
+                                @if (fv.HasDbValue)
+                                {
+                                    <span class="va-badge va-success">@Ls["EntraConfig.Source.Db"]</span>
+                                }
+                                @if (fv.HasCodeValue)
+                                {
+                                    <span class="va-badge">@Ls["EntraConfig.Source.Code"]</span>
+                                }
+                            </label>
+                            @if (f.IsSecret)
+                            {
+                                <input id="@inputId"
+                                       type="password"
+                                       name="FieldValues[@f.Key]"
+                                       value=""
+                                       autocomplete="new-password"
+                                       placeholder="@(fv.HasDbValue ? Ls["EntraConfig.Secret.Replace"].Value : Ls["EntraConfig.Secret.New"].Value)"
+                                       class="va-input" />
+                                @if (fv.HasDbValue)
+                                {
+                                    <label class="va-checkbox">
+                                        <input type="checkbox" name="ClearSecrets" value="@f.Key" />
+                                        <span>@Ls["EntraConfig.Secret.Clear"]</span>
+                                    </label>
+                                }
+                            }
+                            else
+                            {
+                                <input id="@inputId"
+                                       type="text"
+                                       name="FieldValues[@f.Key]"
+                                       value="@fv.EffectiveValue"
+                                       spellcheck="false"
+                                       class="va-input" />
+                            }
+                            @if (f.HelpText is { Length: > 0 })
+                            {
+                                <span class="va-field-hint va-muted">@f.HelpText</span>
+                            }
+                        </div>
+                    }
+                </div>
+                <div style="padding:0 1rem 1rem;">
+                    <button type="submit" class="va-btn va-btn-primary">@Ls["EntraConfig.Save"]</button>
+                </div>
+            </form>
+        </section>
+    }
+}

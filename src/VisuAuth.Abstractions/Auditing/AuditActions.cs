@@ -41,6 +41,9 @@ public static class AuditActions
     public const string ExternalProviderBulkDisabled = "ExternalProviderBulkDisabled";
     public const string ExternalProviderOrphanDeleted = "ExternalProviderOrphanDeleted";
 
+    // --- Adapter configuration (admin-driven) ---
+    public const string AdapterConfigSaved = "AdapterConfigSaved";
+
     // --- End-user self-service ---
     public const string LoginSucceeded = "LoginSucceeded";
     public const string LoginFailed = "LoginFailed";
@@ -87,6 +90,7 @@ public static class AuditTargetTypes
     public const string Role = "Role";
     public const string Tenant = "Tenant";
     public const string ExternalProvider = "ExternalProvider";
+    public const string AdapterConfig = "AdapterConfig";
     public const string ExternalLogin = "ExternalLogin";
     public const string System = "System";
     public const string Session = "Session";

@@ -23,6 +23,14 @@
     // Service-locator lookup mirrors the ITenantStore pattern above.
     var externalProvidersAvailable =
         Services.GetService(typeof(IExternalProviderConfigStore)) is not null;
+    // The adapter-config page only works when the consumer wired the DB store
+    // (AddVisuAuthAdapterConfigStore) AND an adapter contributed a schema
+    // (e.g. AddVisuAuthEntraDbConfig). Hide the link otherwise.
+    var adapterConfigAvailable =
+        Services.GetService(typeof(VisuAuth.Abstractions.Configuration.IAdapterConfigStore)) is not null
+        && Services.GetService(typeof(IEnumerable<VisuAuth.Abstractions.Configuration.IAdapterConfigSchema>))
+            is IEnumerable<VisuAuth.Abstractions.Configuration.IAdapterConfigSchema> schemas
+        && schemas.Any();
 }<!doctype html>
 <html lang="@pageLang">
 <head>
@@ -77,6 +85,10 @@
                 @if (externalProvidersAvailable)
                 {
                     <a href="/visuauth/admin/external-providers" class="@NavClass("/visuauth/admin/external-providers")">@Ls["Sidebar.NavExternalProviders"]</a>
+                }
+                @if (adapterConfigAvailable)
+                {
+                    <a href="/visuauth/admin/entra-config" class="@NavClass("/visuauth/admin/entra-config")">@Ls["Sidebar.NavAdapterConfig"]</a>
                 }
                 <a href="/visuauth/admin/audit-log" class="@NavClass("/visuauth/admin/audit-log")">@Ls["Sidebar.NavAuditLog"]</a>
             </nav>

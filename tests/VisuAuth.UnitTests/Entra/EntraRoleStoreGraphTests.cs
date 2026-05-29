@@ -215,6 +215,6 @@ public sealed class EntraRoleStoreGraphTests
             ClientSecret = "fake",
             AppRoleResourceId = "00000000-0000-0000-0000-000000000003",
         });
-        return new EntraRoleStore(graph, options);
+        return new EntraRoleStore(graph.AsEntraGraphClient(), options);
     }
 }

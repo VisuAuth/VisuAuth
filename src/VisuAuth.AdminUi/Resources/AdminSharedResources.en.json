@@ -208,6 +208,7 @@
 
   "Sidebar.NavDashboard": "Dashboard",
   "Sidebar.NavExternalProviders": "External providers",
+  "Sidebar.NavAdapterConfig": "Adapter config",
   "Sidebar.NavAuditLog": "Audit log",
 
   "AuditLog.PageTitle": "Audit log — VisuAuth",
@@ -239,6 +240,21 @@
   "AuditLog.Col.Details": "Details",
   "AuditLog.Details.Expand": "expand",
   "AuditLog.Details.Reason": "Reason",
+
+  "EntraConfig.PageTitle": "Adapter configuration — VisuAuth",
+  "EntraConfig.Title": "Adapter configuration",
+  "EntraConfig.Subtitle": "Edit backend-adapter settings and save them to the database. Changes take effect without restarting the app.",
+  "EntraConfig.NotEnabled": "Adapter configuration isn't enabled for this deployment. Wire <code>AddVisuAuthAdapterConfigStore()</code> and an adapter's DB-config opt-in (e.g. <code>AddVisuAuthEntraDbConfig()</code>) to manage settings here.",
+  "EntraConfig.SaveFailedHeading": "Couldn't save the configuration",
+  "EntraConfig.Source.Db": "From DB",
+  "EntraConfig.Source.Code": "From code",
+  "EntraConfig.Secret.Replace": "Stored — type to replace",
+  "EntraConfig.Secret.New": "Enter a value",
+  "EntraConfig.Secret.Clear": "Clear the stored value",
+  "EntraConfig.Save": "Save",
+  "EntraConfig.Action.Saved": "{0} configuration saved — it takes effect on the next call.",
+  "EntraConfig.Error.UnknownAdapter": "Unknown adapter.",
+  "EntraConfig.Error.SaveFailed": "Saving the configuration failed.",
 
   "ExternalProviders.PageTitle": "External providers — VisuAuth",
   "ExternalProviders.Title": "External providers",

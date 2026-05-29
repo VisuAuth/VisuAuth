@@ -208,6 +208,7 @@
 
   "Sidebar.NavDashboard": "Painel",
   "Sidebar.NavExternalProviders": "Provedores externos",
+  "Sidebar.NavAdapterConfig": "Config do adapter",
   "Sidebar.NavAuditLog": "Auditoria",
 
   "AuditLog.PageTitle": "Auditoria — VisuAuth",
@@ -239,6 +240,21 @@
   "AuditLog.Col.Details": "Detalhes",
   "AuditLog.Details.Expand": "expandir",
   "AuditLog.Details.Reason": "Motivo",
+
+  "EntraConfig.PageTitle": "Configuração do adapter — VisuAuth",
+  "EntraConfig.Title": "Configuração do adapter",
+  "EntraConfig.Subtitle": "Edite as configurações do adapter de backend e salve no banco de dados. As alterações entram em vigor sem reiniciar a aplicação.",
+  "EntraConfig.NotEnabled": "A configuração do adapter não está habilitada nesta implantação. Registre <code>AddVisuAuthAdapterConfigStore()</code> e o opt-in de config via banco de um adapter (ex.: <code>AddVisuAuthEntraDbConfig()</code>) para gerenciar as configurações aqui.",
+  "EntraConfig.SaveFailedHeading": "Não foi possível salvar a configuração",
+  "EntraConfig.Source.Db": "Do banco",
+  "EntraConfig.Source.Code": "Do código",
+  "EntraConfig.Secret.Replace": "Armazenado — digite para substituir",
+  "EntraConfig.Secret.New": "Informe um valor",
+  "EntraConfig.Secret.Clear": "Limpar o valor armazenado",
+  "EntraConfig.Save": "Salvar",
+  "EntraConfig.Action.Saved": "Configuração de {0} salva — entra em vigor na próxima chamada.",
+  "EntraConfig.Error.UnknownAdapter": "Adapter desconhecido.",
+  "EntraConfig.Error.SaveFailed": "Falha ao salvar a configuração.",
 
   "ExternalProviders.PageTitle": "Provedores externos — VisuAuth",
   "ExternalProviders.Title": "Provedores externos",

@@ -119,6 +119,7 @@ public sealed class AuditRetentionHostedServiceTests
         public DbSet<VisuAuthExternalProviderConfig> VisuAuthExternalProviderConfigs
             => Set<VisuAuthExternalProviderConfig>();
         public DbSet<VisuAuthAuditLogEntry> VisuAuthAuditLog => Set<VisuAuthAuditLogEntry>();
+        public DbSet<VisuAuthAdapterConfig> VisuAuthAdapterConfigs => Set<VisuAuthAdapterConfig>();
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

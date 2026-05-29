@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.Graph;
 using VisuAuth.Entra;
 using VisuAuth.Entra.Configuration;
+using VisuAuth.UnitTests.Entra.Internal;
 using Xunit;
 
 namespace VisuAuth.UnitTests.Entra;
@@ -139,9 +140,9 @@ public sealed class EntraRoleStoreTests
     /// Graph endpoint, so the client just needs to construct without
     /// requiring real Azure connectivity.
     /// </summary>
-    private static GraphServiceClient BuildOfflineGraphClient()
+    private static IEntraGraphClient BuildOfflineGraphClient()
     {
         TokenCredential offline = new ClientSecretCredential("tenant", "client", "secret");
-        return new GraphServiceClient(offline);
+        return new GraphServiceClient(offline).AsEntraGraphClient();
     }
 }

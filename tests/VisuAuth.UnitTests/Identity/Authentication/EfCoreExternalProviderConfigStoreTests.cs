@@ -261,5 +261,6 @@ public sealed class EfCoreExternalProviderConfigStoreTests : IDisposable
             => Set<VisuAuthExternalProviderConfig>();
         public DbSet<VisuAuth.Identity.Auditing.VisuAuthAuditLogEntry> VisuAuthAuditLog
             => Set<VisuAuth.Identity.Auditing.VisuAuthAuditLogEntry>();
+        public DbSet<VisuAuthAdapterConfig> VisuAuthAdapterConfigs => Set<VisuAuthAdapterConfig>();
     }
 }

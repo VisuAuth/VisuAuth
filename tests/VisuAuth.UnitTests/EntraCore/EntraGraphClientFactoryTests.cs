@@ -43,4 +43,23 @@ public sealed class EntraGraphClientFactoryTests
         client.RequestAdapter.Should().NotBeNull(
             "every Graph call walks through the request adapter — a null one would crash on first use");
     }
+
+    [Fact]
+    public void Create_WithGraphBaseUrl_AppliesItToTheRequestAdapter()
+    {
+        const string sovereign = "https://graph.microsoft.us/v1.0";
+
+        var client = EntraGraphClientFactory.Create("t", "c", "s", sovereign);
+
+        client.RequestAdapter.BaseUrl.Should().Be(sovereign,
+            "a configured GraphBaseUrl must reach the transport, not just be stored");
+    }
+
+    [Fact]
+    public void Create_WithoutGraphBaseUrl_KeepsTheSdkPublicCloudDefault()
+    {
+        var client = EntraGraphClientFactory.Create("t", "c", "s");
+
+        client.RequestAdapter.BaseUrl.Should().Contain("graph.microsoft.com");
+    }
 }

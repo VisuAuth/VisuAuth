@@ -39,6 +39,10 @@ public abstract class MultiTenantIdentityDbContext<TUser> : IdentityDbContext<TU
         => Set<VisuAuthAuditLogEntry>();
 
     /// <inheritdoc />
+    public DbSet<VisuAuthAdapterConfig> VisuAuthAdapterConfigs
+        => Set<VisuAuthAdapterConfig>();
+
+    /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -57,6 +61,7 @@ public abstract class MultiTenantIdentityDbContext<TUser> : IdentityDbContext<TU
         ConfigureVisuAuthTenant(builder);
         ConfigureVisuAuthExternalProviderConfig(builder);
         ConfigureVisuAuthAuditLog(builder);
+        ConfigureVisuAuthAdapterConfig(builder);
     }
 
     internal static void ConfigureVisuAuthTenant(ModelBuilder builder)
@@ -133,6 +138,23 @@ public abstract class MultiTenantIdentityDbContext<TUser> : IdentityDbContext<TU
             entity.HasIndex(e => e.Action);
         });
     }
+
+    internal static void ConfigureVisuAuthAdapterConfig(ModelBuilder builder)
+    {
+        builder.Entity<VisuAuthAdapterConfig>(entity =>
+        {
+            entity.ToTable("VisuAuthAdapterConfigs");
+            // Synthetic GUID PK; the real invariant (one row per (Adapter, Key))
+            // is the unique index below.
+            entity.HasKey(c => c.Id);
+            entity.Property(c => c.Id).ValueGeneratedNever();
+            entity.HasIndex(c => new { c.Adapter, c.Key }).IsUnique();
+            entity.Property(c => c.Adapter).HasMaxLength(64).IsRequired();
+            entity.Property(c => c.Key).HasMaxLength(128).IsRequired();
+            // No length cap on Value — DataProtection ciphertext for secret
+            // settings can grow large depending on the protector chain.
+        });
+    }
 }
 
 /// <summary>
@@ -167,6 +189,10 @@ public abstract class MultiTenantIdentityDbContext<TUser, TRole>
         => Set<VisuAuthAuditLogEntry>();
 
     /// <inheritdoc />
+    public DbSet<VisuAuthAdapterConfig> VisuAuthAdapterConfigs
+        => Set<VisuAuthAdapterConfig>();
+
+    /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -182,5 +208,6 @@ public abstract class MultiTenantIdentityDbContext<TUser, TRole>
         MultiTenantIdentityDbContext<TUser>.ConfigureVisuAuthTenant(builder);
         MultiTenantIdentityDbContext<TUser>.ConfigureVisuAuthExternalProviderConfig(builder);
         MultiTenantIdentityDbContext<TUser>.ConfigureVisuAuthAuditLog(builder);
+        MultiTenantIdentityDbContext<TUser>.ConfigureVisuAuthAdapterConfig(builder);
     }
 }

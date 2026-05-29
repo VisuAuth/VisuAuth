@@ -36,13 +36,25 @@ public static class EntraGraphClientFactory
     /// <param name="tenantId">Directory (tenant) GUID.</param>
     /// <param name="clientId">Application (client) GUID.</param>
     /// <param name="clientSecret">Client secret value.</param>
-    public static GraphServiceClient Create(string tenantId, string clientId, string clientSecret)
+    /// <param name="graphBaseUrl">
+    /// Optional Graph endpoint base URL (e.g. a sovereign cloud). When supplied
+    /// it overrides the SDK default so requests target the right cloud; null /
+    /// empty keeps the SDK's public-cloud default.
+    /// </param>
+    public static GraphServiceClient Create(string tenantId, string clientId, string clientSecret, string? graphBaseUrl = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(tenantId);
         ArgumentException.ThrowIfNullOrWhiteSpace(clientId);
         ArgumentException.ThrowIfNullOrWhiteSpace(clientSecret);
 
         var credential = new ClientSecretCredential(tenantId, clientId, clientSecret);
-        return new GraphServiceClient(credential, DefaultScopes);
+        var client = new GraphServiceClient(credential, DefaultScopes);
+        if (!string.IsNullOrWhiteSpace(graphBaseUrl))
+        {
+            // Point the request adapter at the configured cloud; otherwise the
+            // GraphBaseUrl option would be ignored for the actual transport.
+            client.RequestAdapter.BaseUrl = graphBaseUrl;
+        }
+        return client;
     }
 }

@@ -1,6 +1,7 @@
 using Microsoft.Graph;
 using Microsoft.Graph.Models.ODataErrors;
 using VisuAuth.Abstractions.Users;
+using VisuAuth.Entra.Configuration;
 
 namespace VisuAuth.Entra;
 
@@ -25,10 +26,12 @@ namespace VisuAuth.Entra;
 /// empty result is NOT cached, so a later render retries.
 /// </para>
 /// </remarks>
-public sealed class EntraEmailDomainSource(GraphServiceClient graphClient) : IEmailDomainSource, IDisposable
+public sealed class EntraEmailDomainSource(IEntraGraphClient graphClient) : IEmailDomainSource, IDisposable
 {
-    private readonly GraphServiceClient _graph =
+    private readonly IEntraGraphClient _graphClient =
         graphClient ?? throw new ArgumentNullException(nameof(graphClient));
+
+    private GraphServiceClient Graph => _graphClient.GetClient();
 
     private readonly SemaphoreSlim _gate = new(1, 1);
     private IReadOnlyList<string>? _cached;
@@ -69,7 +72,7 @@ public sealed class EntraEmailDomainSource(GraphServiceClient graphClient) : IEm
     {
         try
         {
-            var response = await _graph.Domains.GetAsync(rc =>
+            var response = await Graph.Domains.GetAsync(rc =>
             {
                 rc.QueryParameters.Select = ["id", "isVerified", "isDefault"];
             }, cancellationToken);

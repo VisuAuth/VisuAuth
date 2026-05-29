@@ -85,26 +85,26 @@ immediate next step. Updated as PRs land. Long-term direction lives in
 
 ## In flight
 
-- **Cursor-based pagination** (`feat/cursor-pagination`) — replaces the
-  numeric `PagedResult.Page` / `PageSize` / `TotalPages` contract with a
-  forward, opaque `NextCursor` (string) plus an optional `TotalCount`
-  (int?). EF stores (`AspNetIdentityUserStore`, `EfCoreAuditStore`) encode
-  the next offset as the cursor and still supply a real `COUNT`; the Graph
-  user stores (`EntraUserStore`, `EntraExternalUserStore`) now follow
-  Graph's `@odata.nextLink` natively (no more "every call is page 1") with
-  `TotalCount` null. `EntraAuditReader` stays a single page (no cursor)
-  because it merges two independently-tokenised Graph sources client-side.
-  `UserFilter` / `AuditFilter` swap `Page` for `Cursor`. A new SSRF-safe
-  `GraphPageCursor` (EntraCore) validates a decoded continuation link
-  resolves to the configured Graph origin before `WithUrl(...)` is called,
-  so a tampered cursor can't redirect a bearer-token request off-host; EF
-  stores use an `OffsetCursor` codec that decodes garbage to page 1. Admin
-  pagers: "Next" follows the cursor (htmx + `hx-push-url`), "Previous"
-  steps back through browser history, and the count line shows the real
-  total when known or a per-page count otherwise. Tests: `OffsetCursor` +
-  `GraphPageCursor` codecs (round-trip, tamper/SSRF rejection), EF audit
-  cursor round-trip, Graph skiptoken round-trip + off-origin rejection.
-  **Breaking** on `VisuAuth.Abstractions` — flagged in CHANGELOG.
+- **DB-backed adapter config UI** (`feat/adapter-config-ui`) — a generic
+  `/visuauth/admin/entra-config` page that edits a backend adapter's
+  settings at runtime and persists them to the database, overlaid on top of
+  the values bound from code / appsettings / user-secrets. New
+  `IAdapterConfigStore` + `IAdapterConfigSchema` + `IAdapterConfigChangeNotifier`
+  contracts in `VisuAuth.Abstractions`; an EF-backed `EfCoreAdapterConfigStore`
+  (new generic `VisuAuthAdapterConfigs` table, adapter/key/value/isSecret,
+  secrets encrypted via Data Protection) opted in with
+  `AddVisuAuthAdapterConfigStore()`. The Entra adapter contributes a schema +
+  a DB overlay via `AddVisuAuthEntraDbConfig()`: an `IConfigureOptions<EntraOptions>`
+  applies stored overrides after the bind step, and the `GraphServiceClient`
+  is now supplied by a fingerprint-cached `EntraGraphClientProvider` that
+  rebuilds when an admin save fires an `IOptionsChangeTokenSource` — so the
+  change takes effect on the next Graph call **without a restart**. The page
+  renders "From DB" / "From code" source badges, write-only secret fields,
+  and never logs secret plaintext. AdminUi stays adapter-agnostic (depends
+  only on the abstractions). Tests: the EF store (encryption, tri-state
+  save, secret-never-echoed), the overlay (DB wins, snapshot capture), the
+  client provider (rebuild on change, last-good on invalid), and the page
+  model (tri-state mapping, notifier fired, audit omits secrets).
 
 ---
 
@@ -116,8 +116,9 @@ customization"*. The External adapter shipped across PRs A/B/C
 (#36 EntraCore extraction, #37 CRUD adapter, #38 OIDC sign-in) plus two
 admin-robustness fixes (#39 roles, #40 external-providers) and PR D
 (#41 profile sync). Follow-ups #42 (ResetTwoFactor), #43 (sign-in audit
-reader), #44 (directoryAudits merge) and #45 (multi-domain create-user
-dropdown) also landed. Other concrete ideas surfaced during v0.2:
+reader), #44 (directoryAudits merge), #45 (multi-domain create-user
+dropdown) and #46 (cursor-based pagination) also landed. Other concrete
+ideas surfaced during v0.2:
 
 1. **User-flow management admin UI** *(blocked on Graph v1.0)* — the
    originally-envisioned `/visuauth/admin/entra-external/user-flows`
@@ -127,14 +128,6 @@ dropdown) also landed. Other concrete ideas surfaced during v0.2:
    Graph. Parked until either those graduate to v1.0 or we decide to
    take a dependency on `Microsoft.Graph.Beta`. PR D delivered the
    attribute-mapping value (claims → Graph user) without it.
-2. **DB-backed adapter config UI** — `/visuauth/admin/entra-config`
-   (and similar for future adapters). Pattern reuses the existing
-   External Providers infrastructure: `IConfigureOptions<TOptions>`
-   overlay on top of `IConfiguration`, source badges ("from DB" /
-   "from code"), cache invalidator so saves take effect on the next
-   Graph call without restart. Possibly generalised to
-   `VisuAuthAdapterConfigs` (section/key/value/isSecret) so future
-   adapters (LDAP, Cognito, …) get the same admin surface for free.
 
 No branches queued yet — each item lands as its own feature branch +
 PR per CLAUDE.md §11. Owner picks order.

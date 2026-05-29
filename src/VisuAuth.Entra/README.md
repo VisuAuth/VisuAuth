@@ -192,6 +192,19 @@ builder.Services.AddVisuAuthEntra(builder.Configuration);
 
 Both register the same service graph (TryAdd, so a consumer-registered test double wins): `IUserStore` → `EntraUserStore`, `IRoleStore` → `EntraRoleStore`, `IAuthenticationFlow` → `EntraAuthenticationFlow`, plus stub `IAuditWriter` / `IJwtIssuer` / `ITenantContext` / `IExternalLoginFlow` so the End-user UI can resolve without Identity wired alongside.
 
+### Edit settings from the admin UI (optional)
+
+By default the Entra settings are read once at startup from `IConfiguration` / the configure lambda. To let an operator edit them at runtime from `/visuauth/admin/entra-config` instead, opt in:
+
+```csharp
+// Needs a metadata DbContext (the VisuAuthAdapterConfigs table) — register one
+// and surface it as IVisuAuthMetadataDbContext, then:
+builder.Services.AddVisuAuthAdapterConfigStore();   // from VisuAuth.Identity
+builder.Services.AddVisuAuthEntraDbConfig();         // from VisuAuth.Entra
+```
+
+Stored values overlay on top of the code/appsettings values (DB wins per key; keys with no override keep the code value), the `ClientSecret` is encrypted at rest via ASP.NET Core Data Protection, and a save **takes effect on the next Graph call without restarting** — the client is rebuilt when the effective options change. Without this opt-in the page stays hidden and the adapter reads its configuration exactly as before.
+
 ---
 
 ## Multi-domain (verified custom domain)

@@ -1,300 +1,747 @@
-/*
- * VisuAuth end-user pages — layout-only additions on top of the admin
- * theme (which already defines colours, inputs, buttons, alerts).
- */
+/* ============================================================================
+   VisuAuth — End-User Pages Stylesheet
+   ----------------------------------------------------------------------------
+   Self-contained styles for the public authentication surfaces:
+   login, register, password reset, and TOTP / two-factor setup.
 
-.va-enduser-body {
-    background: var(--visuauth-surface);
-    min-height: 100vh;
-    margin: 0;
+   These pages render a single centred card on a full-viewport background.
+   No external fonts, no @import, no CSS framework — plain CSS + custom
+   properties. Light is the default; dark via data-theme + prefers-color-scheme.
+
+   Tokens are duplicated here (rather than @import'd) so this file ships
+   independently of visuauth.css. Consumers re-theme by overriding --visuauth-*.
+   ============================================================================ */
+
+/* ===========================================================================
+   1. TOKENS — LIGHT THEME (defaults)
+   =========================================================================== */
+:root {
+  --visuauth-primary: #6366f1;
+  --visuauth-primary-hover: #4f46e5;
+  --visuauth-primary-active: #4338ca;
+  --visuauth-primary-fg: #ffffff;
+  --visuauth-primary-soft: #eef2ff;
+  --visuauth-primary-soft-fg: #4338ca;
+  --visuauth-link: #4f46e5;
+  --visuauth-ring: rgba(99, 102, 241, 0.45);
+
+  --visuauth-bg: #ffffff;
+  --visuauth-fg: #0f172a;
+  --visuauth-muted: #64748b;
+  --visuauth-faint: #94a3b8;
+  --visuauth-border: #e2e8f0;
+  --visuauth-border-strong: #cbd5e1;
+  --visuauth-surface: #f8fafc;
+  --visuauth-surface-2: #f1f5f9;
+  --visuauth-elevated: #ffffff;
+  --visuauth-hover: #f1f5f9;
+
+  /* The page backdrop behind the card — a soft indigo-tinted wash */
+  --visuauth-enduser-bg: radial-gradient(1200px 600px at 50% -10%, #eef2ff 0%, #f8fafc 45%, #f1f5f9 100%);
+
+  --visuauth-danger: #dc2626;
+  --visuauth-danger-fg: #ffffff;
+  --visuauth-danger-soft: #fef2f2;
+  --visuauth-danger-soft-fg: #b91c1c;
+  --visuauth-success: #16a34a;
+  --visuauth-success-soft: #f0fdf4;
+  --visuauth-success-soft-fg: #15803d;
+  --visuauth-warning: #d97706;
+  --visuauth-warning-soft: #fffbeb;
+  --visuauth-warning-soft-fg: #b45309;
+  --visuauth-info: #2563eb;
+  --visuauth-info-soft: #eff6ff;
+  --visuauth-info-soft-fg: #1d4ed8;
+
+  --visuauth-radius: 0.5rem;
+  --visuauth-radius-sm: 0.375rem;
+  --visuauth-radius-lg: 0.75rem;
+  --visuauth-radius-xl: 1rem;
+  --visuauth-radius-full: 9999px;
+
+  --visuauth-shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --visuauth-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.05);
+  --visuauth-shadow-card: 0 1px 3px rgba(15, 23, 42, 0.06), 0 20px 50px -20px rgba(15, 23, 42, 0.22);
+
+  --visuauth-space-1: 0.25rem;
+  --visuauth-space-2: 0.5rem;
+  --visuauth-space-3: 0.75rem;
+  --visuauth-space-4: 1rem;
+  --visuauth-space-5: 1.25rem;
+  --visuauth-space-6: 1.5rem;
+  --visuauth-space-8: 2rem;
+  --visuauth-space-10: 2.5rem;
+
+  --visuauth-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --visuauth-font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+
+  --visuauth-text-xs: 0.75rem;
+  --visuauth-text-sm: 0.8125rem;
+  --visuauth-text-base: 0.875rem;
+  --visuauth-text-md: 0.9375rem;
+  --visuauth-text-lg: 1.125rem;
+  --visuauth-text-xl: 1.5rem;
+
+  --visuauth-fw-normal: 400;
+  --visuauth-fw-medium: 500;
+  --visuauth-fw-semibold: 600;
+  --visuauth-fw-bold: 700;
+
+  --visuauth-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --visuauth-duration: 0.16s;
+
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s;
 }
 
+/* ===========================================================================
+   2. RESET / BASE
+   =========================================================================== */
+.va-enduser-shell *,
+.va-enduser-shell *::before,
+.va-enduser-shell *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--visuauth-font);
+  font-size: var(--visuauth-text-base);
+  line-height: 1.55;
+  color: var(--visuauth-fg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.va-enduser-shell a:focus-visible,
+.va-enduser-shell button:focus-visible,
+.va-enduser-shell input:focus-visible,
+.va-enduser-shell select:focus-visible {
+  outline: 2px solid var(--visuauth-primary);
+  outline-offset: 2px;
+  border-radius: var(--visuauth-radius-sm);
+}
+
+/* ===========================================================================
+   3. SHELL & CARD
+   =========================================================================== */
 .va-enduser-shell {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 2rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: var(--visuauth-space-6);
+  background: var(--visuauth-enduser-bg);
+  color: var(--visuauth-fg);
 }
 
 .va-enduser-card {
-    width: 100%;
-    max-width: 26rem;
-    background: var(--visuauth-bg);
-    border: 1px solid var(--visuauth-border);
-    border-radius: var(--visuauth-radius);
-    padding: 2rem;
-    box-shadow: 0 12px 30px -18px rgba(15, 23, 42, 0.25);
+  width: 100%;
+  max-width: 26rem;
+  padding: var(--visuauth-space-8);
+  background: var(--visuauth-elevated);
+  border: 1px solid var(--visuauth-border);
+  border-radius: var(--visuauth-radius-xl);
+  box-shadow: var(--visuauth-shadow-card);
 }
 
 .va-enduser-brand {
-    display: block;
-    margin: 0 0 1.5rem;
-    text-align: center;
-    font-size: 1.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--visuauth-space-2);
+  margin-bottom: var(--visuauth-space-6);
+  font-size: var(--visuauth-text-lg);
+  font-weight: var(--visuauth-fw-bold);
+  letter-spacing: -0.02em;
+  color: var(--visuauth-fg);
+  text-decoration: none;
+}
+
+.va-enduser-brand .va-brand-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--visuauth-radius);
+  background: linear-gradient(135deg, var(--visuauth-primary), var(--visuauth-primary-active));
+  color: #fff;
+  font-weight: var(--visuauth-fw-bold);
+  font-size: 1rem;
 }
 
 .va-enduser-heading {
-    margin: 0 0 0.25rem;
-    font-size: 1.5rem;
+  margin: 0 0 var(--visuauth-space-2);
+  font-size: var(--visuauth-text-xl);
+  font-weight: var(--visuauth-fw-bold);
+  letter-spacing: -0.02em;
+  text-align: center;
+  color: var(--visuauth-fg);
 }
 
 .va-enduser-subtitle {
-    margin: 0 0 1.5rem;
-    color: var(--visuauth-muted);
-    font-size: 0.95rem;
+  margin: 0 0 var(--visuauth-space-6);
+  font-size: var(--visuauth-text-base);
+  color: var(--visuauth-muted);
+  text-align: center;
+  line-height: 1.5;
 }
 
-.va-enduser-form .va-field {
-    margin-bottom: 1rem;
+/* ===========================================================================
+   4. FORM
+   =========================================================================== */
+.va-enduser-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--visuauth-space-4);
 }
 
-.va-enduser-form .va-checkbox {
-    margin: 0.25rem 0 1.5rem;
+.va-enduser-form .va-btn-primary { width: 100%; }
+
+/* Field building blocks (shared with admin naming) */
+.va-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--visuauth-space-2);
 }
 
-.va-enduser-form .va-btn-primary {
-    width: 100%;
-    justify-content: center;
+.va-field-label {
+  font-size: var(--visuauth-text-xs);
+  font-weight: var(--visuauth-fw-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--visuauth-muted);
 }
 
-.va-enduser-footer {
-    margin-top: 1.25rem;
-    text-align: center;
-    font-size: 0.9rem;
-    color: var(--visuauth-muted);
+.va-field-hint {
+  font-size: var(--visuauth-text-xs);
+  color: var(--visuauth-faint);
 }
 
-.va-enduser-footer a {
-    color: var(--visuauth-primary);
-    text-decoration: none;
+.va-input {
+  width: 100%;
+  padding: var(--visuauth-space-3) var(--visuauth-space-3);
+  font-family: inherit;
+  font-size: var(--visuauth-text-md);
+  color: var(--visuauth-fg);
+  background: var(--visuauth-elevated);
+  border: 1px solid var(--visuauth-border-strong);
+  border-radius: var(--visuauth-radius);
+  transition: border-color var(--visuauth-duration) var(--visuauth-ease),
+              box-shadow var(--visuauth-duration) var(--visuauth-ease);
 }
 
-.va-enduser-footer a:hover {
-    text-decoration: underline;
+.va-input::placeholder { color: var(--visuauth-faint); }
+.va-input:hover { border-color: var(--visuauth-muted); }
+.va-input:focus-visible {
+  outline: none;
+  border-color: var(--visuauth-primary);
+  box-shadow: 0 0 0 3px var(--visuauth-ring);
 }
 
-/* Language switcher inside the end-user card — pushes the select to the
- * footer so the sign-in form is the visual anchor and the locale flip is
- * a secondary action. */
-.va-enduser-lang {
-    margin-top: 1.5rem;
-    padding-top: 1rem;
-    border-top: 1px solid var(--visuauth-border);
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    font-size: 0.85rem;
+.va-password-wrap { position: relative; display: flex; }
+.va-password-wrap .va-input { padding-right: var(--visuauth-space-10); }
+
+.va-password-toggle {
+  position: absolute;
+  top: 50%;
+  right: var(--visuauth-space-2);
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: var(--visuauth-radius-sm);
+  background: transparent;
+  color: var(--visuauth-muted);
+  cursor: pointer;
+  transition: background-color var(--visuauth-duration) var(--visuauth-ease),
+              color var(--visuauth-duration) var(--visuauth-ease);
+}
+.va-password-toggle:hover { background: var(--visuauth-hover); color: var(--visuauth-fg); }
+.va-password-toggle svg { width: 16px; height: 16px; }
+
+.va-checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--visuauth-space-2);
+  font-size: var(--visuauth-text-base);
+  color: var(--visuauth-fg);
+  cursor: pointer;
+}
+.va-checkbox input[type="checkbox"] {
+  width: 16px; height: 16px;
+  accent-color: var(--visuauth-primary);
+  cursor: pointer;
 }
 
-.va-enduser-lang select {
-    font-size: 0.9rem;
-}
+.va-required { color: var(--visuauth-danger); margin-left: 1px; }
 
-/* Authenticated quick-nav above the card body. Sits between the brand and
- * the page heading so it never competes with form inputs for attention. */
-.va-enduser-account {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.75rem;
-    font-size: 0.85rem;
-    margin: -0.75rem 0 1rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid var(--visuauth-border);
+/* ===========================================================================
+   5. BUTTONS (subset needed on end-user pages)
+   =========================================================================== */
+.va-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--visuauth-space-2);
+  padding: var(--visuauth-space-3) var(--visuauth-space-4);
+  font-family: inherit;
+  font-size: var(--visuauth-text-md);
+  font-weight: var(--visuauth-fw-semibold);
+  line-height: 1.2;
+  border: 1px solid transparent;
+  border-radius: var(--visuauth-radius);
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color var(--visuauth-duration) var(--visuauth-ease),
+              border-color var(--visuauth-duration) var(--visuauth-ease),
+              color var(--visuauth-duration) var(--visuauth-ease),
+              box-shadow var(--visuauth-duration) var(--visuauth-ease),
+              transform var(--visuauth-duration) var(--visuauth-ease);
 }
+.va-btn:active { transform: translateY(0.5px); }
+.va-btn svg { width: 16px; height: 16px; }
+.va-btn:disabled, .va-btn.va-disabled { opacity: 0.55; cursor: not-allowed; pointer-events: none; }
 
-.va-enduser-account a {
-    color: var(--visuauth-primary);
-    text-decoration: none;
+.va-btn-primary {
+  background: var(--visuauth-primary);
+  color: var(--visuauth-primary-fg);
+  box-shadow: var(--visuauth-shadow-xs);
 }
-
-.va-enduser-account a:hover {
-    text-decoration: underline;
-}
-
-/* TOTP setup — three numbered steps stacked inside the card. */
-.va-twofactor-steps {
-    margin: 1rem 0 0;
-    padding-left: 1.25rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
-}
-
-.va-twofactor-steps li {
-    line-height: 1.5;
-}
-
-.va-twofactor-steps strong {
-    display: block;
-    margin-bottom: 0.25rem;
-}
-
-.va-twofactor-qr {
-    display: flex;
-    justify-content: center;
-    margin: 0.75rem 0;
-}
-
-/* The QR container — NOT the SVG — owns the white background, padding, and
- * border. Painting those on the SVG element itself can clip the QR's quiet
- * zone (the white border QRCoder draws) and confuses some camera apps that
- * expect the quiet zone to be visually contiguous with the surrounding
- * background. The wrapper ensures the white field always extends past the
- * QR's outer modules. */
-.va-twofactor-qr-frame {
-    background: #ffffff;
-    padding: 0.75rem;
-    border: 1px solid var(--visuauth-border);
-    border-radius: var(--visuauth-radius);
-    display: inline-block;
-    line-height: 0;
-}
-
-.va-twofactor-qr svg {
-    /* Cap with max-width so narrow phones never overflow the card, but DO
-     * NOT set width / height — letting the SVG render at its native pixel
-     * grid keeps every QR module crisp and aligned. image-rendering keeps
-     * any forced scaling (e.g. browser zoom) on integer pixel boundaries
-     * so module edges stay sharp instead of blurring into each other. */
-    display: block;
-    max-width: 16rem;
-    height: auto;
-    image-rendering: pixelated;
-    image-rendering: crisp-edges;
-}
-
-.va-twofactor-reset {
-    margin-top: 1.5rem;
-}
-
-/* Recovery codes — single column of monospaced codes with per-row copy. */
-.va-twofactor-codes {
-    list-style: none;
-    margin: 1rem 0 0;
-    padding: 0;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.5rem;
-}
-
-.va-twofactor-codes li {
-    margin: 0;
-}
-
-.va-twofactor-codes .va-copy-wrap {
-    width: 100%;
-}
-
-.va-twofactor-recovery {
-    margin-top: 1.25rem;
-    border-top: 1px solid var(--visuauth-border);
-    padding-top: 1rem;
-}
-
-.va-twofactor-recovery summary {
-    cursor: pointer;
-    color: var(--visuauth-primary);
-    font-size: 0.9rem;
-    margin-bottom: 0.75rem;
-}
-
-.va-twofactor-disable {
-    margin-top: 1.5rem;
-}
-
-.va-twofactor-disable-hint {
-    margin: 0.5rem 0 0;
-    font-size: 0.8rem;
-}
-
-.va-alert.va-alert-warning {
-    background: #fffbeb;
-    color: #92400e;
-    border: 1px solid #fde68a;
-    border-radius: var(--visuauth-radius);
-    padding: 0.75rem 1rem;
-    margin-bottom: 1rem;
-}
+.va-btn-primary:hover { background: var(--visuauth-primary-hover); }
+.va-btn-primary:active { background: var(--visuauth-primary-active); }
 
 .va-btn-secondary {
-    background: var(--visuauth-bg);
-    color: var(--visuauth-primary);
-    border: 1px solid var(--visuauth-primary);
+  background: var(--visuauth-elevated);
+  color: var(--visuauth-fg);
+  border-color: var(--visuauth-border-strong);
 }
-
 .va-btn-secondary:hover {
-    background: var(--visuauth-surface);
+  border-color: var(--visuauth-primary);
+  background: var(--visuauth-primary-soft);
+  color: var(--visuauth-primary-soft-fg);
 }
 
-.va-btn-danger {
-    background: var(--visuauth-danger);
-    color: var(--visuauth-primary-fg);
-    border: 1px solid var(--visuauth-danger);
+.va-btn-ghost {
+  background: transparent;
+  color: var(--visuauth-fg);
 }
+.va-btn-ghost:hover { background: var(--visuauth-hover); }
 
-.va-btn-danger:hover {
-    filter: brightness(0.95);
-}
-
-/* "or" divider between password form and external-provider buttons.
- * Two horizontal rules flanking the centered text keeps the divider
- * vertically aligned regardless of how long the localized "or" / "ou"
- * string ends up. */
-.va-divider {
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    align-items: center;
-    gap: 0.75rem;
-    margin: 1.5rem 0;
-    color: var(--visuauth-muted);
-    font-size: 0.85rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-
-.va-divider::before,
-.va-divider::after {
-    content: "";
-    height: 1px;
-    background: var(--visuauth-border);
-}
-
-/* Stack of "Continue with X" buttons. Each provider lives in its own
- * <form> so the antiforgery token + scheme hidden input ride along; the
- * stack collapses to single-column on mobile via the existing card width. */
-.va-external-providers {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.va-external-providers .va-enduser-form {
-    margin: 0;
+.va-btn-small {
+  padding: var(--visuauth-space-1) var(--visuauth-space-3);
+  font-size: var(--visuauth-text-sm);
 }
 
 .va-btn-provider {
-    width: 100%;
-    justify-content: center;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.6rem;
+  width: 100%;
+  justify-content: center;
+  gap: var(--visuauth-space-3);
+  padding: var(--visuauth-space-3) var(--visuauth-space-4);
+  background: var(--visuauth-elevated);
+  color: var(--visuauth-fg);
+  border-color: var(--visuauth-border-strong);
+  font-weight: var(--visuauth-fw-medium);
+}
+.va-btn-provider:hover { background: var(--visuauth-surface); border-color: var(--visuauth-muted); }
+
+/* ===========================================================================
+   6. FOOTER / ACCOUNT LINKS
+   =========================================================================== */
+.va-enduser-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--visuauth-space-2) var(--visuauth-space-4);
+  margin-top: var(--visuauth-space-6);
+  padding-top: var(--visuauth-space-5);
+  border-top: 1px solid var(--visuauth-border);
+  font-size: var(--visuauth-text-base);
+  color: var(--visuauth-muted);
 }
 
-/* Brand glyph emitted by the <va-provider-icon> tag helper. Sized to match
- * the button text line-height so the visual weight stays balanced; explicit
- * width/height keeps the icon stable across browsers that compute SVG sizing
- * differently from raster <img>. */
+.va-enduser-footer a {
+  color: var(--visuauth-link);
+  text-decoration: none;
+  font-weight: var(--visuauth-fw-medium);
+}
+.va-enduser-footer a:hover { text-decoration: underline; }
+
+.va-enduser-account {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--visuauth-space-4);
+  font-size: var(--visuauth-text-sm);
+  color: var(--visuauth-muted);
+}
+.va-enduser-account a {
+  color: var(--visuauth-link);
+  text-decoration: none;
+  font-weight: var(--visuauth-fw-medium);
+}
+.va-enduser-account a:hover { text-decoration: underline; }
+
+/* ===========================================================================
+   7. DIVIDER ("or")  &  EXTERNAL PROVIDERS
+   =========================================================================== */
+.va-divider {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--visuauth-space-3);
+  margin: var(--visuauth-space-5) 0;
+  font-size: var(--visuauth-text-xs);
+  font-weight: var(--visuauth-fw-medium);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--visuauth-faint);
+}
+.va-divider::before,
+.va-divider::after {
+  content: "";
+  height: 1px;
+  background: var(--visuauth-border);
+}
+
+.va-external-providers {
+  display: flex;
+  flex-direction: column;
+  gap: var(--visuauth-space-3);
+}
+
 .va-provider-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 1.1rem;
-    height: 1.1rem;
-    flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+.va-provider-icon svg,
+.va-provider-icon img { width: 18px; height: 18px; }
+
+/* ===========================================================================
+   8. ALERTS (shared)
+   =========================================================================== */
+.va-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--visuauth-space-3);
+  padding: var(--visuauth-space-3) var(--visuauth-space-4);
+  border-radius: var(--visuauth-radius);
+  border: 1px solid var(--visuauth-border);
+  background: var(--visuauth-surface);
+  font-size: var(--visuauth-text-base);
+  line-height: 1.5;
+  margin-bottom: var(--visuauth-space-4);
+}
+.va-alert svg { width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px; }
+.va-alert-success { background: var(--visuauth-success-soft); color: var(--visuauth-success-soft-fg); border-color: color-mix(in srgb, var(--visuauth-success) 30%, transparent); }
+.va-alert-danger  { background: var(--visuauth-danger-soft);  color: var(--visuauth-danger-soft-fg);  border-color: color-mix(in srgb, var(--visuauth-danger) 30%, transparent); }
+.va-alert-info    { background: var(--visuauth-info-soft);    color: var(--visuauth-info-soft-fg);    border-color: color-mix(in srgb, var(--visuauth-info) 30%, transparent); }
+.va-alert-warning { background: var(--visuauth-warning-soft); color: var(--visuauth-warning-soft-fg); border-color: color-mix(in srgb, var(--visuauth-warning) 35%, transparent); }
+
+/* ===========================================================================
+   9. TWO-FACTOR / TOTP SETUP
+   =========================================================================== */
+.va-twofactor-steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--visuauth-space-4);
+  margin: 0 0 var(--visuauth-space-5);
+  padding: 0;
+  list-style: none;
+  counter-reset: va-step;
 }
 
-.va-provider-icon svg {
-    width: 100%;
-    height: 100%;
+.va-twofactor-steps > li {
+  position: relative;
+  padding-left: var(--visuauth-space-8);
+  font-size: var(--visuauth-text-base);
+  color: var(--visuauth-fg);
+  line-height: 1.5;
+  counter-increment: va-step;
+}
+
+.va-twofactor-steps > li::before {
+  content: counter(va-step);
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--visuauth-radius-full);
+  background: var(--visuauth-primary-soft);
+  color: var(--visuauth-primary-soft-fg);
+  font-size: var(--visuauth-text-xs);
+  font-weight: var(--visuauth-fw-bold);
+}
+
+.va-twofactor-qr-frame {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  margin: var(--visuauth-space-2) auto var(--visuauth-space-5);
+  padding: var(--visuauth-space-4);
+  background: #ffffff;             /* QR must stay white in both themes */
+  border: 1px solid var(--visuauth-border);
+  border-radius: var(--visuauth-radius-lg);
+  box-shadow: var(--visuauth-shadow-sm);
+}
+.va-twofactor-qr-frame img,
+.va-twofactor-qr-frame svg,
+.va-twofactor-qr-frame canvas {
+  display: block;
+  width: 160px;
+  height: 160px;
+}
+
+.va-twofactor-recovery {
+  margin-top: var(--visuauth-space-5);
+  padding-top: var(--visuauth-space-5);
+  border-top: 1px solid var(--visuauth-border);
+}
+
+.va-twofactor-recovery h3 {
+  margin: 0 0 var(--visuauth-space-1);
+  font-size: var(--visuauth-text-md);
+  font-weight: var(--visuauth-fw-semibold);
+  color: var(--visuauth-fg);
+}
+
+.va-twofactor-codes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--visuauth-space-2);
+  margin: var(--visuauth-space-4) 0;
+  padding: var(--visuauth-space-4);
+  background: var(--visuauth-surface);
+  border: 1px solid var(--visuauth-border);
+  border-radius: var(--visuauth-radius);
+}
+
+.va-twofactor-codes code,
+.va-twofactor-codes li {
+  font-family: var(--visuauth-font-mono);
+  font-size: var(--visuauth-text-base);
+  letter-spacing: 0.06em;
+  color: var(--visuauth-fg);
+  list-style: none;
+}
+
+/* ===========================================================================
+   9b. RAZOR TEMPLATE CLASSES (added)
+   ---------------------------------------------------------------------------
+   Consume the same --visuauth-* tokens, so light & dark work automatically.
+   =========================================================================== */
+
+/* Page <body> on every end-user page — the full-viewport backdrop */
+.va-enduser-body {
+  min-height: 100vh;
+  margin: 0;
+  background: var(--visuauth-enduser-bg);
+  color: var(--visuauth-fg);
+}
+
+/* Language switcher at the bottom of the auth card (compact, muted, centred) */
+.va-enduser-lang {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--visuauth-space-2);
+  margin-top: var(--visuauth-space-5);
+  padding-top: var(--visuauth-space-4);
+  border-top: 1px solid var(--visuauth-border);
+  font-size: var(--visuauth-text-sm);
+  color: var(--visuauth-muted);
+}
+.va-enduser-lang a,
+.va-enduser-lang button {
+  color: var(--visuauth-link);
+  background: transparent;
+  border: 0;
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+.va-enduser-lang a:hover,
+.va-enduser-lang button:hover { text-decoration: underline; }
+.va-enduser-lang select {
+  font: inherit;
+  color: var(--visuauth-fg);
+  background: var(--visuauth-elevated);
+  border: 1px solid var(--visuauth-border-strong);
+  border-radius: var(--visuauth-radius-sm);
+  padding: 0.15rem var(--visuauth-space-2);
+  cursor: pointer;
+}
+
+/* QR outer block on the TOTP setup page (wraps .va-twofactor-qr-frame) */
+.va-twofactor-qr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--visuauth-space-2);
+  margin: var(--visuauth-space-2) 0 var(--visuauth-space-5);
+}
+
+/* Disable-2FA section */
+.va-twofactor-disable { margin-top: var(--visuauth-space-2); }
+.va-twofactor-disable-hint {
+  margin: 0 0 var(--visuauth-space-3);
+  font-size: var(--visuauth-text-sm);
+  line-height: 1.5;
+}
+
+/* Reset-authenticator-key section — separated from the disable section above */
+.va-twofactor-reset {
+  margin-top: var(--visuauth-space-5);
+  padding-top: var(--visuauth-space-5);
+  border-top: 1px solid var(--visuauth-border);
+}
+
+/* ===========================================================================
+   10. RESPONSIVE
+   =========================================================================== */
+@media (max-width: 640px) {
+  .va-enduser-shell { padding: var(--visuauth-space-4); align-items: flex-start; }
+  .va-enduser-card { padding: var(--visuauth-space-6); }
+  .va-twofactor-codes { grid-template-columns: 1fr; }
+}
+
+/* ===========================================================================
+   11. DARK THEME
+   ----------------------------------------------------------------------------
+   data-theme condition wrapped in :where() so the dark token blocks keep
+   :root specificity (0,1,0); the inline <va-theme-style /> :root override
+   loaded after this stylesheet then wins by source order — consumer palettes
+   layer on top in both themes (CLAUDE.md §8.4).
+   =========================================================================== */
+:root:where([data-theme="dark"]) {
+  --visuauth-primary: #6366f1;
+  --visuauth-primary-hover: #818cf8;
+  --visuauth-primary-active: #a5b4fc;
+  --visuauth-primary-fg: #ffffff;
+  --visuauth-primary-soft: rgba(99, 102, 241, 0.18);
+  --visuauth-primary-soft-fg: #c7d2fe;
+  --visuauth-link: #a5b4fc;
+  --visuauth-ring: rgba(129, 140, 248, 0.50);
+
+  --visuauth-bg: #0a0c10;
+  --visuauth-fg: #e8ebf2;
+  --visuauth-muted: #8b94a8;
+  --visuauth-faint: #5c6678;
+  --visuauth-border: #1e242f;
+  --visuauth-border-strong: #2c3340;
+  --visuauth-surface: #11141b;
+  --visuauth-surface-2: #161a22;
+  --visuauth-elevated: #14181f;
+  --visuauth-hover: #1a1f29;
+
+  --visuauth-enduser-bg: radial-gradient(1200px 600px at 50% -10%, #161a2e 0%, #0c0f16 50%, #0a0c10 100%);
+
+  --visuauth-danger: #ef4444;
+  --visuauth-danger-fg: #ffffff;
+  --visuauth-danger-soft: rgba(239, 68, 68, 0.14);
+  --visuauth-danger-soft-fg: #fca5a5;
+  --visuauth-success: #22c55e;
+  --visuauth-success-soft: rgba(34, 197, 94, 0.14);
+  --visuauth-success-soft-fg: #86efac;
+  --visuauth-warning: #f59e0b;
+  --visuauth-warning-soft: rgba(245, 158, 11, 0.14);
+  --visuauth-warning-soft-fg: #fcd34d;
+  --visuauth-info: #3b82f6;
+  --visuauth-info-soft: rgba(59, 130, 246, 0.14);
+  --visuauth-info-soft-fg: #93c5fd;
+
+  --visuauth-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --visuauth-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5);
+  --visuauth-shadow-card: 0 1px 3px rgba(0, 0, 0, 0.5), 0 24px 60px -24px rgba(0, 0, 0, 0.8);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    --visuauth-primary: #6366f1;
+    --visuauth-primary-hover: #818cf8;
+    --visuauth-primary-active: #a5b4fc;
+    --visuauth-primary-fg: #ffffff;
+    --visuauth-primary-soft: rgba(99, 102, 241, 0.18);
+    --visuauth-primary-soft-fg: #c7d2fe;
+    --visuauth-link: #a5b4fc;
+    --visuauth-ring: rgba(129, 140, 248, 0.50);
+
+    --visuauth-bg: #0a0c10;
+    --visuauth-fg: #e8ebf2;
+    --visuauth-muted: #8b94a8;
+    --visuauth-faint: #5c6678;
+    --visuauth-border: #1e242f;
+    --visuauth-border-strong: #2c3340;
+    --visuauth-surface: #11141b;
+    --visuauth-surface-2: #161a22;
+    --visuauth-elevated: #14181f;
+    --visuauth-hover: #1a1f29;
+
+    --visuauth-enduser-bg: radial-gradient(1200px 600px at 50% -10%, #161a2e 0%, #0c0f16 50%, #0a0c10 100%);
+
+    --visuauth-danger: #ef4444;
+    --visuauth-danger-fg: #ffffff;
+    --visuauth-danger-soft: rgba(239, 68, 68, 0.14);
+    --visuauth-danger-soft-fg: #fca5a5;
+    --visuauth-success: #22c55e;
+    --visuauth-success-soft: rgba(34, 197, 94, 0.14);
+    --visuauth-success-soft-fg: #86efac;
+    --visuauth-warning: #f59e0b;
+    --visuauth-warning-soft: rgba(245, 158, 11, 0.14);
+    --visuauth-warning-soft-fg: #fcd34d;
+    --visuauth-info: #3b82f6;
+    --visuauth-info-soft: rgba(59, 130, 246, 0.14);
+    --visuauth-info-soft-fg: #93c5fd;
+
+    --visuauth-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --visuauth-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5);
+    --visuauth-shadow-card: 0 1px 3px rgba(0, 0, 0, 0.5), 0 24px 60px -24px rgba(0, 0, 0, 0.8);
+  }
+}
+
+/* ===========================================================================
+   12. PACKAGE-SPECIFIC ADDITIONS
+   ---------------------------------------------------------------------------
+   Markup details the Razor templates emit that the design-system base above
+   does not cover: the <strong> step headings, the recovery-codes <details>
+   disclosure, full-width per-code copy buttons, and QR crispness. The light/
+   dark toggle, danger button, temp-password chip and copy button all come from
+   the admin stylesheet, which the end-user layout also loads.
+   =========================================================================== */
+
+/* Each TOTP step opens with a <strong> heading on its own line. */
+.va-twofactor-steps strong { display: block; margin-bottom: var(--visuauth-space-1); }
+
+/* Recovery codes render inside a <details> — style the <summary> disclosure. */
+.va-twofactor-recovery summary {
+  cursor: pointer;
+  color: var(--visuauth-link);
+  font-size: var(--visuauth-text-sm);
+  font-weight: var(--visuauth-fw-medium);
+  margin-bottom: var(--visuauth-space-3);
+}
+.va-twofactor-recovery summary:hover { text-decoration: underline; }
+
+/* Each recovery code carries a copy button — let it fill the grid cell. */
+.va-twofactor-codes .va-copy-wrap { width: 100%; }
+
+/* The QR is an inline <svg>; keep it crisp instead of forcing an exact box so
+   scanners read every module cleanly (overrides the frame's fixed sizing). */
+.va-twofactor-qr-frame svg,
+.va-twofactor-qr svg {
+  width: auto;
+  height: auto;
+  max-width: 16rem;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
 }

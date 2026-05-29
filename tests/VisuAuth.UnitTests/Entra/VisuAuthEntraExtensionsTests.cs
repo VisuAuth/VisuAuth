@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using VisuAuth.Abstractions.Authentication;
+using VisuAuth.Abstractions.Configuration;
 using VisuAuth.Abstractions.Roles;
 using VisuAuth.Abstractions.Users;
 using VisuAuth.Entra;
@@ -133,6 +134,28 @@ public sealed class VisuAuthEntraExtensionsTests
         services.Should().ContainSingle(d =>
             d.ServiceType == typeof(IEmailDomainSource)
             && d.ImplementationType == typeof(EntraEmailDomainSource));
+    }
+
+    [Fact]
+    public void AddVisuAuthEntraDbConfig_RegistersOverlaySchemaNotifierAndChangeSource()
+    {
+        var services = BaseServices();
+        services.AddVisuAuthEntra(o =>
+        {
+            o.TenantId = "t";
+            o.ClientId = "c";
+            o.ClientSecret = "s";
+        });
+        services.AddVisuAuthEntraDbConfig();
+
+        using var sp = services.BuildServiceProvider();
+
+        sp.GetServices<IAdapterConfigSchema>().Should().ContainSingle(s => s is EntraAdapterConfigSchema);
+        sp.GetServices<IAdapterConfigChangeNotifier>().Should().ContainSingle(n => n is EntraConfigChangeNotifier);
+        sp.GetServices<IConfigureOptions<EntraOptions>>().Should().Contain(c => c is EntraDbConfigOverlay);
+        sp.GetServices<IOptionsChangeTokenSource<EntraOptions>>().Should().Contain(c => c is EntraConfigChangeTokenSource);
+        sp.GetService<EntraGraphClientProvider>().Should().NotBeNull(
+            "the Graph client comes from the provider so it can rebuild on config change");
     }
 
     private static void AssertEntraSurfaceRegistered(IServiceCollection services)

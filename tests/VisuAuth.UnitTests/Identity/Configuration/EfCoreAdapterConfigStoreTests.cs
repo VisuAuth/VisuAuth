@@ -1,10 +1,12 @@
 using FluentAssertions;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Time.Testing;
 using VisuAuth.Abstractions.Configuration;
 using VisuAuth.Identity.Auditing;
 using VisuAuth.Identity.Configuration;
+using VisuAuth.Identity.DependencyInjection;
 using VisuAuth.Identity.MultiTenancy;
 using Xunit;
 
@@ -130,6 +132,18 @@ public sealed class EfCoreAdapterConfigStoreTests : IDisposable
         var rows = await _db.VisuAuthAdapterConfigs.Where(c => c.Key == "GraphBaseUrl").ToListAsync();
         rows.Should().ContainSingle("the unique (Adapter, Key) is updated, not duplicated");
         rows[0].Value.Should().Be("https://graph.microsoft.us/v1.0");
+    }
+
+    [Fact]
+    public void AddVisuAuthAdapterConfigStore_RegistersTheEfStore()
+    {
+        var services = new ServiceCollection();
+
+        services.AddVisuAuthAdapterConfigStore();
+
+        services.Should().ContainSingle(d =>
+            d.ServiceType == typeof(IAdapterConfigStore)
+            && d.ImplementationType == typeof(EfCoreAdapterConfigStore));
     }
 
     public void Dispose() => _db.Dispose();

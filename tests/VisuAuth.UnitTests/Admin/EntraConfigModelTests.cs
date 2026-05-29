@@ -84,6 +84,79 @@ public sealed class EntraConfigModelTests
     }
 
     [Fact]
+    public async Task OnGet_LoadsSections_WithSourceBadgesAndEffectiveValues()
+    {
+        var (page, store, _, _) = BuildPage();
+        store.Setup(s => s.ListAsync("Entra", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+            [
+                new() { Key = "TenantId", IsSecret = false, HasValue = true, Value = "db-tenant" },
+                new() { Key = "ClientSecret", IsSecret = true, HasValue = true, Value = null },
+            ]);
+
+        await page.OnGetAsync(CancellationToken.None);
+
+        page.ConfigAvailable.Should().BeTrue();
+        var section = page.Sections.Should().ContainSingle().Subject;
+        section.Adapter.Should().Be("Entra");
+
+        var tenant = section.Fields.Single(f => f.Field.Key == "TenantId");
+        tenant.HasDbValue.Should().BeTrue();
+        tenant.EffectiveValue.Should().Be("db-tenant");
+
+        var secret = section.Fields.Single(f => f.Field.Key == "ClientSecret");
+        secret.HasDbValue.Should().BeTrue();
+        secret.DbValue.Should().BeNull("a secret's plaintext never reaches the view");
+    }
+
+    [Fact]
+    public async Task OnPostSave_UnknownAdapter_SurfacesError_AndDoesNotNotify()
+    {
+        var (page, _, _, notifier) = BuildPage();
+
+        await page.OnPostSaveAsync("DoesNotExist", CancellationToken.None);
+
+        page.Errors.Should().NotBeEmpty();
+        notifier.Fired.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task OnPostSave_StoreFailure_RecordsErrors_AuditsFailure_AndDoesNotNotify()
+    {
+        var (page, store, audit, notifier) = BuildPage();
+        store.Setup(s => s.SaveAsync(It.IsAny<SaveAdapterConfigCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(UserResult.Failure("write blocked"));
+        AuditEvent? recorded = null;
+        audit.Setup(a => a.WriteAsync(It.IsAny<AuditEvent>(), It.IsAny<CancellationToken>()))
+            .Callback<AuditEvent, CancellationToken>((e, _) => recorded = e)
+            .Returns(Task.CompletedTask);
+
+        page.FieldValues["TenantId"] = "tenant-x";
+        await page.OnPostSaveAsync(Adapter, CancellationToken.None);
+
+        page.Errors.Should().Contain("write blocked");
+        notifier.Fired.Should().BeFalse("a failed save must not trigger a reload");
+        recorded.Should().NotBeNull();
+        recorded!.Outcome.Should().Be(AuditOutcome.Failure);
+    }
+
+    [Fact]
+    public async Task OnPostSave_NoStore_IsNoOp()
+    {
+        var page = new IndexModel(
+            BuildLocalizer().Object,
+            new Mock<IAuditWriter>().Object,
+            [new FakeSchema()],
+            [],
+            store: null);
+
+        var result = await page.OnPostSaveAsync(Adapter, CancellationToken.None);
+
+        result.Should().NotBeNull();
+        page.Errors.Should().BeEmpty();
+    }
+
+    [Fact]
     public void ConfigAvailable_IsFalse_WhenNoStoreRegistered()
     {
         var page = new IndexModel(

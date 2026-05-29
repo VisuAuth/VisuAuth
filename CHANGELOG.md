@@ -38,6 +38,28 @@ at a single, shared version.
     toggle/anti-flash JS is dependency-free.
   - i18n: theme-toggle label + aria for `en` + `pt-BR`.
 
+### Changed
+
+- **Refreshed the admin dashboard and end-user UI to match the VisuAuth design
+  system** — a modern, restrained look (the Linear / Vercel / Resend reference
+  points): a slate-neutral palette carrying a single indigo accent, hairline
+  borders over heavy shadows, soft low-spread elevation, a tighter type scale,
+  and quiet ~160 ms micro-interactions.
+  - The admin dashboard now has a top header bar with a brand mark (an indigo
+    rounded square whose gradient is derived from `--visuauth-primary`, so it
+    re-themes with the consumer's palette) and an icon-only light/dark toggle;
+    the sidebar keeps navigation, the tenant switcher, and the language
+    switcher. The active nav item reads as a soft indigo pill.
+  - The end-user auth card gains the same brand mark and sits on a soft
+    indigo-tinted backdrop (a dark radial wash in dark mode).
+  - Both stylesheets stay token-driven: every rule consumes the existing
+    `--visuauth-*` custom properties, so programmatic theming
+    (`VisuAuthTheme` / `<va-theme-style />`), per-tenant resolvers, and CSS
+    overrides keep layering cleanly on top in **both** light and dark — the
+    dark token blocks are scoped with `:where()` so they never out-specify a
+    consumer override. No class names were renamed or removed; the change is
+    purely visual.
+
 ## [0.2.0] — Entra ID & External ID adapters, audit log, TOTP, external logins, cursor pagination, adapter-config UI
 
 The Microsoft Entra milestone (`CLAUDE.md` §13, v0.2) plus the v0.3 follow-on

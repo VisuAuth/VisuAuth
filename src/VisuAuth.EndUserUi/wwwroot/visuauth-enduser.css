@@ -424,11 +424,14 @@ body {
 
 /* ===========================================================================
    8. ALERTS (shared)
+   ----------------------------------------------------------------------------
+   Block banner (not an icon+text flex row): end-user alerts carry no leading
+   icon and stack multiple block children — a <strong> heading + a <ul> of
+   errors on confirm-email / reset — and use semantic <output>. Block layout
+   keeps those children stacked, full-width.
    =========================================================================== */
 .va-alert {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--visuauth-space-3);
+  display: block;
   padding: var(--visuauth-space-3) var(--visuauth-space-4);
   border-radius: var(--visuauth-radius);
   border: 1px solid var(--visuauth-border);
@@ -437,7 +440,9 @@ body {
   line-height: 1.5;
   margin-bottom: var(--visuauth-space-4);
 }
-.va-alert svg { width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px; }
+.va-alert p { margin: 0 0 var(--visuauth-space-2); }
+.va-alert p:last-child { margin-bottom: 0; }
+.va-alert ul { margin: var(--visuauth-space-1) 0 0; padding-left: 1.25rem; }
 .va-alert-success { background: var(--visuauth-success-soft); color: var(--visuauth-success-soft-fg); border-color: color-mix(in srgb, var(--visuauth-success) 30%, transparent); }
 .va-alert-danger  { background: var(--visuauth-danger-soft);  color: var(--visuauth-danger-soft-fg);  border-color: color-mix(in srgb, var(--visuauth-danger) 30%, transparent); }
 .va-alert-info    { background: var(--visuauth-info-soft);    color: var(--visuauth-info-soft-fg);    border-color: color-mix(in srgb, var(--visuauth-info) 30%, transparent); }

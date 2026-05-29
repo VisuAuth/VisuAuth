@@ -1119,11 +1119,14 @@ body {
 
 /* ===========================================================================
    11. ALERTS
+   ----------------------------------------------------------------------------
+   Block banner (not an icon+text flex row): the package alerts carry no
+   leading icon and often stack multiple block children — a heading + a <ul>
+   of validation errors, or a message + a copyable secret — and use semantic
+   <output>. Block layout keeps those children stacked, full-width.
    =========================================================================== */
 .va-alert {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--visuauth-space-3);
+  display: block;
   padding: var(--visuauth-space-3) var(--visuauth-space-4);
   border-radius: var(--visuauth-radius);
   border: 1px solid var(--visuauth-border);
@@ -1134,7 +1137,9 @@ body {
   margin-bottom: var(--visuauth-space-4);
 }
 
-.va-alert svg { width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px; }
+.va-alert p { margin: 0 0 var(--visuauth-space-2); }
+.va-alert p:last-child { margin-bottom: 0; }
+.va-alert ul { margin: var(--visuauth-space-1) 0 0; padding-left: 1.25rem; }
 
 .va-alert-success {
   background: var(--visuauth-success-soft);
@@ -1380,7 +1385,10 @@ body {
 
 .va-activity-item {
   display: grid;
-  grid-template-columns: auto 1fr auto auto;
+  /* Columns: when · action · outcome · target. The target link is the column
+     that can grow, so it takes the largest flexible track and truncates with
+     an ellipsis there instead of clipping in an auto track. */
+  grid-template-columns: auto minmax(8rem, 1fr) auto minmax(10rem, 2fr);
   align-items: center;
   gap: var(--visuauth-space-4);
   padding: var(--visuauth-space-3) 0;

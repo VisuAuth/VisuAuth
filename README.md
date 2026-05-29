@@ -236,7 +236,7 @@ dotnet pack src/VisuAuth.slnx \
   --configuration Release \
   --output ./artifacts
 
-# → ./artifacts/VisuAuth.0.1.0-alpha.local.nupkg (and the four sibling packages)
+# → ./artifacts/VisuAuth.0.3.0-alpha.local.nupkg (and the other sibling packages)
 ```
 
 Override the suffix to mimic a CI build locally:
@@ -244,7 +244,7 @@ Override the suffix to mimic a CI build locally:
 ```bash
 dotnet pack src/VisuAuth.slnx -c Release -o ./artifacts \
   -p:VersionSuffix=alpha.999
-# → VisuAuth.0.1.0-alpha.999.nupkg
+# → VisuAuth.0.3.0-alpha.999.nupkg
 ```
 
 Override the full version to mimic a stable release:
@@ -262,15 +262,15 @@ Two release channels run off the same GitHub Actions workflow
 
 | Trigger | Version | NuGet visibility | How to consume |
 |---|---|---|---|
-| Push to `main` (every merge) | `0.1.0-alpha.<run_number>` | Pre-release (hidden by default) | `dotnet add package VisuAuth --prerelease` |
-| Git tag matching `v*` (e.g. `v0.1.0`) | `0.1.0` (stable) | Stable, shows as "Latest" | `dotnet add package VisuAuth` |
+| Push to `main` (every merge) | `0.3.0-alpha.<run_number>` | Pre-release (hidden by default) | `dotnet add package VisuAuth --prerelease` |
+| Git tag matching `v*` (e.g. `v0.3.0`) | `0.3.0` (stable) | Stable, shows as "Latest" | `dotnet add package VisuAuth` |
 | Manual `workflow_dispatch` | Same as push-to-main | Pre-release | — |
 
 The version comes from `Directory.Build.props`'s `<VersionPrefix>` plus a
 suffix computed by the workflow:
 
 - On `main`: `-p:VersionSuffix=alpha.${{ github.run_number }}` — monotonic
-  across the repo lifetime, so `0.1.0-alpha.42` < `0.1.0-alpha.43`.
+  across the repo lifetime, so `0.3.0-alpha.42` < `0.3.0-alpha.43`.
 - On tag: the tag name (minus the leading `v`) becomes the full version
   via `-p:Version=...`.
 

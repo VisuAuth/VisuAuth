@@ -35,6 +35,7 @@
   "Sidebar.TenantApply": "Apply",
   "Sidebar.TenantGlobal": "(global)",
   "Sidebar.TenantScope": "Tenant scope",
+  "Sidebar.ThemeToggle": "Toggle light / dark theme",
 
   "Users.Title": "Users",
   "Users.PageTitle": "Users — VisuAuth Admin",

@@ -85,8 +85,15 @@ immediate next step. Updated as PRs land. Long-term direction lives in
 
 ## In flight
 
-Nothing — the v0.2 + v0.3 work is all merged and `0.2.0` is release-ready
-(see **Current status**). Next work starts after the `v0.2.0` tag.
+- **UI redesign + dark mode** (`feat/ui-redesign-dark-mode`) — both
+  stylesheets rebuilt around an expanded `--visuauth-*` token system with a
+  modern visual language, keeping every `va-*` class name (zero consumer-markup
+  breakage). Built-in light/dark: follows the OS via `prefers-color-scheme`
+  plus a sun/moon toggle (sidebar foot / card foot) that persists to
+  `localStorage` and applies pre-paint via a synchronous `va-theme-init.js`
+  (no flash). Programmatic + per-tenant theming still flow through the same
+  custom properties. CSS came from the design kit (drop-in, all 140 used
+  classes covered); the toggle wiring + anti-flash + i18n are the code added.
 
 ---
 

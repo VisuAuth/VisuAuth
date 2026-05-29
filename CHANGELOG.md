@@ -15,9 +15,26 @@ at a single, shared version.
 
 ## [Unreleased]
 
-Nothing yet — work toward the next milestone lands here. `<VersionPrefix>` is
-now `0.3.0`, so merges to `main` publish as `0.3.0-alpha.<run_number>`
-pre-releases until the next stable tag.
+`<VersionPrefix>` is `0.3.0`, so merges to `main` publish as
+`0.3.0-alpha.<run_number>` pre-releases until the next stable tag.
+
+### Changed
+
+- **Redesigned admin + end-user UI with a modern light/dark theme.** Both
+  stylesheets (`VisuAuth.AdminUi/wwwroot/visuauth.css` and
+  `VisuAuth.EndUserUi/wwwroot/visuauth-enduser.css`) were rebuilt around an
+  expanded `--visuauth-*` design-token system (colour, spacing, radius, shadow,
+  type scales) with a refreshed visual language — while keeping every existing
+  `va-*` class name, so no consumer markup or view override breaks.
+  - **Dark mode** ships built in: it follows the OS via
+    `prefers-color-scheme`, and a sun/moon toggle (sidebar foot in the admin
+    dashboard, card foot on the end-user pages) lets the visitor pin light or
+    dark. The choice persists in `localStorage` and is applied before first
+    paint by a tiny synchronous initializer (`va-theme-init.js`) so there's no
+    colour flash on navigation.
+  - The existing programmatic theming (`VisuAuthTheme` / `<va-theme-style />`),
+    per-tenant theme resolver, and view-override layers are unaffected — they
+    still write the same `--visuauth-*` custom properties the new CSS reads.
 
 ## [0.2.0] — Entra ID & External ID adapters, audit log, TOTP, external logins, cursor pagination, adapter-config UI
 

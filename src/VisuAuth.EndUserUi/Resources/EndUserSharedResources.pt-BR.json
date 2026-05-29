@@ -88,6 +88,7 @@
   "Layout.AccountNav": "Navegação da conta",
   "Layout.SetupTwoFactor": "Configurar 2FA",
   "Layout.SignOut": "Sair",
+  "Layout.ThemeToggle": "Alternar tema claro / escuro",
 
   "TwoFactor.NotSupported": "Autenticação de dois fatores não é suportada por este backend.",
   "TwoFactor.BackToApp": "Voltar para o app",

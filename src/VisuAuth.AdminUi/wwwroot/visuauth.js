@@ -114,4 +114,77 @@
         button.setAttribute('aria-label', willReveal ? 'Hide password' : 'Show password');
         button.setAttribute('aria-pressed', willReveal ? 'true' : 'false');
     });
+
+    //
+    // Light / dark theme toggle.
+    //
+    // The inline <head> script applies a stored choice (data-theme on <html>)
+    // before first paint to avoid a colour flash. This handler flips the
+    // choice on click and persists it; with no stored choice the page follows
+    // the OS via the CSS prefers-color-scheme media query. Icon swap uses the
+    // native `hidden` attribute — same no-CSS-cascade approach as the password
+    // toggle above. The two SVGs:
+    //   .va-icon-theme-light  → moon  ("switch to dark"), shown while in light
+    //   .va-icon-theme-dark   → sun   ("switch to light"), shown while in dark
+    //
+    const THEME_KEY = 'va-theme';
+
+    function resolveTheme() {
+        const explicit = document.documentElement.dataset.theme;
+        if (explicit === 'dark' || explicit === 'light') {
+            return explicit;
+        }
+        return globalThis.matchMedia?.('(prefers-color-scheme: dark)').matches
+            ? 'dark'
+            : 'light';
+    }
+
+    function paintToggle(button, theme) {
+        const moon = button.querySelector('.va-icon-theme-light');
+        const sun = button.querySelector('.va-icon-theme-dark');
+        const dark = theme === 'dark';
+        if (moon) { moon.hidden = dark; }
+        if (sun) { sun.hidden = !dark; }
+        button.setAttribute('aria-pressed', dark ? 'true' : 'false');
+    }
+
+    function syncToggles() {
+        const theme = resolveTheme();
+        for (const button of document.querySelectorAll('[data-va-theme-toggle]')) {
+            paintToggle(button, theme);
+        }
+    }
+
+    document.addEventListener('click', function (event) {
+        const button = event.target?.closest?.('[data-va-theme-toggle]');
+        if (!button) {
+            return;
+        }
+        event.preventDefault();
+
+        const next = resolveTheme() === 'dark' ? 'light' : 'dark';
+        document.documentElement.dataset.theme = next;
+        try {
+            localStorage.setItem(THEME_KEY, next);
+        } catch {
+            // Private mode / storage disabled — the toggle still works for the
+            // current page; the choice just won't persist across navigations.
+        }
+        syncToggles();
+    });
+
+    // Paint the correct icon once the DOM is ready (the button isn't in the
+    // DOM yet when the inline anti-flash script runs in <head>).
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', syncToggles);
+    } else {
+        syncToggles();
+    }
+
+    // Follow OS changes live, but only while the user hasn't pinned a choice.
+    globalThis.matchMedia?.('(prefers-color-scheme: dark)').addEventListener('change', function () {
+        if (!document.documentElement.dataset.theme) {
+            syncToggles();
+        }
+    });
 })();

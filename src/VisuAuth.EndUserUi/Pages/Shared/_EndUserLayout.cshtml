@@ -25,6 +25,10 @@
        and end-user pages (copy-to-clipboard, password show/hide). Same
        file as the admin layout — single source for both surfaces. *@
     <script src="/_content/VisuAuth.AdminUi/visuauth.js" asp-append-version="true" defer></script>
+    @* Anti-flash theme initializer — synchronous (NOT deferred) so it applies
+       the stored light/dark choice during head parse, before the card paints.
+       Served from VisuAuth.AdminUi's wwwroot (single source for both surfaces). *@
+    <script src="/_content/VisuAuth.AdminUi/va-theme-init.js" asp-append-version="true"></script>
 </head>
 <body class="va-enduser-body">
     <main class="va-enduser-shell">
@@ -45,6 +49,30 @@
                the visitor can flip between en / pt-BR without leaving the
                sign-in flow. Auto-suppresses when a single culture is configured. *@
             <va-language-switcher class="va-enduser-lang" />
+            @* Light / dark theme toggle — same behaviour as the admin sidebar
+               (document data-theme attribute + localStorage; the anti-flash
+               initializer applies the saved choice pre-paint). JS swaps the
+               visible icon via the native `hidden` attribute. *@
+            <div class="va-enduser-theme" style="text-align:center;margin-top:0.75rem;">
+                <button type="button"
+                        class="va-btn va-btn-ghost va-btn-small va-header-theme"
+                        data-va-theme-toggle
+                        aria-pressed="false"
+                        aria-label="@Ls["Layout.ThemeToggle"]"
+                        title="@Ls["Layout.ThemeToggle"]">
+                    <svg class="va-icon-theme-light" xmlns="http://www.w3.org/2000/svg" width="19" height="19"
+                         fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"
+                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                    </svg>
+                    <svg class="va-icon-theme-dark" hidden xmlns="http://www.w3.org/2000/svg" width="19" height="19"
+                         fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"
+                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="5" />
+                        <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+                    </svg>
+                </button>
+            </div>
         </div>
     </main>
 </body>

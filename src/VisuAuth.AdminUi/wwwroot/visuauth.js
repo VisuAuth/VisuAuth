@@ -134,9 +134,9 @@
         if (explicit === 'dark' || explicit === 'light') {
             return explicit;
         }
-        return globalThis.matchMedia?.('(prefers-color-scheme: dark)').matches
-            ? 'dark'
-            : 'light';
+        // Guard .matches too: if matchMedia is absent the query is undefined.
+        const mql = globalThis.matchMedia?.('(prefers-color-scheme: dark)');
+        return mql?.matches ? 'dark' : 'light';
     }
 
     function paintToggle(button, theme) {
@@ -182,7 +182,10 @@
     }
 
     // Follow OS changes live, but only while the user hasn't pinned a choice.
-    globalThis.matchMedia?.('(prefers-color-scheme: dark)').addEventListener('change', function () {
+    // addEventListener is optional-called: older engines that expose only the
+    // legacy MediaQueryList.addListener simply skip live-follow (no throw).
+    const osTheme = globalThis.matchMedia?.('(prefers-color-scheme: dark)');
+    osTheme?.addEventListener?.('change', function () {
         if (!document.documentElement.dataset.theme) {
             syncToggles();
         }

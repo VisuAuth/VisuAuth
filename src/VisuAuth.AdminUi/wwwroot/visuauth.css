@@ -182,9 +182,16 @@ body {
 .va-shell {
   display: grid;
   grid-template-columns: var(--visuauth-sidebar-w) 1fr;
-  min-height: calc(100vh - var(--visuauth-header-h));
+  /* Full viewport by default (sidebar-only layout, no top header). The header
+     offset only applies inside the optional .va-app header layout below. */
+  min-height: 100vh;
   background: var(--visuauth-bg);
   color: var(--visuauth-fg);
+}
+
+/* Header layout: shell sits beneath the fixed-height top header. */
+.va-app .va-shell {
+  min-height: calc(100vh - var(--visuauth-header-h));
 }
 
 .va-main {
@@ -325,15 +332,22 @@ body {
    =========================================================================== */
 .va-sidebar {
   position: sticky;
-  top: var(--visuauth-header-h);
+  /* Full viewport by default; offset only under the optional .va-app header. */
+  top: 0;
   align-self: start;
-  height: calc(100vh - var(--visuauth-header-h));
+  height: 100vh;
   display: flex;
   flex-direction: column;
   background: var(--visuauth-sidebar-bg);
   border-right: 1px solid var(--visuauth-border);
   padding: var(--visuauth-space-4) var(--visuauth-space-3);
   overflow: hidden;
+}
+
+/* Header layout: sidebar starts below the top header and fills the rest. */
+.va-app .va-sidebar {
+  top: var(--visuauth-header-h);
+  height: calc(100vh - var(--visuauth-header-h));
 }
 
 .va-brand {
@@ -1862,10 +1876,11 @@ body {
   .va-collapse-btn { display: none; }
   .va-sidebar-head { display: none; }
 
-  /* Sidebar becomes a horizontal top bar, sticking below the header */
+  /* Sidebar becomes a horizontal top bar. Sticks to the top by default; only
+     drops below the header in the optional .va-app header layout. */
   .va-sidebar {
     position: sticky;
-    top: var(--visuauth-header-h);
+    top: 0;
     z-index: 20;
     height: auto;
     flex-direction: row;
@@ -1876,6 +1891,7 @@ body {
     border-bottom: 1px solid var(--visuauth-border);
     overflow-x: auto;
   }
+  .va-app .va-sidebar { top: var(--visuauth-header-h); }
 
   .va-nav {
     flex-direction: row;

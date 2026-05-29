@@ -44,8 +44,8 @@
 
       CI picks the channel:
         - Tag push `v0.2.0`  → `dotnet pack -p:Version=0.2.0`           → stable 0.2.0
-        - Push to main       → `dotnet pack -p:VersionSuffix=alpha.NN`  → 0.1.0-alpha.NN (pre-release)
-        - Local dev          → falls back to 0.1.0-alpha.local
+        - Push to main       → `dotnet pack -p:VersionSuffix=alpha.NN`  → 0.2.0-alpha.NN (pre-release)
+        - Local dev          → falls back to 0.2.0-alpha.local
 
       Bump `VersionPrefix` when starting work on the next minor / major.
     -->

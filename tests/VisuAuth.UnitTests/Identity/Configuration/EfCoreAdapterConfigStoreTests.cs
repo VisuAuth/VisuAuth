@@ -135,6 +135,24 @@ public sealed class EfCoreAdapterConfigStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task SaveAsync_DuplicateKeysInOneCommand_LastWriteWins_NoDuplicateRow()
+    {
+        await _store.SaveAsync(new SaveAdapterConfigCommand
+        {
+            Adapter = Adapter,
+            Values =
+            [
+                new() { Key = "TenantId", IsSecret = false, Value = "first" },
+                new() { Key = "TenantId", IsSecret = false, Value = "second" },
+            ],
+        });
+
+        var rows = await _db.VisuAuthAdapterConfigs.Where(c => c.Key == "TenantId").ToListAsync();
+        rows.Should().ContainSingle("a duplicate key must not insert a second row (unique index)");
+        rows[0].Value.Should().Be("second", "last write wins");
+    }
+
+    [Fact]
     public void AddVisuAuthAdapterConfigStore_RegistersTheEfStore()
     {
         var services = new ServiceCollection();

@@ -7,6 +7,7 @@ using Microsoft.Graph;
 using VisuAuth.Abstractions.Capabilities;
 using VisuAuth.Entra;
 using VisuAuth.Entra.Configuration;
+using VisuAuth.UnitTests.Entra.Internal;
 using Xunit;
 
 namespace VisuAuth.UnitTests.Entra;
@@ -240,9 +241,9 @@ public sealed class EntraUserStoreTests
                Options.Create(new EntraOptions { TenantId = "t", ClientId = "c", ClientSecret = "s" }),
                NullLogger<EntraUserStore>.Instance);
 
-    private static GraphServiceClient BuildOfflineGraphClient()
+    private static IEntraGraphClient BuildOfflineGraphClient()
     {
         TokenCredential offline = new ClientSecretCredential("tenant", "client", "secret");
-        return new GraphServiceClient(offline);
+        return new GraphServiceClient(offline).AsEntraGraphClient();
     }
 }

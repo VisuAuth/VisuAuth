@@ -144,16 +144,21 @@ public static class VisuAuthEntraExtensions
 
     private static IServiceCollection RegisterCore(IServiceCollection services)
     {
-        // The client is supplied by EntraGraphClientProvider, which reads
-        // IOptionsMonitor<EntraOptions> and rebuilds lazily when the effective
-        // options change. Without the DB-config opt-in there is no change-token
-        // source, so the monitor's value is stable and this behaves exactly
-        // like the previous build-once singleton. With AddVisuAuthEntraDbConfig
-        // wired, an admin save re-materializes the options and the next Graph
-        // call gets a client built from the new credentials — no restart.
+        // EntraGraphClientProvider (singleton) owns the GraphServiceClient and
+        // rebuilds it lazily when the effective EntraOptions change — reading
+        // IOptionsMonitor<EntraOptions>, which re-materializes after an admin
+        // save (see AddVisuAuthEntraDbConfig). The stores resolve it through
+        // IEntraGraphClient and call GetClient() per operation so they observe
+        // the latest client without holding a DI-tracked instance that the
+        // container would dispose at scope end. GraphServiceClient itself is a
+        // singleton sourced from the provider — kept for consumers that inject
+        // it directly (e.g. the opt-in EntraCore audit reader); the container
+        // disposes that one instance once at shutdown.
         services.TryAddSingleton<EntraGraphClientProvider>();
-        services.TryAddTransient<GraphServiceClient>(sp =>
-            sp.GetRequiredService<EntraGraphClientProvider>().GetClient());
+        services.TryAddSingleton<IEntraGraphClient>(sp =>
+            sp.GetRequiredService<EntraGraphClientProvider>());
+        services.TryAddSingleton<GraphServiceClient>(sp =>
+            sp.GetRequiredService<IEntraGraphClient>().GetClient());
 
         services.TryAddScoped<IUserStore, EntraUserStore>();
         services.TryAddScoped<IRoleStore, EntraRoleStore>();

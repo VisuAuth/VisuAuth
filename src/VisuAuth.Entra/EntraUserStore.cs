@@ -51,7 +51,7 @@ namespace VisuAuth.Entra;
 /// </para>
 /// </remarks>
 public sealed class EntraUserStore(
-    GraphServiceClient graphClient,
+    IEntraGraphClient graphClient,
     IOptions<EntraOptions> options,
     ILogger<EntraUserStore> logger) : IUserStore
 {
@@ -72,8 +72,13 @@ public sealed class EntraUserStore(
     /// </summary>
     private const string UserNotFoundMessage = "User not found.";
 
-    private readonly GraphServiceClient _graph =
+    private readonly IEntraGraphClient _graphClient =
         graphClient ?? throw new ArgumentNullException(nameof(graphClient));
+
+    // Resolved per call so the store always uses the current client (which the
+    // provider rebuilds after a config change) without holding a DI-tracked,
+    // scope-disposed instance.
+    private GraphServiceClient Graph => _graphClient.GetClient();
     private readonly EntraOptions _options =
         options?.Value ?? throw new ArgumentNullException(nameof(options));
     private readonly ILogger<EntraUserStore> _logger =
@@ -103,7 +108,7 @@ public sealed class EntraUserStore(
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
         try
         {
-            var user = await _graph.Users[id].GetAsync(rc =>
+            var user = await Graph.Users[id].GetAsync(rc =>
             {
                 rc.QueryParameters.Select = EntraUserMapper.SummarySelect.Split(',');
             }, cancellationToken);
@@ -121,7 +126,7 @@ public sealed class EntraUserStore(
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
         try
         {
-            var user = await _graph.Users[id].GetAsync(rc =>
+            var user = await Graph.Users[id].GetAsync(rc =>
             {
                 rc.QueryParameters.Select = EntraUserMapper.DetailSelect.Split(',');
             }, cancellationToken);
@@ -159,13 +164,13 @@ public sealed class EntraUserStore(
                 // original $top / $filter / $select, so we replay it as-is and
                 // only re-assert the consistency level (a header, so not part
                 // of the URL) in case the original query was an advanced one.
-                response = await _graph.Users
+                response = await Graph.Users
                     .WithUrl(nextLink)
                     .GetAsync(rc => rc.Headers.Add("ConsistencyLevel", "eventual"), cancellationToken);
             }
             else
             {
-                response = await _graph.Users.GetAsync(rc =>
+                response = await Graph.Users.GetAsync(rc =>
                 {
                     rc.QueryParameters.Top = pageSize;
                     rc.QueryParameters.Select = EntraUserMapper.SummarySelect.Split(',');
@@ -216,7 +221,7 @@ public sealed class EntraUserStore(
         try
         {
             var (graphUser, tempPassword) = EntraUserMapper.ToGraphCreate(command, EntraTemporaryPassword.Generate);
-            var created = await _graph.Users.PostAsync(graphUser, cancellationToken: cancellationToken);
+            var created = await Graph.Users.PostAsync(graphUser, cancellationToken: cancellationToken);
             if (created?.Id is null)
             {
                 return UserResult.Failure("Graph returned no user id on create.");
@@ -241,7 +246,7 @@ public sealed class EntraUserStore(
         ArgumentNullException.ThrowIfNull(command);
         try
         {
-            await _graph.Users[id].PatchAsync(EntraUserMapper.ToGraphUpdate(command), cancellationToken: cancellationToken);
+            await Graph.Users[id].PatchAsync(EntraUserMapper.ToGraphUpdate(command), cancellationToken: cancellationToken);
             return UserResult.Success(id);
         }
         catch (ODataError ex) when (IsNotFound(ex))
@@ -260,7 +265,7 @@ public sealed class EntraUserStore(
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
         try
         {
-            await _graph.Users[id].DeleteAsync(cancellationToken: cancellationToken);
+            await Graph.Users[id].DeleteAsync(cancellationToken: cancellationToken);
             return UserResult.Success(id);
         }
         catch (ODataError ex) when (IsNotFound(ex))
@@ -282,7 +287,7 @@ public sealed class EntraUserStore(
             // Entra equivalent of "lock user": PATCH accountEnabled = false.
             // Setting it back to true unlocks. No separate lockout window —
             // user stays disabled until an admin re-enables them.
-            await _graph.Users[id].PatchAsync(new GraphUser { AccountEnabled = enabled }, cancellationToken: cancellationToken);
+            await Graph.Users[id].PatchAsync(new GraphUser { AccountEnabled = enabled }, cancellationToken: cancellationToken);
             return UserResult.Success(id);
         }
         catch (ODataError ex) when (IsNotFound(ex))
@@ -311,7 +316,7 @@ public sealed class EntraUserStore(
             // needs and which many tenants don't grant. Tradeoff documented
             // in EntraOptions remarks.
             var tempPassword = EntraTemporaryPassword.Generate();
-            await _graph.Users[id].PatchAsync(new GraphUser
+            await Graph.Users[id].PatchAsync(new GraphUser
             {
                 PasswordProfile = new PasswordProfile
                 {
@@ -350,7 +355,7 @@ public sealed class EntraUserStore(
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
         try
         {
-            await EntraTwoFactorReset.RemoveAllAsync(_graph, id, cancellationToken);
+            await EntraTwoFactorReset.RemoveAllAsync(Graph, id, cancellationToken);
             return UserResult.Success(id);
         }
         catch (ODataError ex) when (IsNotFound(ex))
@@ -376,7 +381,7 @@ public sealed class EntraUserStore(
             // a typed response — the boolean payload is just "did Graph
             // queue the revocation", which we don't surface upward; the
             // operation either succeeds or throws.
-            await _graph.Users[id].RevokeSignInSessions
+            await Graph.Users[id].RevokeSignInSessions
                 .PostAsRevokeSignInSessionsPostResponseAsync(cancellationToken: cancellationToken);
             return UserResult.Success(id);
         }
@@ -405,9 +410,9 @@ public sealed class EntraUserStore(
             // → role display name. Concurrent dispatch keeps the detail
             // page latency at max(assignment-call, app-call) rather than
             // the sum.
-            var assignmentsTask = _graph.Users[userId].AppRoleAssignments
+            var assignmentsTask = Graph.Users[userId].AppRoleAssignments
                 .GetAsync(cancellationToken: cancellationToken);
-            var appRolesTask = _graph.ServicePrincipals
+            var appRolesTask = Graph.ServicePrincipals
                 .GetAsync(rc =>
                 {
                     rc.QueryParameters.Filter = $"appId eq '{resourceId}'";

@@ -26,7 +26,7 @@ namespace VisuAuth.Entra.Configuration;
 /// an <see cref="OptionsValidationException"/> surface as a 500 mid-request.
 /// </para>
 /// </remarks>
-public sealed class EntraGraphClientProvider(IOptionsMonitor<EntraOptions> monitor) : IDisposable
+public sealed class EntraGraphClientProvider(IOptionsMonitor<EntraOptions> monitor) : IEntraGraphClient, IDisposable
 {
     private readonly IOptionsMonitor<EntraOptions> _monitor =
         monitor ?? throw new ArgumentNullException(nameof(monitor));
@@ -60,7 +60,8 @@ public sealed class EntraGraphClientProvider(IOptionsMonitor<EntraOptions> monit
             // Don't dispose the previous client here — an in-flight request may
             // still hold it. Rebuilds are rare (an admin save); the old client
             // is released to the GC.
-            _client = EntraGraphClientFactory.Create(options.TenantId, options.ClientId, options.ClientSecret);
+            _client = EntraGraphClientFactory.Create(
+                options.TenantId, options.ClientId, options.ClientSecret, options.GraphBaseUrl);
             _fingerprint = fingerprint;
             return _client;
         }

@@ -43,13 +43,16 @@ namespace VisuAuth.Entra;
 /// </para>
 /// </remarks>
 public sealed class EntraRoleStore(
-    GraphServiceClient graphClient,
+    IEntraGraphClient graphClient,
     IOptions<EntraOptions> options) : IRoleStore
 {
-    private readonly GraphServiceClient _graph =
+    private readonly IEntraGraphClient _graphClient =
         graphClient ?? throw new ArgumentNullException(nameof(graphClient));
     private readonly EntraOptions _options =
         options?.Value ?? throw new ArgumentNullException(nameof(options));
+
+    // Resolved per call so the store always uses the current client.
+    private GraphServiceClient Graph => _graphClient.GetClient();
 
     /// <inheritdoc />
     public async Task<IReadOnlyList<RoleSummary>> ListAsync(string? tenantId, CancellationToken cancellationToken = default)
@@ -126,7 +129,7 @@ public sealed class EntraRoleStore(
             var byId = appRoles.Where(r => r.Id.HasValue)
                 .ToDictionary(r => r.Id!.Value, r => r.DisplayName ?? r.Value ?? r.Id!.Value.ToString());
 
-            var assignments = await _graph.Users[userId].AppRoleAssignments
+            var assignments = await Graph.Users[userId].AppRoleAssignments
                 .GetAsync(cancellationToken: cancellationToken);
 
             return (assignments?.Value ?? [])
@@ -159,7 +162,7 @@ public sealed class EntraRoleStore(
                 return UserResult.Failure($"Role '{roleName}' is not declared on the target app.");
             }
 
-            await _graph.Users[userId].AppRoleAssignments.PostAsync(new AppRoleAssignment
+            await Graph.Users[userId].AppRoleAssignments.PostAsync(new AppRoleAssignment
             {
                 AppRoleId = role.Id,
                 // PrincipalId = the user being assigned the role. Graph
@@ -195,7 +198,7 @@ public sealed class EntraRoleStore(
                 return UserResult.Failure($"Role '{roleName}' is not declared on the target app.");
             }
 
-            var assignments = await _graph.Users[userId].AppRoleAssignments
+            var assignments = await Graph.Users[userId].AppRoleAssignments
                 .GetAsync(cancellationToken: cancellationToken);
 
             var target = (assignments?.Value ?? [])
@@ -207,7 +210,7 @@ public sealed class EntraRoleStore(
 #pragma warning restore IDE0028
             }
 
-            await _graph.Users[userId].AppRoleAssignments[target.Id]
+            await Graph.Users[userId].AppRoleAssignments[target.Id]
                 .DeleteAsync(cancellationToken: cancellationToken);
 
             return UserResult.Success(userId);
@@ -236,7 +239,7 @@ public sealed class EntraRoleStore(
 
         try
         {
-            var principals = await _graph.ServicePrincipals.GetAsync(rc =>
+            var principals = await Graph.ServicePrincipals.GetAsync(rc =>
             {
                 rc.QueryParameters.Filter = $"appId eq '{targetAppId}'";
                 rc.QueryParameters.Select = ["id", "appRoles"];
@@ -266,7 +269,7 @@ public sealed class EntraRoleStore(
         // role) pair, so the bucket-by-role count is a simple group-by.
         try
         {
-            var assignments = await _graph.ServicePrincipals[servicePrincipalId].AppRoleAssignedTo
+            var assignments = await Graph.ServicePrincipals[servicePrincipalId].AppRoleAssignedTo
                 .GetAsync(cancellationToken: cancellationToken);
 
             return (assignments?.Value ?? [])

@@ -103,7 +103,16 @@ public sealed class EfCoreAdapterConfigStore(
         var byKey = existing.ToDictionary(c => c.Key, StringComparer.Ordinal);
         var now = _timeProvider.GetUtcNow();
 
-        foreach (var entry in command.Values)
+        // Collapse duplicate keys (last write wins) so a repeated key can't
+        // Add a second row that violates the unique (Adapter, Key) index or
+        // mutate an entity already marked for removal.
+        var lastPerKey = new Dictionary<string, AdapterConfigValue>(StringComparer.Ordinal);
+        foreach (var entry in command.Values.Where(v => !string.IsNullOrWhiteSpace(v.Key)))
+        {
+            lastPerKey[entry.Key] = entry;
+        }
+
+        foreach (var entry in lastPerKey.Values)
         {
             ApplyEntry(command.Adapter, entry, byKey, now);
         }
@@ -132,6 +141,7 @@ public sealed class EfCoreAdapterConfigStore(
             if (row is not null)
             {
                 _db.VisuAuthAdapterConfigs.Remove(row);
+                byKey.Remove(entry.Key);
             }
             return;
         }
@@ -139,7 +149,7 @@ public sealed class EfCoreAdapterConfigStore(
         var stored = entry.IsSecret ? _protector.Protect(entry.Value) : entry.Value;
         if (row is null)
         {
-            _db.VisuAuthAdapterConfigs.Add(new VisuAuthAdapterConfig
+            var added = new VisuAuthAdapterConfig
             {
                 Id = Guid.NewGuid(),
                 Adapter = adapter,
@@ -147,7 +157,10 @@ public sealed class EfCoreAdapterConfigStore(
                 Value = stored,
                 IsSecret = entry.IsSecret,
                 UpdatedAt = now,
-            });
+            };
+            _db.VisuAuthAdapterConfigs.Add(added);
+            // Keep the in-batch view in sync with EF's tracked state.
+            byKey[entry.Key] = added;
         }
         else
         {

@@ -33,7 +33,18 @@
 <body class="va-enduser-body">
     <main class="va-enduser-shell">
         <div class="va-enduser-card">
-            <a class="va-brand va-enduser-brand" href="/">@brand</a>
+            <a class="va-brand va-enduser-brand" href="/">
+                @* Brand mark — indigo rounded square (gradient from
+                   --visuauth-primary, so it re-themes with the consumer's
+                   palette) carrying the white VisuAuth "V" glyph. *@
+                <span class="va-brand-mark" aria-hidden="true">
+                    <svg viewBox="0 0 40 40" width="20" height="20" fill="none" aria-hidden="true">
+                        <path d="M11 12.5 L20 27.5 L29 12.5" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" />
+                        <circle cx="20" cy="14.2" r="2.4" fill="currentColor" />
+                    </svg>
+                </span>
+                <span>@brand</span>
+            </a>
             @if (isAuthenticated)
             {
                 @* Authenticated quick-nav (CLAUDE.md §8 — drop-in surface; no

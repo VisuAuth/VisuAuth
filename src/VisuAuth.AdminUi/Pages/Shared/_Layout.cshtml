@@ -57,24 +57,51 @@
     <script src="/_content/VisuAuth.AdminUi/va-theme-init.js" asp-append-version="true"></script>
 </head>
 <body>
-    <div class="va-shell">
-        @{
-            // Highlight the sidebar entry that matches the current URL. Razor
-            // partials inherit the host request, so Request.Path is the live URL.
-            var path = Context.Request.Path.Value ?? string.Empty;
-            string NavClass(string segment) =>
-                path.StartsWith(segment, StringComparison.OrdinalIgnoreCase) ? "va-active" : "";
-            // Dashboard sits at the admin root, so the StartsWith helper
-            // above would mark it active on every /admin/* path. Match
-            // exactly instead — trailing slash optional.
-            string DashboardNavClass() =>
-                string.Equals(path, "/visuauth/admin", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(path, "/visuauth/admin/", StringComparison.OrdinalIgnoreCase)
-                    ? "va-active" : "";
-        }
-        <aside class="va-sidebar">
-            <a class="va-brand" href="/visuauth/admin">VisuAuth</a>
-            <nav class="va-nav">
+    @{
+        // Highlight the sidebar entry that matches the current URL. Razor
+        // partials inherit the host request, so Request.Path is the live URL.
+        var path = Context.Request.Path.Value ?? string.Empty;
+        string NavClass(string segment) =>
+            path.StartsWith(segment, StringComparison.OrdinalIgnoreCase) ? "va-active" : "";
+        // Dashboard sits at the admin root, so the StartsWith helper
+        // above would mark it active on every /admin/* path. Match
+        // exactly instead — trailing slash optional.
+        string DashboardNavClass() =>
+            string.Equals(path, "/visuauth/admin", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(path, "/visuauth/admin/", StringComparison.OrdinalIgnoreCase)
+                ? "va-active" : "";
+    }
+    <div class="va-app">
+        @* Top bar — brand (left) · light/dark toggle (right). Mirrors the
+           Linear/Vercel-style chrome the design system specifies. *@
+        <header class="va-header">
+            <div class="va-header-group">
+                <a class="va-brand" href="/visuauth/admin">
+                    @* Brand mark — indigo rounded square (gradient comes from
+                       --visuauth-primary, so it re-themes with the consumer's
+                       palette) carrying the white VisuAuth "V" glyph. *@
+                    <span class="va-brand-mark" aria-hidden="true">
+                        <svg viewBox="0 0 40 40" width="18" height="18" fill="none" aria-hidden="true">
+                            <path d="M11 12.5 L20 27.5 L29 12.5" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" />
+                            <circle cx="20" cy="14.2" r="2.4" fill="currentColor" />
+                        </svg>
+                    </span>
+                    <span>VisuAuth</span>
+                </a>
+            </div>
+            <div class="va-header-group">
+                @* Light/dark toggle (icon-only in the header). va-theme-init.js
+                   flips + persists the choice via the data attribute; the icon
+                   swap is pure CSS (data-theme). Both icons ship in the markup. *@
+                <button type="button" class="va-theme-toggle va-header-theme" data-va-theme-toggle aria-label="@Ls["Sidebar.ThemeToggle"]">
+                    <svg class="va-theme-toggle-icon va-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                    <svg class="va-theme-toggle-icon va-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+                </button>
+            </div>
+        </header>
+        <div class="va-shell">
+            <aside class="va-sidebar">
+                <nav class="va-nav">
                 <a href="/visuauth/admin" class="@DashboardNavClass()">@Ls["Sidebar.NavDashboard"]</a>
                 <a href="/visuauth/admin/users" class="@NavClass("/visuauth/admin/users")">@Ls["Sidebar.NavUsers"]</a>
                 <a href="/visuauth/admin/roles" class="@NavClass("/visuauth/admin/roles")">@Ls["Sidebar.NavRoles"]</a>
@@ -134,18 +161,11 @@
                itself when only one culture is configured, so the markup
                stays clean for single-language deployments. *@
             <va-language-switcher class="va-tenant-indicator" />
-            @* Light/dark toggle. va-theme-init.js flips + persists the choice
-               via the data attribute; the icon swap is pure CSS (data-theme).
-               Both icons ship in the markup — CSS shows the right one. *@
-            <button type="button" class="va-theme-toggle" data-va-theme-toggle aria-label="@Ls["Sidebar.ThemeToggle"]">
-                <svg class="va-theme-toggle-icon va-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-                <svg class="va-theme-toggle-icon va-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
-                <span>@Ls["Sidebar.ThemeLabel"]</span>
-            </button>
         </aside>
         <main class="va-main">
             @RenderBody()
         </main>
+        </div>
     </div>
 </body>
 </html>

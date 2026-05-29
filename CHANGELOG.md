@@ -15,9 +15,28 @@ at a single, shared version.
 
 ## [Unreleased]
 
-Nothing yet — work toward the next milestone lands here. `<VersionPrefix>` is
-now `0.3.0`, so merges to `main` publish as `0.3.0-alpha.<run_number>`
-pre-releases until the next stable tag.
+`<VersionPrefix>` is `0.3.0`, so merges to `main` publish as
+`0.3.0-alpha.<run_number>` pre-releases until the next stable tag.
+
+### Added
+
+- **Built-in light/dark theme** for the admin dashboard and end-user pages.
+  Every consumer now gets dark mode for free — no extra wiring.
+  - Follows the OS via `prefers-color-scheme` by default; a sun/moon toggle
+    (sidebar foot on admin, card foot on end-user pages) lets the visitor pin
+    light or dark. The choice persists in `localStorage` (`va-theme`) and is
+    applied before first paint by a tiny synchronous initializer
+    (`va-theme-init.js`), so there's no colour flash on navigation.
+  - The dark palette is expressed entirely as `--visuauth-*` token overrides
+    under `:root[data-theme="dark"]` + the `prefers-color-scheme` media query,
+    so programmatic theming (`VisuAuthTheme` / `<va-theme-style />`),
+    per-tenant resolvers, and CSS overrides all keep working — a consumer
+    palette layers cleanly on top in both themes. A few package rules that
+    baked light hexes (status badges/alerts, the warning button, the
+    danger-zone border) are re-skinned for dark.
+  - The sun/moon icon swap is pure CSS (driven by `data-theme`), and the
+    toggle/anti-flash JS is dependency-free.
+  - i18n: theme-toggle label + aria for `en` + `pt-BR`.
 
 ## [0.2.0] — Entra ID & External ID adapters, audit log, TOTP, external logins, cursor pagination, adapter-config UI
 

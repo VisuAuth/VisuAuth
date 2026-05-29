@@ -17,6 +17,20 @@
     --visuauth-success: #16a34a;
     --visuauth-radius: 0.5rem;
     --visuauth-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+    /* Extended tokens. Several component rules reference these via
+     * var(--token, <fallback>); declaring them here (with the same light
+     * values as those fallbacks) lets the dark theme below override them in
+     * one place instead of chasing baked-in hexes. */
+    --visuauth-warning: #b45309;
+    --visuauth-text: var(--visuauth-fg);
+    --visuauth-bar-track: #f1f5f9;
+    --visuauth-code-bg: #f1f5f9;
+    --visuauth-row-hover: #f8fafc;
+    --visuauth-success-soft: #d1fae5;
+    --visuauth-danger-soft: #fee2e2;
+    --visuauth-muted-soft: #f1f5f9;
+    --visuauth-card-shadow: 0 12px 30px -18px rgba(15, 23, 42, 0.25);
 }
 
 * { box-sizing: border-box; }
@@ -69,8 +83,11 @@ body {
 }
 
 .va-nav a.va-active {
-    background: var(--visuauth-primary);
-    color: var(--visuauth-primary-fg);
+    /* Soft primary-tint pill (calmer than a solid block, legible in both
+       themes). Tracks the consumer palette + light/dark via the token. */
+    background: color-mix(in srgb, var(--visuauth-primary) 14%, transparent);
+    color: var(--visuauth-primary);
+    font-weight: 600;
 }
 
 .va-main {
@@ -1500,4 +1517,143 @@ body {
     margin-top: 0.3rem;
     font-size: 0.78rem;
     line-height: 1.35;
+}
+
+/* ===========================================================================
+   DARK THEME + LIGHT/DARK TOGGLE
+   ---------------------------------------------------------------------------
+   Dark applies in two situations, both resolving to the same token overrides:
+     • :root[data-theme="dark"]            — explicit user toggle (va-theme-init.js)
+     • @media (prefers-color-scheme: dark) — system default, unless the user
+                                             has forced light ([data-theme="light"])
+   Consumers still re-theme by overriding the --visuauth-* tokens; this only
+   adds the dark palette + a few re-skins for rules that bake light hexes.
+   =========================================================================== */
+:root[data-theme="dark"] {
+    --visuauth-primary: #818cf8;
+    --visuauth-primary-fg: #0b1020;
+    --visuauth-bg: #10151f;
+    --visuauth-fg: #e7ebf3;
+    --visuauth-muted: #97a2b6;
+    --visuauth-border: #29313f;
+    --visuauth-surface: #181f2b;
+    --visuauth-danger: #f87171;
+    --visuauth-success: #34d399;
+    --visuauth-warning: #fbbf24;
+    --visuauth-text: var(--visuauth-fg);
+    --visuauth-bar-track: #232c3a;
+    --visuauth-code-bg: #1d2533;
+    --visuauth-row-hover: #1b2330;
+    --visuauth-success-soft: rgba(52, 211, 153, 0.16);
+    --visuauth-danger-soft: rgba(248, 113, 113, 0.16);
+    --visuauth-info-soft: rgba(129, 140, 248, 0.16);
+    --visuauth-warning-soft: rgba(251, 191, 36, 0.16);
+    --visuauth-muted-soft: #232c3a;
+    --visuauth-card-shadow: 0 12px 30px -18px rgba(0, 0, 0, 0.6);
+    color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        --visuauth-primary: #818cf8;
+        --visuauth-primary-fg: #0b1020;
+        --visuauth-bg: #10151f;
+        --visuauth-fg: #e7ebf3;
+        --visuauth-muted: #97a2b6;
+        --visuauth-border: #29313f;
+        --visuauth-surface: #181f2b;
+        --visuauth-danger: #f87171;
+        --visuauth-success: #34d399;
+        --visuauth-warning: #fbbf24;
+        --visuauth-text: var(--visuauth-fg);
+        --visuauth-bar-track: #232c3a;
+        --visuauth-code-bg: #1d2533;
+        --visuauth-row-hover: #1b2330;
+        --visuauth-success-soft: rgba(52, 211, 153, 0.16);
+        --visuauth-danger-soft: rgba(248, 113, 113, 0.16);
+        --visuauth-info-soft: rgba(129, 140, 248, 0.16);
+        --visuauth-warning-soft: rgba(251, 191, 36, 0.16);
+        --visuauth-muted-soft: #232c3a;
+        --visuauth-card-shadow: 0 12px 30px -18px rgba(0, 0, 0, 0.6);
+        color-scheme: dark;
+    }
+}
+
+/* Re-skin the few rules that hard-code light hex values so nothing glows
+   white in dark. A grouped selector can't span a media query, so these are
+   written twice — once for the explicit toggle, once for the system default. */
+:root[data-theme="dark"] .va-badge.va-success { background: var(--visuauth-success-soft); border-color: transparent; }
+:root[data-theme="dark"] .va-badge.va-danger  { background: var(--visuauth-danger-soft);  border-color: transparent; }
+:root[data-theme="dark"] .va-alert-success { background: var(--visuauth-success-soft); border-color: transparent; color: #6ee7b7; }
+:root[data-theme="dark"] .va-alert-danger  { background: var(--visuauth-danger-soft);  border-color: transparent; color: #fca5a5; }
+:root[data-theme="dark"] .va-alert-info    { background: var(--visuauth-info-soft); border-color: transparent; color: #c7d2fe; }
+:root[data-theme="dark"] .va-alert-warning { background: var(--visuauth-warning-soft); border-color: transparent; color: #fcd34d; }
+:root[data-theme="dark"] .va-btn-warning { background: var(--visuauth-warning-soft); color: #fcd34d; border-color: transparent; }
+:root[data-theme="dark"] .va-btn-warning:hover { background: rgba(251,191,36,0.26); }
+:root[data-theme="dark"] .va-danger-zone { border-color: rgba(248,113,113,0.4); }
+:root[data-theme="dark"] .va-pill-success { background: var(--visuauth-success-soft); color: #6ee7b7; }
+:root[data-theme="dark"] .va-pill-danger  { background: var(--visuauth-danger-soft);  color: #fca5a5; }
+:root[data-theme="dark"] .va-code-snippet { background: #0b101b; }
+:root[data-theme="dark"] .va-enduser-card { box-shadow: var(--visuauth-card-shadow); }
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .va-badge.va-success { background: var(--visuauth-success-soft); border-color: transparent; }
+    :root:not([data-theme="light"]) .va-badge.va-danger  { background: var(--visuauth-danger-soft);  border-color: transparent; }
+    :root:not([data-theme="light"]) .va-alert-success { background: var(--visuauth-success-soft); border-color: transparent; color: #6ee7b7; }
+    :root:not([data-theme="light"]) .va-alert-danger  { background: var(--visuauth-danger-soft);  border-color: transparent; color: #fca5a5; }
+    :root:not([data-theme="light"]) .va-alert-info    { background: var(--visuauth-info-soft); border-color: transparent; color: #c7d2fe; }
+    :root:not([data-theme="light"]) .va-alert-warning { background: var(--visuauth-warning-soft); border-color: transparent; color: #fcd34d; }
+    :root:not([data-theme="light"]) .va-btn-warning { background: var(--visuauth-warning-soft); color: #fcd34d; border-color: transparent; }
+    :root:not([data-theme="light"]) .va-btn-warning:hover { background: rgba(251,191,36,0.26); }
+    :root:not([data-theme="light"]) .va-danger-zone { border-color: rgba(248,113,113,0.4); }
+    :root:not([data-theme="light"]) .va-pill-success { background: var(--visuauth-success-soft); color: #6ee7b7; }
+    :root:not([data-theme="light"]) .va-pill-danger  { background: var(--visuauth-danger-soft);  color: #fca5a5; }
+    :root:not([data-theme="light"]) .va-code-snippet { background: #0b101b; }
+    :root:not([data-theme="light"]) .va-enduser-card { box-shadow: var(--visuauth-card-shadow); }
+}
+
+/* Token-driven polish that tracks light/dark + any consumer palette.
+   (The active-nav pill lives in the base .va-nav a.va-active rule above so
+   there's no duplicate selector.) */
+.va-kpi,
+.va-detail-card,
+.va-dashboard-chart,
+.va-dashboard-health,
+.va-dashboard-activity {
+    box-shadow: var(--visuauth-card-shadow);
+}
+
+/* Light/dark toggle button (rendered in the sidebar foot / end-user card by
+   the layouts). Quiet ghost control; the icon swap is pure CSS via the
+   data-theme attribute, so no JS touches the icons. */
+.va-theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    margin-top: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    font: inherit;
+    font-size: 0.95rem;
+    color: var(--visuauth-fg);
+    background: transparent;
+    border: 1px solid var(--visuauth-border);
+    border-radius: var(--visuauth-radius);
+    cursor: pointer;
+    text-align: left;
+}
+.va-theme-toggle:hover { background: var(--visuauth-surface); }
+.va-theme-toggle:focus-visible { outline: 2px solid var(--visuauth-primary); outline-offset: 1px; }
+.va-theme-toggle .va-theme-toggle-icon { width: 16px; height: 16px; flex: 0 0 16px; }
+
+/* End-user variant: centered, under the language switcher. */
+.va-enduser-theme-toggle { margin-top: 1rem; justify-content: center; text-align: center; }
+
+/* Icon swap — moon in light (action: go dark), sun in dark. */
+.va-theme-toggle .va-icon-sun { display: none; }
+:root[data-theme="dark"] .va-theme-toggle .va-icon-sun  { display: inline; }
+:root[data-theme="dark"] .va-theme-toggle .va-icon-moon { display: none; }
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .va-theme-toggle .va-icon-sun  { display: inline; }
+    :root:not([data-theme="light"]) .va-theme-toggle .va-icon-moon { display: none; }
 }

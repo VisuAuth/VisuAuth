@@ -14,6 +14,17 @@
     var COPIED_CLASS = 'va-copied';
     var COPIED_DURATION_MS = 1500;
 
+    // Show / hide an icon via the `hidden` content attribute. We can't use
+    // `el.hidden = x` because that IDL property lives on HTMLElement only —
+    // it's a no-op on <svg> (SVGElement), which would leave both icons of a
+    // swap visible. Toggling the attribute works for HTML and SVG alike; the
+    // `svg[hidden] { display: none }` CSS rule makes it bite on SVG too.
+    function setHidden(el, hide) {
+        if (!el) { return; }
+        if (hide) { el.setAttribute('hidden', ''); }
+        else { el.removeAttribute('hidden'); }
+    }
+
     document.addEventListener('click', function (event) {
         var button = event.target && event.target.closest && event.target.closest('[data-va-copy]');
         if (!button) {
@@ -108,8 +119,8 @@
 
         var eye = button.querySelector('.va-icon-eye');
         var eyeOff = button.querySelector('.va-icon-eye-off');
-        if (eye) { eye.hidden = willReveal; }
-        if (eyeOff) { eyeOff.hidden = !willReveal; }
+        setHidden(eye, willReveal);
+        setHidden(eyeOff, !willReveal);
 
         button.setAttribute('aria-label', willReveal ? 'Hide password' : 'Show password');
         button.setAttribute('aria-pressed', willReveal ? 'true' : 'false');
@@ -143,8 +154,8 @@
         const moon = button.querySelector('.va-icon-theme-light');
         const sun = button.querySelector('.va-icon-theme-dark');
         const dark = theme === 'dark';
-        if (moon) { moon.hidden = dark; }
-        if (sun) { sun.hidden = !dark; }
+        setHidden(moon, dark);
+        setHidden(sun, !dark);
         button.setAttribute('aria-pressed', dark ? 'true' : 'false');
     }
 

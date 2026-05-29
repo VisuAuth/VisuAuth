@@ -143,6 +143,13 @@
 
 html { background: var(--visuauth-bg); }
 
+/* The `hidden` attribute must hide SVG icons too. The UA stylesheet's
+   [hidden]{display:none} rule is unreliable across the HTML/SVG namespace
+   boundary in some engines, so icon swaps driven by `hidden` (theme toggle,
+   password show/hide) can leave BOTH icons visible. This author rule enforces
+   it for SVGs regardless of namespace. */
+svg[hidden] { display: none; }
+
 body {
   margin: 0;
   font-family: var(--visuauth-font);

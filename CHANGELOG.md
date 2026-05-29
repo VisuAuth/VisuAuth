@@ -6,9 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 this project follows [SemVer](https://semver.org). Until `1.0.0`, minor bumps
 (`0.x`) may include breaking changes — they will always be called out below.
 
-Each release groups changes across the five sibling packages (`VisuAuth`,
-`VisuAuth.Abstractions`, `VisuAuth.Identity`, `VisuAuth.AdminUi`,
-`VisuAuth.EndUserUi`) since they ship at a single, shared version.
+Each release groups changes across the sibling `VisuAuth.*` packages — the
+five from `0.1.0` (`VisuAuth`, `VisuAuth.Abstractions`, `VisuAuth.Identity`,
+`VisuAuth.AdminUi`, `VisuAuth.EndUserUi`) plus the Entra adapter packages
+added in `0.2.0` (`VisuAuth.Entra`, `VisuAuth.EntraCore`,
+`VisuAuth.EntraExternal`, `VisuAuth.EntraExternal.Web`) — since they all ship
+at a single, shared version.
 
 ## [Unreleased]
 

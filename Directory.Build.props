@@ -43,9 +43,9 @@
       Single source of truth for the VisuAuth.* package version.
 
       CI picks the channel:
-        - Tag push `v0.3.0`  → `dotnet pack -p:Version=0.3.0`           → stable 0.3.0
-        - Push to main       → `dotnet pack -p:VersionSuffix=alpha.NN`  → 0.3.0-alpha.NN (pre-release)
-        - Local dev          → falls back to 0.3.0-alpha.local
+        - Tag push `v0.3.0`           → `dotnet pack -p:Version=0.3.0`                    → stable 0.3.0
+        - Push to main (merge)       → `dotnet pack -p:VersionSuffix=alpha.<run_number>` → 0.3.0-alpha.<run_number> (pre-release)
+        - Local dev                  → falls back to 0.3.0-alpha.local
 
       Bump `VersionPrefix` when starting work on the next minor / major.
       (0.2.0 shipped on the v0.2.0 tag; main now tracks 0.3.0 pre-releases.)

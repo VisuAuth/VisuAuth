@@ -453,9 +453,9 @@ When working on this repository:
 | Version | Scope | Status |
 |---|---|---|
 | 0.0.1-alpha | Placeholder NuGet release reserving the name | ✅ Shipped |
-| 0.1 | Admin UI (CRUD users, roles, lockout, reset), end-user UI (login, register, reset, confirm, profile), multi-tenancy, theming layers 1+2+3+4, mobile REST + JWT, WebView flow, i18n (pt-BR + en), embedded htmx asset | 🚧 In progress |
-| 0.2 | Microsoft Entra ID adapter, TOTP pages, external providers (Google, Microsoft, Apple), audit log plugin | 📋 Planned |
-| 0.3 | Microsoft Entra External ID adapter, profile / sessions management, bulk operations, view-level customization | 📋 Planned |
+| 0.1 | Admin UI (CRUD users, roles, lockout, reset), end-user UI (login, register, reset, confirm, profile), multi-tenancy, theming layers 1+2+3+4, mobile REST + JWT, WebView flow, i18n (pt-BR + en), embedded htmx asset | ✅ Shipped |
+| 0.2 | Microsoft Entra ID adapter (`VisuAuth.Entra` + `VisuAuth.EntraCore`), TOTP pages, external login providers, audit log plugin, admin dashboard | ✅ Shipped |
+| 0.3 | Microsoft Entra External ID adapter (`VisuAuth.EntraExternal` + `VisuAuth.EntraExternal.Web`), cursor-based pagination, DB-backed adapter-config UI. (Shipped under the `v0.2.0` tag together with v0.2.) | ✅ Shipped |
 | 1.0 | Production-ready, stable contracts, full English documentation site | 📋 Planned |
 
 Track concrete next steps in `PLAN.md`.

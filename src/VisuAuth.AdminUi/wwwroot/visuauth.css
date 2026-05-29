@@ -1528,8 +1528,13 @@ body {
                                              has forced light ([data-theme="light"])
    Consumers still re-theme by overriding the --visuauth-* tokens; this only
    adds the dark palette + a few re-skins for rules that bake light hexes.
+   The data-theme condition is wrapped in :where() so the dark token block
+   keeps the SAME specificity as a bare :root (0,1,0). That way the inline
+   <va-theme-style /> :root override, which the layout emits AFTER this
+   stylesheet, still wins by source order — programmatic / per-tenant / CSS
+   token overrides layer on top in BOTH themes, exactly as documented.
    =========================================================================== */
-:root[data-theme="dark"] {
+:root:where([data-theme="dark"]) {
     --visuauth-primary: #818cf8;
     --visuauth-primary-fg: #0b1020;
     --visuauth-bg: #10151f;
@@ -1554,7 +1559,7 @@ body {
 }
 
 @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
+    :root:where(:not([data-theme="light"])) {
         --visuauth-primary: #818cf8;
         --visuauth-primary-fg: #0b1020;
         --visuauth-bg: #10151f;

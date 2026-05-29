@@ -8,11 +8,11 @@ immediate next step. Updated as PRs land. Long-term direction lives in
 
 ## Current status
 
-- **Version in development**: between milestones — v0.2 fully merged to `main`, awaiting a `v0.2.0` tag from the owner to ship; v0.3 backlog forming.
-- **Latest shipped on NuGet**: [`VisuAuth 0.1.0`](https://www.nuget.org/packages/VisuAuth/0.1.0) — first feature release. The v0.2 release will publish six packages (the five `0.1.0` ones plus the new `VisuAuth.Entra`).
+- **Version**: `0.2.0` release-ready. All v0.2 + v0.3 work is merged to `main` (PRs #30–#47), the CHANGELOG `[0.2.0]` section is finalized, and `VersionPrefix` is `0.2.0`. Shipping is the owner's `v0.2.0` tag (CI publishes the stable packages on the tag push). Bump `VersionPrefix` to `0.3.0` once the next milestone work begins.
+- **Latest shipped on NuGet**: [`VisuAuth 0.1.0`](https://www.nuget.org/packages/VisuAuth/0.1.0). The `v0.2.0` tag publishes nine packages: the five `0.1.0` ones plus `VisuAuth.Entra`, `VisuAuth.EntraCore`, `VisuAuth.EntraExternal`, and `VisuAuth.EntraExternal.Web`.
 - **Default branch**: `main` at <https://github.com/VisuAuth/visuauth>
 - **Build state**: green (`dotnet build src/VisuAuth.slnx -c Release` → 0 errors, 0 warnings)
-- **Test state**: green on `main` (417 unit + 179 integration = 596 tests after the EntraCore extraction; PR B's adapter + sample push the in-flight branch to 510 unit + 179 integration = 689 tests)
+- **Test state**: green on `main` (730 unit + 184 integration = 914 tests)
 
 ---
 
@@ -85,40 +85,20 @@ immediate next step. Updated as PRs land. Long-term direction lives in
 
 ## In flight
 
-- **DB-backed adapter config UI** (`feat/adapter-config-ui`) — a generic
-  `/visuauth/admin/entra-config` page that edits a backend adapter's
-  settings at runtime and persists them to the database, overlaid on top of
-  the values bound from code / appsettings / user-secrets. New
-  `IAdapterConfigStore` + `IAdapterConfigSchema` + `IAdapterConfigChangeNotifier`
-  contracts in `VisuAuth.Abstractions`; an EF-backed `EfCoreAdapterConfigStore`
-  (new generic `VisuAuthAdapterConfigs` table, adapter/key/value/isSecret,
-  secrets encrypted via Data Protection) opted in with
-  `AddVisuAuthAdapterConfigStore()`. The Entra adapter contributes a schema +
-  a DB overlay via `AddVisuAuthEntraDbConfig()`: an `IConfigureOptions<EntraOptions>`
-  applies stored overrides after the bind step, and the `GraphServiceClient`
-  is now supplied by a fingerprint-cached `EntraGraphClientProvider` that
-  rebuilds when an admin save fires an `IOptionsChangeTokenSource` — so the
-  change takes effect on the next Graph call **without a restart**. The page
-  renders "From DB" / "From code" source badges, write-only secret fields,
-  and never logs secret plaintext. AdminUi stays adapter-agnostic (depends
-  only on the abstractions). Tests: the EF store (encryption, tri-state
-  save, secret-never-echoed), the overlay (DB wins, snapshot capture), the
-  client provider (rebuild on change, last-good on invalid), and the page
-  model (tri-state mapping, notifier fired, audit omits secrets).
+Nothing — the v0.2 + v0.3 work is all merged and `0.2.0` is release-ready
+(see **Current status**). Next work starts after the `v0.2.0` tag.
 
 ---
 
-## Next up — v0.3 backlog
+## Next up — backlog
 
-Roadmap row from CLAUDE.md §13 is *"Microsoft Entra External ID
-adapter, profile / sessions management, bulk operations, view-level
-customization"*. The External adapter shipped across PRs A/B/C
-(#36 EntraCore extraction, #37 CRUD adapter, #38 OIDC sign-in) plus two
-admin-robustness fixes (#39 roles, #40 external-providers) and PR D
-(#41 profile sync). Follow-ups #42 (ResetTwoFactor), #43 (sign-in audit
-reader), #44 (directoryAudits merge), #45 (multi-domain create-user
-dropdown) and #46 (cursor-based pagination) also landed. Other concrete
-ideas surfaced during v0.2:
+The v0.2 + v0.3 scope (CLAUDE.md §13) all shipped under the `0.2.0` version:
+the Entra ID adapter (#34), the Entra External adapter across PRs A/B/C/D
+(#36 EntraCore extraction, #37 CRUD adapter, #38 OIDC sign-in, #41 profile
+sync) plus admin-robustness fixes (#39 roles, #40 external-providers),
+#42 (ResetTwoFactor), #43 (sign-in audit reader), #44 (directoryAudits merge),
+#45 (multi-domain create-user dropdown), #46 (cursor-based pagination), and
+#47 (DB-backed adapter-config UI). What's left for a future milestone:
 
 1. **User-flow management admin UI** *(blocked on Graph v1.0)* — the
    originally-envisioned `/visuauth/admin/entra-external/user-flows`

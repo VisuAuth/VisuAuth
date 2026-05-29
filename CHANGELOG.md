@@ -12,9 +12,18 @@ Each release groups changes across the five sibling packages (`VisuAuth`,
 
 ## [Unreleased]
 
-Working toward [`0.2.0`](#020--planned). `<VersionPrefix>` in
-`Directory.Build.props` is now `0.2.0`, so merges to `main` publish as
-`0.2.0-alpha.<run_number>` pre-releases until the next stable tag.
+Nothing yet — work toward the next milestone lands here. (Bump
+`<VersionPrefix>` in `Directory.Build.props` to `0.3.0` when that work starts.)
+
+## [0.2.0] — Entra ID & External ID adapters, audit log, TOTP, external logins, cursor pagination, adapter-config UI
+
+The Microsoft Entra milestone (`CLAUDE.md` §13, v0.2) plus the v0.3 follow-on
+work, released together. Everything below shipped as `0.2.0-alpha.<run_number>`
+pre-releases off `main`; the `v0.2.0` tag finalizes them as the stable release.
+
+> **Breaking (pre-1.0):** pagination moved from numeric pages to opaque
+> cursors — see the *Changed* section. Per SemVer-for-0.x, breaking changes
+> can land on a minor bump and are always called out here.
 
 ### Added
 
@@ -720,23 +729,6 @@ Working toward [`0.2.0`](#020--planned). `<VersionPrefix>` in
   `EfCoreExternalProviderConfigStoreTests` (round-trips through an
   in-memory DbContext instead of standing up SQLite per test).
 
-## [0.2.0] — Planned
-
-Microsoft Entra ID adapter milestone. Tracks CLAUDE.md §13 row for v0.2.
-
-Working list:
-
-- TOTP pages (`/visuauth/two-factor/setup` and `/visuauth/two-factor/verify`)
-  plus recovery-code management.
-- External login providers (Google, Microsoft, Apple) on the login page,
-  driven by registered authentication schemes so the markup is provider-agnostic.
-- Audit log plugin — opt-in package writing to a separate
-  `VisuAuthAuditLog` EF Core table, with retention policy and admin filter UI.
-- Microsoft Entra ID adapter — new package `VisuAuth.Entra` against
-  `IUserStore` / `IRoleStore`, exercising the capability flag system
-  (`SupportsLocalLogin = false` swaps the login form for a "Sign in with
-  Microsoft" button at runtime).
-
 ## [0.1.0] — Admin UI, end-user pages, multi-tenancy, theming, mobile
 
 First feature release. Establishes the public surface for the 0.x line: the
@@ -894,6 +886,7 @@ Tracks the v0.1 milestone in `CLAUDE.md` §13.
 Placeholder release on NuGet to reserve the `VisuAuth` package name. No
 runtime code; pin to `0.1.0+` for real features.
 
-[Unreleased]: https://github.com/VisuAuth/visuauth/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/VisuAuth/visuauth/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/VisuAuth/visuauth/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/VisuAuth/visuauth/releases/tag/v0.1.0
 [0.0.1-alpha]: https://github.com/VisuAuth/visuauth/releases/tag/v0.0.1-alpha

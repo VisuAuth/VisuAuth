@@ -15,8 +15,9 @@ at a single, shared version.
 
 ## [Unreleased]
 
-Nothing yet — work toward the next milestone lands here. (Bump
-`<VersionPrefix>` in `Directory.Build.props` to `0.3.0` when that work starts.)
+Nothing yet — work toward the next milestone lands here. `<VersionPrefix>` is
+now `0.3.0`, so merges to `main` publish as `0.3.0-alpha.<run_number>`
+pre-releases until the next stable tag.
 
 ## [0.2.0] — Entra ID & External ID adapters, audit log, TOTP, external logins, cursor pagination, adapter-config UI
 

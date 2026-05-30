@@ -55,18 +55,18 @@ public sealed partial class TenantThemeResolverTests(VisuAuthTestFactory factory
     [Fact]
     public async Task GetUsers_AfterSwitchingToInitech_RendersMidnightPreset()
     {
-        // initech → SampleThemes.Midnight (the dark theme). Pin the
-        // dark background to make sure the per-tenant override reaches
-        // the end-user pages too.
+        // initech → SampleThemes.Midnight (deep-indigo brand on a tinted
+        // page background). Pin the tinted background to make sure the
+        // per-tenant override reaches the end-user pages too.
         using var client = await SwitchTenantAsync("initech");
 
         var response = await client.GetAsync(new Uri("/visuauth/admin/users", UriKind.Relative));
         var body = await response.Content.ReadAsStringAsync();
 
-        body.Should().Contain("--visuauth-primary: #818cf8",
-            "initech → Midnight has indigo primary on dark surfaces");
-        body.Should().Contain("--visuauth-bg: #0f172a",
-            "Midnight flips Bg — the strongest signal that the per-tenant override took effect");
+        body.Should().Contain("--visuauth-primary: #4f46e5",
+            "initech → Midnight has a deep-indigo primary");
+        body.Should().Contain("--visuauth-bg: #eef2ff",
+            "Midnight tints Bg — the strongest signal that the per-tenant override took effect");
     }
 
     [Fact]

@@ -63,23 +63,22 @@ internal static class SampleThemes
     }
 
     /// <summary>
-    /// Full dark theme. Flips <see cref="VisuAuthTheme.Bg"/>,
-    /// <see cref="VisuAuthTheme.Fg"/>, <see cref="VisuAuthTheme.Surface"/>,
-    /// and <see cref="VisuAuthTheme.Border"/> so the entire layout
-    /// (sidebar, cards, tables, inputs) inverts in one go. Useful to
-    /// stress-test that every component honours the variables instead
-    /// of hard-coding colours.
+    /// Deep-indigo brand on a soft tinted page background. The design-system
+    /// stylesheet renders cards and popovers on <c>--visuauth-elevated</c> — a
+    /// token the Layer-2 theme can't reach — so a full dark flip (dark
+    /// <see cref="VisuAuthTheme.Bg"/> + light <see cref="VisuAuthTheme.Fg"/>)
+    /// left the white cards carrying unreadable light text. This preset stays
+    /// coherent with the light card surfaces: it only tints the page
+    /// background and recolours the brand, keeping the default dark text. A
+    /// genuine dark UI is available through the built-in light/dark toggle.
     /// </summary>
     public static void Midnight(VisuAuthTheme theme)
     {
         ArgumentNullException.ThrowIfNull(theme);
-        theme.Primary = "#818cf8";
-        theme.PrimaryFg = "#0f172a";
-        theme.Bg = "#0f172a";
-        theme.Fg = "#e2e8f0";
-        theme.Muted = "#94a3b8";
-        theme.Surface = "#1e293b";
-        theme.Border = "#334155";
+        theme.Primary = "#4f46e5";
+        theme.PrimaryFg = "#ffffff";
+        theme.Bg = "#eef2ff";
+        theme.Border = "#c7d2fe";
     }
 
     /// <summary>

@@ -593,6 +593,20 @@ body {
   width: 100%;
 }
 
+/* Tenant switcher placed in the header (design-system parity) — undo the
+   sidebar column layout so it sits inline beside the brand. */
+.va-header .va-tenant-indicator {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+  flex-direction: row;
+  align-items: center;
+}
+.va-header .va-tenant-indicator select,
+.va-header .va-tenant-indicator .va-filter-select {
+  width: auto;
+}
+
 /* ── Collapsed sidebar (icons only) ─────────────────────────── */
 :root { --visuauth-sidebar-w-collapsed: 72px; }
 

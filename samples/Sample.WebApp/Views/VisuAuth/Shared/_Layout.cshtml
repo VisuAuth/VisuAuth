@@ -87,6 +87,36 @@
                     <span class="va-brand-mark" aria-hidden="true">V</span>
                     <span>VisuAuth</span>
                 </a>
+                @if (TenantContext.IsMultiTenancyEnabled)
+                {
+                    @* Tenant switcher in the header (design-system parity): sits
+                       beside the brand instead of at the foot of the sidebar.
+                       Keeps the va-tenant-indicator class so the same
+                       POST-to-Switch handler applies; the .va-header scope in
+                       visuauth.css overrides the sidebar column layout. *@
+                    <form method="post"
+                          asp-page="/Admin/Tenants/Index"
+                          asp-page-handler="Switch"
+                          class="va-tenant-indicator va-header-tenant">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="returnUrl" value="@currentPath" />
+                        <select name="tenantId"
+                                class="va-input va-tenant-switcher"
+                                aria-label="@Ls["Sidebar.TenantScope"]"
+                                onchange="this.form.submit();">
+                            <option value="" selected="@(string.IsNullOrEmpty(TenantContext.CurrentTenantId) ? "selected" : null)">@Ls["Sidebar.TenantGlobal"]</option>
+                            @foreach (var tenant in sidebarTenants)
+                            {
+                                <option value="@tenant.Id" selected="@(string.Equals(tenant.Id, TenantContext.CurrentTenantId, StringComparison.Ordinal) ? "selected" : null)">
+                                    @tenant.DisplayName
+                                </option>
+                            }
+                        </select>
+                        <noscript>
+                            <button type="submit" class="va-btn va-btn-small va-btn-ghost">@Ls["Sidebar.TenantApply"]</button>
+                        </noscript>
+                    </form>
+                }
             </div>
             <div class="va-header-group">
                 <va-language-switcher />
@@ -185,31 +215,6 @@
                         <span>@Ls["Sidebar.NavAuditLog"]</span>
                     </a>
                 </nav>
-                @if (TenantContext.IsMultiTenancyEnabled)
-                {
-                    <form method="post"
-                          asp-page="/Admin/Tenants/Index"
-                          asp-page-handler="Switch"
-                          class="va-tenant-indicator">
-                        @Html.AntiForgeryToken()
-                        <span class="va-field-label">@Ls["Sidebar.TenantScope"]</span>
-                        <input type="hidden" name="returnUrl" value="@currentPath" />
-                        <select name="tenantId"
-                                class="va-input va-tenant-switcher"
-                                onchange="this.form.submit();">
-                            <option value="" selected="@(string.IsNullOrEmpty(TenantContext.CurrentTenantId) ? "selected" : null)">@Ls["Sidebar.TenantGlobal"]</option>
-                            @foreach (var tenant in sidebarTenants)
-                            {
-                                <option value="@tenant.Id" selected="@(string.Equals(tenant.Id, TenantContext.CurrentTenantId, StringComparison.Ordinal) ? "selected" : null)">
-                                    @tenant.DisplayName
-                                </option>
-                            }
-                        </select>
-                        <noscript>
-                            <button type="submit" class="va-btn va-btn-small va-btn-ghost">@Ls["Sidebar.TenantApply"]</button>
-                        </noscript>
-                    </form>
-                }
             </aside>
             <main class="va-main">
                 @RenderBody()

@@ -196,6 +196,13 @@ Full instructions (token bootstrap, exclusions, dashboard URL) are in
 [CLAUDE.md section 10.5](CLAUDE.md). New bugs / vulnerabilities introduced
 by a PR should be fixed before requesting review.
 
+- **Check the issues list, not just the quality gate.** `INFO` / `MINOR`
+  violations don't fail the gate but we keep them at zero. After a scan, query
+  the issues — locally
+  `curl -u "$SONAR_TOKEN:" "http://localhost:9000/api/issues/search?componentKeys=VisuAuth&inNewCodePeriod=true&resolved=false"`,
+  or open the dashboard — and clear anything your change introduced before
+  requesting review.
+
 ## What "drop-in" means here
 
 The user-facing promise is:
@@ -222,7 +229,17 @@ Use the GitHub issue templates. Include:
 - **PR title must follow Conventional Commits** — it becomes the squashed commit message on `main`.
 - Update tests. New behavior without a test is rejected.
 - Update docs/README if user-facing behavior changes.
+- **If you add a VisuAuth route, link it from the sample home.** Every new
+  page / endpoint must be reachable from `samples/Sample.WebApp/Program.cs`
+  (the `/` landing page), so the route is manually testable and nothing ships
+  invisible.
 - Wait for CI to pass before requesting review.
+- **Triage every review comment after opening the PR _and_ again after CI.**
+  Read the conversation, the reviews, *and* the inline review comments
+  (`gh api repos/VisuAuth/VisuAuth/pulls/<N>/comments`) — the automated
+  reviewer leaves its findings inline, not in the main thread. Address or
+  explicitly answer each one; never let an inline comment (especially a
+  security finding) go unread.
 
 ## Code of conduct
 

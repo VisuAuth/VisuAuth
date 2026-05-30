@@ -2171,3 +2171,46 @@ body {
 .va-btn-warning { border-color: var(--visuauth-warning); }
 .va-btn-warning:hover { border-color: var(--visuauth-warning-hover); }
 .va-btn-ghost { border-color: transparent; }
+
+/* ===========================================================================
+   Layout fixes (design-system review, issue #55)
+   =========================================================================== */
+
+/* 1. The language switcher (<va-language-switcher>) renders a stacked
+   "LANGUAGE" label + full-width <select>. That overflows the 56px header bar.
+   In the header, drop the label and let the select size to its content so it
+   sits inline with the theme toggle and account menu. The end-user card
+   footer (outside .va-header) keeps the labelled, stacked form. */
+.va-header .va-lang-switcher {
+  display: flex;
+  align-items: center;
+  margin: 0;
+}
+.va-header .va-lang-switcher .va-field-label { display: none; }
+.va-header .va-lang-switcher .va-input {
+  width: auto;
+  padding-top: var(--visuauth-space-1);
+  padding-bottom: var(--visuauth-space-1);
+}
+
+/* 2. The user filter selects carry both .va-filter-select (flex:0 0 auto) and
+   .va-input (width:100%); the width:100% wins and forces each onto its own
+   row. Let them size to content so the filter bar stays a single row. */
+.va-filters .va-filter-select { width: auto; }
+
+/* 3. An action row sitting directly under a definition list (the user Security
+   section: Lock / Reset password / ...) hugged the last row — give it room. */
+.va-dl + .va-actions { margin-top: var(--visuauth-space-5); }
+
+/* 4. A plain .va-card has no padding (so a .va-table can sit flush, its cells
+   supplying the inset). Non-table sections inside one — the section heading
+   and the provider-card grid — must be inset from the card edge instead of
+   hugging the left/both sides. .va-detail-card already pads its body, so
+   exclude it to avoid double padding. */
+.va-card:not(.va-detail-card) > .va-section-heading {
+  padding: var(--visuauth-space-5) var(--visuauth-space-5) 0;
+}
+.va-card:not(.va-detail-card) > .va-ghost-grid {
+  padding: 0 var(--visuauth-space-5) var(--visuauth-space-5);
+  margin-bottom: 0;
+}

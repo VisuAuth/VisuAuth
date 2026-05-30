@@ -2214,3 +2214,58 @@ body {
   padding: 0 var(--visuauth-space-5) var(--visuauth-space-5);
   margin-bottom: 0;
 }
+
+/* 5. Roles section (user detail): the chip list hugged the "Assign role" form
+   below it (both had margin:0). Give the chips breathing room. */
+#va-user-roles .va-chip-list { margin-bottom: var(--visuauth-space-5); }
+
+/* ===========================================================================
+   Modal dialog (native <dialog>) — used by the "How to activate" snippet on
+   the External Providers page, where the code was cramped inside the card.
+   Opened/closed by visuauth.js via [data-va-modal-open] / [data-va-modal-close].
+   =========================================================================== */
+.va-modal {
+  width: min(640px, calc(100vw - 2rem));
+  max-width: 100%;
+  padding: 0;
+  border: 1px solid var(--visuauth-border);
+  border-radius: var(--visuauth-radius-lg);
+  background: var(--visuauth-elevated);
+  color: var(--visuauth-fg);
+  box-shadow: var(--visuauth-shadow-lg);
+}
+.va-modal::backdrop { background: rgba(2, 6, 23, 0.55); }
+
+.va-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--visuauth-space-3);
+  padding: var(--visuauth-space-4) var(--visuauth-space-5);
+  border-bottom: 1px solid var(--visuauth-border);
+}
+.va-modal-title {
+  margin: 0;
+  font-size: var(--visuauth-text-lg);
+  font-weight: var(--visuauth-fw-semibold);
+  color: var(--visuauth-fg);
+}
+.va-modal-close {
+  border: 0;
+  background: transparent;
+  color: var(--visuauth-muted);
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 var(--visuauth-space-2);
+  border-radius: var(--visuauth-radius-sm);
+}
+.va-modal-close:hover { color: var(--visuauth-fg); background: var(--visuauth-hover); }
+
+.va-modal-body { padding: var(--visuauth-space-5); }
+.va-modal-body > :first-child { margin-top: 0; }
+.va-modal-body .va-code-snippet {
+  margin: 0 0 var(--visuauth-space-3);
+  max-height: 50vh;
+  overflow: auto;
+}

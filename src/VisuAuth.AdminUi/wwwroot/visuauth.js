@@ -114,4 +114,45 @@
         button.setAttribute('aria-label', willReveal ? 'Hide password' : 'Show password');
         button.setAttribute('aria-pressed', willReveal ? 'true' : 'false');
     });
+
+    //
+    // Modal dialogs (native <dialog>).
+    //
+    // [data-va-modal-open="<dialog-id>"] opens the matching <dialog> via
+    // showModal() (free backdrop, Esc-to-close, focus trap). [data-va-modal-close]
+    // closes the enclosing dialog, and a click on the backdrop (the <dialog>
+    // element itself, outside its content) closes it too. Delegated on document
+    // so htmx-swapped cards keep working.
+    //
+    document.addEventListener('click', function (event) {
+        var target = event.target;
+        if (!target || !target.closest) {
+            return;
+        }
+
+        var opener = target.closest('[data-va-modal-open]');
+        if (opener) {
+            event.preventDefault();
+            var dialog = document.getElementById(opener.getAttribute('data-va-modal-open'));
+            if (dialog && typeof dialog.showModal === 'function') {
+                dialog.showModal();
+            }
+            return;
+        }
+
+        var closer = target.closest('[data-va-modal-close]');
+        if (closer) {
+            event.preventDefault();
+            var owning = closer.closest('dialog');
+            if (owning) {
+                owning.close();
+            }
+            return;
+        }
+
+        // Click on the backdrop (the dialog element, not its inner content).
+        if (target.tagName === 'DIALOG' && target.classList.contains('va-modal')) {
+            target.close();
+        }
+    });
 })();

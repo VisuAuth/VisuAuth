@@ -2269,3 +2269,10 @@ body {
   max-height: 50vh;
   overflow: auto;
 }
+
+/* 6. Native <summary> renders a default (arrow) cursor in several browsers,
+   so disclosure toggles (audit-log "expand", header account menu) didn't feel
+   clickable. Restore the pointer. .va-app covers the header layout; .va-shell
+   covers the audit content in both the header and sidebar-only layouts. */
+.va-app summary,
+.va-shell summary { cursor: pointer; }

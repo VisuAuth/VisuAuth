@@ -1,1664 +1,2159 @@
-/*
- * VisuAuth admin UI default theme.
- *
- * Override any of the CSS variables below in your own stylesheet (loaded
- * AFTER this file) to rebrand the dashboard without forking the views.
- */
+/* ============================================================================
+   VisuAuth — Admin Dashboard Stylesheet  (full design-system version)
+   ----------------------------------------------------------------------------
+   DROP-IN REPLACEMENT for src/VisuAuth.AdminUi/wwwroot/visuauth.css.
+   This is the complete design-system stylesheet the prototype renders against
+   — full token scale (radius/shadow/spacing/type/status ramps), polished
+   cards/buttons/pills/badges/KPIs/chart, sticky sidebar, and an OPTIONAL top
+   header. It already includes dark mode, so once you adopt this you can DELETE
+   the separate visuauth-brand.css dark block + re-skins (this file is fully
+   tokenised — there are no hard-coded light hexes left to patch).
 
+   Two changes vs the raw design-system file, both noted inline below:
+     • --visuauth-header-h defaults to 0 (graceful with the current header-less
+       sidebar layout); `.va-app` restores 56px when the top header is rendered.
+     • The dark token block uses :root:where([data-theme="dark"]) so consumer
+       palette overrides (BrandTheme.cs / Layer-1 CSS) keep winning in dark.
+
+   A single, self-contained stylesheet for the VisuAuth admin dashboard
+   (Razor Class Library). No external fonts, no @import, no CSS framework.
+
+   Theming:
+     • Light is the default.
+     • Dark is applied via  :root[data-theme="dark"]  (manual toggle)
+       AND via  @media (prefers-color-scheme: dark)  when the user has not
+       explicitly chosen light. Both blocks share the SAME token overrides.
+     • Consumers re-theme a deployment by overriding the --visuauth-* tokens.
+
+   Token layers:
+     1. Semantic tokens  (--visuauth-*)   ← consumers override these
+     2. Scale tokens     (radius / shadow / spacing / type)
+     3. Component rules consume only tokens — no scattered colour literals.
+
+   Sections:
+     Tokens → Reset/base → Layout → Navigation → Cards → Tables → Filters →
+     Forms → Buttons → Badges/Pills → Alerts → Pagination → Dashboard →
+     Code → Utilities → Responsive → Dark theme
+   ============================================================================ */
+
+/* ===========================================================================
+   1. TOKENS — LIGHT THEME (defaults)
+   =========================================================================== */
 :root {
-    --visuauth-primary: #6366f1;
-    --visuauth-primary-fg: #ffffff;
-    --visuauth-bg: #ffffff;
-    --visuauth-fg: #0f172a;
-    --visuauth-muted: #64748b;
-    --visuauth-border: #e2e8f0;
-    --visuauth-surface: #f8fafc;
-    --visuauth-danger: #dc2626;
-    --visuauth-success: #16a34a;
-    --visuauth-radius: 0.5rem;
-    --visuauth-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  /* ── Brand / primary ────────────────────────────────────────── */
+  --visuauth-primary: #6366f1;          /* indigo-500 — fills, focus */
+  --visuauth-primary-hover: #4f46e5;    /* indigo-600 */
+  --visuauth-primary-active: #4338ca;   /* indigo-700 */
+  --visuauth-primary-fg: #ffffff;       /* text on primary fill */
+  --visuauth-primary-soft: #eef2ff;     /* indigo tint surface */
+  --visuauth-primary-soft-fg: #4338ca;  /* text on tint surface */
+  --visuauth-link: #4f46e5;             /* in-table / inline links */
+  --visuauth-ring: rgba(99, 102, 241, 0.45); /* focus ring */
 
-    /* Extended tokens. Several component rules reference these via
-     * var(--token, <fallback>); declaring them here (with the same light
-     * values as those fallbacks) lets the dark theme below override them in
-     * one place instead of chasing baked-in hexes. */
-    --visuauth-warning: #b45309;
-    --visuauth-text: var(--visuauth-fg);
-    --visuauth-bar-track: #f1f5f9;
-    --visuauth-code-bg: #f1f5f9;
-    --visuauth-row-hover: #f8fafc;
-    --visuauth-success-soft: #d1fae5;
-    --visuauth-danger-soft: #fee2e2;
-    --visuauth-muted-soft: #f1f5f9;
-    --visuauth-card-shadow: 0 12px 30px -18px rgba(15, 23, 42, 0.25);
+  /* ── Surfaces & text ────────────────────────────────────────── */
+  --visuauth-bg: #ffffff;               /* page background */
+  --visuauth-fg: #0f172a;               /* slate-900 — primary text */
+  --visuauth-muted: #64748b;            /* slate-500 — secondary text */
+  --visuauth-faint: #94a3b8;            /* slate-400 — tertiary / hints */
+  --visuauth-border: #e2e8f0;           /* slate-200 — hairlines */
+  --visuauth-border-strong: #cbd5e1;    /* slate-300 — inputs/hover */
+  --visuauth-surface: #f8fafc;          /* slate-50 — subtle fill */
+  --visuauth-surface-2: #f1f5f9;        /* slate-100 — deeper fill */
+  --visuauth-elevated: #ffffff;         /* card / popover background */
+  --visuauth-hover: #f1f5f9;            /* row / item hover */
+  --visuauth-sidebar-bg: #fbfcfe;       /* sidebar panel */
+
+  /* ── Semantic status ────────────────────────────────────────── */
+  --visuauth-danger: #dc2626;
+  --visuauth-danger-hover: #b91c1c;
+  --visuauth-danger-fg: #ffffff;
+  --visuauth-danger-soft: #fef2f2;
+  --visuauth-danger-soft-fg: #b91c1c;
+
+  --visuauth-success: #16a34a;
+  --visuauth-success-hover: #15803d;
+  --visuauth-success-fg: #ffffff;
+  --visuauth-success-soft: #f0fdf4;
+  --visuauth-success-soft-fg: #15803d;
+
+  --visuauth-warning: #d97706;
+  --visuauth-warning-hover: #b45309;
+  --visuauth-warning-fg: #ffffff;
+  --visuauth-warning-soft: #fffbeb;
+  --visuauth-warning-soft-fg: #b45309;
+
+  --visuauth-info: #2563eb;
+  --visuauth-info-soft: #eff6ff;
+  --visuauth-info-soft-fg: #1d4ed8;
+
+  /* ── Radius scale ───────────────────────────────────────────── */
+  --visuauth-radius: 0.5rem;            /* base — buttons, inputs */
+  --visuauth-radius-sm: 0.375rem;       /* small controls, pills */
+  --visuauth-radius-lg: 0.75rem;        /* cards, panels */
+  --visuauth-radius-xl: 1rem;           /* large containers */
+  --visuauth-radius-full: 9999px;       /* pills, avatars */
+
+  /* ── Elevation / shadows (soft, Linear-style) ──────────────── */
+  --visuauth-shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --visuauth-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.05);
+  --visuauth-shadow-md: 0 2px 4px rgba(15, 23, 42, 0.04), 0 8px 20px -6px rgba(15, 23, 42, 0.12);
+  --visuauth-shadow-lg: 0 12px 36px -10px rgba(15, 23, 42, 0.20);
+
+  /* ── Spacing scale (4px base) ──────────────────────────────── */
+  --visuauth-space-1: 0.25rem;
+  --visuauth-space-2: 0.5rem;
+  --visuauth-space-3: 0.75rem;
+  --visuauth-space-4: 1rem;
+  --visuauth-space-5: 1.25rem;
+  --visuauth-space-6: 1.5rem;
+  --visuauth-space-8: 2rem;
+  --visuauth-space-10: 2.5rem;
+  --visuauth-space-12: 3rem;
+
+  /* ── Typography ────────────────────────────────────────────── */
+  --visuauth-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --visuauth-font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+
+  --visuauth-text-xs: 0.75rem;          /* 12px */
+  --visuauth-text-sm: 0.8125rem;        /* 13px — dense UI default */
+  --visuauth-text-base: 0.875rem;       /* 14px — body */
+  --visuauth-text-md: 0.9375rem;        /* 15px */
+  --visuauth-text-lg: 1.125rem;         /* 18px */
+  --visuauth-text-xl: 1.375rem;         /* 22px — page title */
+  --visuauth-text-2xl: 1.75rem;         /* 28px — KPI value */
+
+  --visuauth-fw-normal: 400;
+  --visuauth-fw-medium: 500;
+  --visuauth-fw-semibold: 600;
+  --visuauth-fw-bold: 700;
+
+  --visuauth-leading-tight: 1.25;
+  --visuauth-leading: 1.55;
+
+  /* ── Motion ────────────────────────────────────────────────── */
+  --visuauth-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --visuauth-duration: 0.16s;
+
+  /* ── Sidebar width ─────────────────────────────────────────── */
+  --visuauth-sidebar-w: 240px;
+
+  /* Smooth theme transition */
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s;
 }
 
-* { box-sizing: border-box; }
+/* ===========================================================================
+   2. RESET / BASE
+   =========================================================================== */
+.va-shell *,
+.va-shell *::before,
+.va-shell *::after,
+.va-enduser-shell *,
+.va-enduser-shell *::before,
+.va-enduser-shell *::after {
+  box-sizing: border-box;
+}
+
+html { background: var(--visuauth-bg); }
 
 body {
-    margin: 0;
-    font-family: var(--visuauth-font);
-    color: var(--visuauth-fg);
-    background: var(--visuauth-bg);
-    line-height: 1.5;
+  margin: 0;
+  font-family: var(--visuauth-font);
+  font-size: var(--visuauth-text-base);
+  line-height: var(--visuauth-leading);
+  color: var(--visuauth-fg);
+  background: var(--visuauth-bg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+/* Global focus visibility — every interactive element */
+.va-shell a:focus-visible,
+.va-shell button:focus-visible,
+.va-shell input:focus-visible,
+.va-shell select:focus-visible,
+.va-shell textarea:focus-visible,
+.va-shell [tabindex]:focus-visible {
+  outline: 2px solid var(--visuauth-primary);
+  outline-offset: 2px;
+  border-radius: var(--visuauth-radius-sm);
+}
+
+/* ===========================================================================
+   3. LAYOUT — APP / HEADER / SHELL
+   =========================================================================== */
+/* Header height is 0 by default so this stylesheet is a safe drop-in for the
+   current sidebar-only layout (no top header bar): the shell + sidebar take
+   the full viewport height with no blank strip. When the optional top header
+   IS rendered, the layout wraps everything in `.va-app`, which restores the
+   56px so the sticky sidebar tucks beneath the header. */
+:root { --visuauth-header-h: 0px; }
+.va-app { --visuauth-header-h: 56px; }
+
+/* App wrapper: full-width header on top, sidebar+main row beneath */
+.va-app {
+  min-height: 100vh;
+  background: var(--visuauth-bg);
+  color: var(--visuauth-fg);
 }
 
 .va-shell {
-    display: grid;
-    grid-template-columns: 240px 1fr;
-    min-height: 100vh;
-}
-
-.va-sidebar {
-    background: var(--visuauth-surface);
-    border-right: 1px solid var(--visuauth-border);
-    padding: 1.5rem 1rem;
-}
-
-.va-brand {
-    font-weight: 700;
-    font-size: 1.15rem;
-    color: var(--visuauth-primary);
-    text-decoration: none;
-    display: block;
-    margin-bottom: 1.5rem;
-}
-
-.va-nav {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-}
-
-.va-nav a {
-    color: var(--visuauth-fg);
-    text-decoration: none;
-    padding: 0.5rem 0.75rem;
-    border-radius: var(--visuauth-radius);
-    font-size: 0.95rem;
-}
-
-.va-nav a:hover {
-    background: var(--visuauth-border);
-}
-
-.va-nav a.va-active {
-    /* Soft primary-tint pill (calmer than a solid block, legible in both
-       themes). Tracks the consumer palette + light/dark via the token. */
-    background: color-mix(in srgb, var(--visuauth-primary) 14%, transparent);
-    color: var(--visuauth-primary);
-    font-weight: 600;
+  display: grid;
+  grid-template-columns: var(--visuauth-sidebar-w) 1fr;
+  min-height: calc(100vh - var(--visuauth-header-h));
+  background: var(--visuauth-bg);
+  color: var(--visuauth-fg);
 }
 
 .va-main {
-    padding: 2rem;
-    /* No max-width cap: admin tables grow column-heavy as features land
-     * (Tenant, Status, 2FA, Verified, etc.). Let .va-main use whatever the
-     * viewport gives it minus the sidebar; horizontal scroll on .va-card
-     * is the final fallback for narrow screens. */
-    min-width: 0;
+  min-width: 0;                 /* allow tables to scroll, not blow out grid */
+  padding: var(--visuauth-space-8) var(--visuauth-space-10);
+  background: var(--visuauth-bg);
+}
+
+/* Top header bar — brand (left) · tenant · language / theme / user (right) */
+.va-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--visuauth-space-3);
+  height: var(--visuauth-header-h);
+  padding: 0 var(--visuauth-space-6);
+  background: var(--visuauth-bg);
+  border-bottom: 1px solid var(--visuauth-border);
+}
+
+.va-header-group {
+  display: flex;
+  align-items: center;
+  gap: var(--visuauth-space-2);
+}
+
+/* Brand sits in the header now (top-left) */
+.va-header .va-brand {
+  margin-bottom: 0;
+  padding: var(--visuauth-space-1) var(--visuauth-space-2);
+}
+
+/* Icon-only theme toggle in the header */
+.va-header-theme {
+  width: 34px;
+  justify-content: center;
+}
+/* Zero the horizontal padding with enough specificity to beat .va-btn-small,
+   and stop the svg from being shrunk by flex. */
+.va-header-theme.va-btn { padding-left: 0; padding-right: 0; }
+.va-header-theme.va-btn svg { width: 19px; height: 19px; flex-shrink: 0; }
+
+/* Circular country flag */
+.va-flag {
+  display: inline-flex;
+  border-radius: var(--visuauth-radius-full);
+  overflow: hidden;
+  flex-shrink: 0;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.12);
+}
+/* Fill the circular container (out-ranks .va-btn-small svg sizing) */
+.va-flag svg,
+.va-btn .va-flag svg,
+.va-lang-item .va-flag svg { display: block; width: 100%; height: 100%; }
+
+/* Compact language switcher (flag button + popover menu) */
+.va-lang { position: relative; }
+
+.va-lang-btn {
+  width: 36px;
+  justify-content: center;
+}
+.va-lang-btn.va-btn { padding-left: 0; padding-right: 0; }
+
+.va-lang-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 30;
+  min-width: 176px;
+  padding: var(--visuauth-space-1);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--visuauth-elevated);
+  border: 1px solid var(--visuauth-border);
+  border-radius: var(--visuauth-radius);
+  box-shadow: var(--visuauth-shadow-md);
+}
+
+.va-lang-item {
+  display: flex;
+  align-items: center;
+  gap: var(--visuauth-space-3);
+  width: 100%;
+  padding: var(--visuauth-space-2) var(--visuauth-space-3);
+  border: 0;
+  border-radius: var(--visuauth-radius-sm);
+  background: transparent;
+  font-family: inherit;
+  font-size: var(--visuauth-text-base);
+  color: var(--visuauth-fg);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--visuauth-duration) var(--visuauth-ease);
+}
+.va-lang-item:hover { background: var(--visuauth-hover); }
+.va-lang-item.va-active {
+  background: var(--visuauth-primary-soft);
+  color: var(--visuauth-primary-soft-fg);
+  font-weight: var(--visuauth-fw-medium);
+}
+.va-lang-check {
+  margin-left: auto;
+  display: inline-flex;
+  color: var(--visuauth-primary-soft-fg);
 }
 
 .va-page-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--visuauth-space-4);
+  margin-bottom: var(--visuauth-space-6);
+  flex-wrap: wrap;
 }
 
-.va-page-header h1 {
-    margin: 0;
-    font-size: 1.5rem;
+.va-page-header h1,
+.va-page-header .va-page-title {
+  margin: 0;
+  font-size: var(--visuauth-text-xl);
+  font-weight: var(--visuauth-fw-semibold);
+  letter-spacing: -0.01em;
+  color: var(--visuauth-fg);
 }
 
-.va-search {
-    flex: 1 1 14rem;
-    min-width: 12rem;
-    padding: 0.5rem 0.75rem;
-    border: 1px solid var(--visuauth-border);
-    border-radius: var(--visuauth-radius);
-    font-size: 0.95rem;
-    font-family: inherit;
+.va-page-header > div:last-child {
+  display: flex;
+  align-items: center;
+  gap: var(--visuauth-space-2);
 }
 
-.va-search:focus {
-    outline: 2px solid var(--visuauth-primary);
-    outline-offset: -1px;
-    border-color: var(--visuauth-primary);
+/* ===========================================================================
+   4. NAVIGATION — SIDEBAR
+   =========================================================================== */
+.va-sidebar {
+  position: sticky;
+  top: var(--visuauth-header-h);
+  align-self: start;
+  height: calc(100vh - var(--visuauth-header-h));
+  display: flex;
+  flex-direction: column;
+  background: var(--visuauth-sidebar-bg);
+  border-right: 1px solid var(--visuauth-border);
+  padding: var(--visuauth-space-4) var(--visuauth-space-3);
+  overflow: hidden;
 }
 
-.va-filters {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-    flex-wrap: wrap;
-    align-items: center;
+.va-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--visuauth-space-2);
+  padding: var(--visuauth-space-2) var(--visuauth-space-3);
+  margin-bottom: var(--visuauth-space-5);
+  font-size: var(--visuauth-text-lg);
+  font-weight: var(--visuauth-fw-bold);
+  letter-spacing: -0.02em;
+  color: var(--visuauth-fg);
+  text-decoration: none;
 }
 
-.va-filter-select {
-    padding: 0.5rem 0.75rem;
-    border: 1px solid var(--visuauth-border);
-    border-radius: var(--visuauth-radius);
-    font-size: 0.9rem;
-    font-family: inherit;
-    background: var(--visuauth-bg);
-    min-width: 9rem;
+.va-brand:hover { color: var(--visuauth-fg); }
+
+/* Sidebar head — holds the collapse toggle (brand now lives in the header) */
+.va-sidebar-head {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--visuauth-space-2);
+  height: 30px;
+  margin-bottom: var(--visuauth-space-3);
 }
 
+.va-collapse-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--visuauth-radius-sm);
+  background: transparent;
+  color: var(--visuauth-muted);
+  cursor: pointer;
+  transition: background-color var(--visuauth-duration) var(--visuauth-ease),
+              color var(--visuauth-duration) var(--visuauth-ease);
+}
+.va-collapse-btn:hover { background: var(--visuauth-hover); color: var(--visuauth-fg); }
+.va-collapse-btn svg { width: 16px; height: 16px; }
+
+/* ── Logged-in user card (lives in the header, right side) ──── */
+.va-user-wrap { position: relative; }
+
+.va-user {
+  display: flex;
+  align-items: center;
+  gap: var(--visuauth-space-2);
+  max-width: 220px;
+  padding: var(--visuauth-space-1) var(--visuauth-space-2);
+  font-family: inherit;
+  text-align: left;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--visuauth-radius);
+  cursor: pointer;
+  transition: background-color var(--visuauth-duration) var(--visuauth-ease),
+              border-color var(--visuauth-duration) var(--visuauth-ease);
+}
+.va-user:hover { background: var(--visuauth-hover); border-color: var(--visuauth-border); }
+
+.va-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: var(--visuauth-radius-full);
+  background: linear-gradient(135deg, var(--visuauth-primary), var(--visuauth-primary-active));
+  color: #fff;
+  font-size: var(--visuauth-text-sm);
+  font-weight: var(--visuauth-fw-semibold);
+  letter-spacing: 0.01em;
+  overflow: hidden;
+}
+.va-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+.va-user-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1 1 auto;
+  line-height: 1.2;
+}
+.va-user-name {
+  font-size: var(--visuauth-text-sm);
+  font-weight: var(--visuauth-fw-semibold);
+  color: var(--visuauth-fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.va-user-role {
+  font-size: var(--visuauth-text-xs);
+  color: var(--visuauth-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.va-user-caret { flex-shrink: 0; color: var(--visuauth-muted); display: inline-flex; }
+
+/* Vertical separator in the header */
+.va-header-sep {
+  width: 1px;
+  height: 22px;
+  background: var(--visuauth-border);
+  flex-shrink: 0;
+}
+
+/* Account dropdown (rendered fixed, anchored to the card) */
+.va-user-menu {
+  z-index: 40;
+  padding: var(--visuauth-space-1);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--visuauth-elevated);
+  border: 1px solid var(--visuauth-border);
+  border-radius: var(--visuauth-radius);
+  box-shadow: var(--visuauth-shadow-md);
+}
+.va-user-menu-head {
+  display: flex;
+  align-items: center;
+  gap: var(--visuauth-space-3);
+  padding: var(--visuauth-space-2) var(--visuauth-space-3) var(--visuauth-space-3);
+}
+.va-menu-sep {
+  height: 1px;
+  margin: var(--visuauth-space-1) 0;
+  background: var(--visuauth-border);
+}
+.va-menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--visuauth-space-3);
+  width: 100%;
+  padding: var(--visuauth-space-2) var(--visuauth-space-3);
+  border: 0;
+  border-radius: var(--visuauth-radius-sm);
+  background: transparent;
+  font-family: inherit;
+  font-size: var(--visuauth-text-base);
+  color: var(--visuauth-fg);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--visuauth-duration) var(--visuauth-ease);
+}
+.va-menu-item:hover { background: var(--visuauth-hover); }
+.va-menu-item svg { color: var(--visuauth-muted); }
+.va-menu-item-danger { color: var(--visuauth-danger); }
+.va-menu-item-danger svg { color: var(--visuauth-danger); }
+.va-menu-item-danger:hover { background: var(--visuauth-danger-soft); }
+
+/* Brand mark — indigo rounded square with a glyph/img inside */
+.va-brand-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--visuauth-radius-sm);
+  background: linear-gradient(135deg, var(--visuauth-primary), var(--visuauth-primary-active));
+  color: #fff;
+  font-weight: var(--visuauth-fw-bold);
+  font-size: 0.95rem;
+  flex-shrink: 0;
+}
+
+.va-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  flex: 1 1 auto;
+}
+
+.va-nav a,
+.va-nav .va-nav-item {
+  display: flex;
+  align-items: center;
+  gap: var(--visuauth-space-3);
+  padding: var(--visuauth-space-2) var(--visuauth-space-3);
+  border-radius: var(--visuauth-radius);
+  font-size: var(--visuauth-text-base);
+  font-weight: var(--visuauth-fw-medium);
+  color: var(--visuauth-muted);
+  text-decoration: none;
+  transition: background-color var(--visuauth-duration) var(--visuauth-ease),
+              color var(--visuauth-duration) var(--visuauth-ease);
+}
+
+.va-nav a:hover,
+.va-nav .va-nav-item:hover {
+  background: var(--visuauth-hover);
+  color: var(--visuauth-fg);
+}
+
+.va-nav a svg,
+.va-nav .va-nav-item svg {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.va-nav .va-active,
+.va-nav a.va-active {
+  background: var(--visuauth-primary-soft);
+  color: var(--visuauth-primary-soft-fg);
+  font-weight: var(--visuauth-fw-semibold);
+}
+
+.va-nav .va-active svg { opacity: 1; }
+
+/* Tenant + language switcher pinned at the bottom of the sidebar */
+.va-tenant-indicator {
+  margin-top: auto;
+  padding-top: var(--visuauth-space-4);
+  border-top: 1px solid var(--visuauth-border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--visuauth-space-2);
+  font-size: var(--visuauth-text-sm);
+  color: var(--visuauth-muted);
+}
+
+.va-tenant-indicator select,
+.va-tenant-indicator .va-filter-select {
+  width: 100%;
+}
+
+/* ── Collapsed sidebar (icons only) ─────────────────────────── */
+:root { --visuauth-sidebar-w-collapsed: 72px; }
+
+.va-shell.va-collapsed { grid-template-columns: var(--visuauth-sidebar-w-collapsed) 1fr; }
+
+.va-shell.va-collapsed .va-sidebar { padding-left: var(--visuauth-space-2); padding-right: var(--visuauth-space-2); }
+
+/* Collapse toggle centres in the narrow rail (head height unchanged → no shift) */
+.va-shell.va-collapsed .va-sidebar-head { justify-content: center; }
+
+/* Nav: centre icons, hide labels */
+.va-shell.va-collapsed .va-nav a { justify-content: center; padding-left: 0; padding-right: 0; }
+.va-shell.va-collapsed .va-nav a span { display: none; }
+
+/* Footer: centre the theme button, hide its label + the selects */
+.va-shell.va-collapsed .va-tenant-indicator .va-btn { justify-content: center; }
+.va-shell.va-collapsed .va-tenant-indicator .va-btn span { display: none; }
+.va-shell.va-collapsed .va-tenant-indicator select { display: none; }
+
+/* ===========================================================================
+   5. CARDS & CONTAINERS
+   =========================================================================== */
 .va-card {
-    border: 1px solid var(--visuauth-border);
-    border-radius: var(--visuauth-radius);
-    background: var(--visuauth-bg);
-    /* overflow-x: auto so wide tables stay scrollable on narrow screens
-     * instead of clipping. overflow-y must stay visible so hx-confirm
-     * dialogs and similar absolutely-positioned UI are not trapped. */
-    overflow-x: auto;
+  background: var(--visuauth-elevated);
+  border: 1px solid var(--visuauth-border);
+  border-radius: var(--visuauth-radius-lg);
+  box-shadow: var(--visuauth-shadow-xs);
+  overflow-x: auto;            /* let wide tables scroll inside the card */
+  margin-bottom: var(--visuauth-space-6);
 }
 
+.va-detail-card {
+  background: var(--visuauth-elevated);
+  border: 1px solid var(--visuauth-border);
+  border-radius: var(--visuauth-radius-lg);
+  box-shadow: var(--visuauth-shadow-xs);
+  padding: var(--visuauth-space-6);
+  margin-bottom: var(--visuauth-space-6);
+}
+
+.va-detail-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--visuauth-space-4);
+  margin-bottom: var(--visuauth-space-5);
+  padding-bottom: var(--visuauth-space-4);
+  border-bottom: 1px solid var(--visuauth-border);
+}
+
+.va-detail-card-header h2,
+.va-detail-card-header h3 {
+  margin: 0;
+  font-size: var(--visuauth-text-lg);
+  font-weight: var(--visuauth-fw-semibold);
+  color: var(--visuauth-fg);
+}
+
+/* ===========================================================================
+   6. TABLES
+   =========================================================================== */
 .va-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.95rem;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--visuauth-text-base);
 }
 
-.va-table th,
-.va-table td {
-    text-align: left;
-    padding: 0.75rem 1rem;
-    border-bottom: 1px solid var(--visuauth-border);
+.va-table thead th {
+  text-align: left;
+  padding: var(--visuauth-space-3) var(--visuauth-space-4);
+  font-size: var(--visuauth-text-xs);
+  font-weight: var(--visuauth-fw-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--visuauth-muted);
+  background: var(--visuauth-surface);
+  border-bottom: 1px solid var(--visuauth-border);
+  white-space: nowrap;
 }
 
-.va-table th {
-    background: var(--visuauth-surface);
-    font-weight: 600;
-    font-size: 0.85rem;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--visuauth-muted);
+.va-table tbody td {
+  padding: var(--visuauth-space-3) var(--visuauth-space-4);
+  border-bottom: 1px solid var(--visuauth-border);
+  color: var(--visuauth-fg);
+  vertical-align: middle;
 }
 
-.va-table tbody tr:last-child td {
-    border-bottom: none;
+.va-table tbody tr:last-child td { border-bottom: 0; }
+
+.va-table tbody tr {
+  transition: background-color var(--visuauth-duration) var(--visuauth-ease);
 }
 
-.va-table tbody tr:hover {
-    background: var(--visuauth-surface);
-}
+.va-table tbody tr:hover { background: var(--visuauth-hover); }
 
-.va-badge {
-    display: inline-block;
-    padding: 0.15rem 0.5rem;
-    font-size: 0.8rem;
-    border-radius: 9999px;
-    background: var(--visuauth-surface);
-    border: 1px solid var(--visuauth-border);
-    color: var(--visuauth-muted);
-}
-
-.va-badge.va-success {
-    background: #ecfdf5;
-    color: var(--visuauth-success);
-    border-color: #bbf7d0;
-}
-
-.va-badge.va-danger {
-    background: #fef2f2;
-    color: var(--visuauth-danger);
-    border-color: #fecaca;
-}
-
-.va-muted {
-    color: var(--visuauth-muted);
-}
-
-.va-pagination {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.75rem 1rem;
-    border-top: 1px solid var(--visuauth-border);
-    background: var(--visuauth-surface);
-    font-size: 0.9rem;
-}
-
-.va-pagination a,
-.va-pagination button.va-pagination-prev,
-.va-pagination span.va-disabled {
-    color: var(--visuauth-primary);
-    text-decoration: none;
-    padding: 0.25rem 0.5rem;
-    border-radius: var(--visuauth-radius);
-}
-
-/* "Previous" is a real <button> (it walks the browser history rather than
-   navigating to a URL) styled to match its link siblings. */
-.va-pagination button.va-pagination-prev {
-    border: none;
-    background: none;
-    font: inherit;
-    cursor: pointer;
-}
-
-.va-pagination span.va-disabled {
-    color: var(--visuauth-muted);
-    pointer-events: none;
-}
-
-.va-pagination a:hover,
-.va-pagination button.va-pagination-prev:hover {
-    background: var(--visuauth-border);
-}
-
-.va-empty {
-    padding: 3rem 1rem;
-    text-align: center;
-    color: var(--visuauth-muted);
-}
-
-.htmx-indicator {
-    opacity: 0;
-    transition: opacity 200ms;
-}
-
-.htmx-request .htmx-indicator,
-.htmx-request.htmx-indicator {
-    opacity: 1;
+.va-col-actions {
+  text-align: right;
+  width: 1%;
+  white-space: nowrap;
 }
 
 .va-row-link {
-    color: var(--visuauth-primary);
-    text-decoration: none;
-    font-weight: 500;
+  color: var(--visuauth-link);
+  font-weight: var(--visuauth-fw-medium);
+  text-decoration: none;
 }
 
-.va-row-link:hover {
-    text-decoration: underline;
+.va-row-link:hover { text-decoration: underline; }
+
+.va-row-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--visuauth-space-2);
+  justify-content: flex-end;
 }
 
-.va-back {
-    display: inline-block;
-    margin-bottom: 0.5rem;
-    color: var(--visuauth-primary);
-    text-decoration: none;
-    font-size: 0.9rem;
+/* ===========================================================================
+   7. FILTERS & SEARCH
+   =========================================================================== */
+.va-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--visuauth-space-2);
+  margin-bottom: var(--visuauth-space-4);
 }
 
-.va-back:hover {
-    text-decoration: underline;
+.va-search {
+  flex: 1 1 14rem;
+  min-width: 12rem;
 }
 
-.va-detail-subtitle {
-    margin-top: 0.25rem;
-    font-size: 0.95rem;
-    display: flex;
-    gap: 0.75rem;
-    align-items: center;
+.va-filter-select {
+  flex: 0 0 auto;
+  padding: var(--visuauth-space-2) var(--visuauth-space-8) var(--visuauth-space-2) var(--visuauth-space-3);
+  font-family: inherit;
+  font-size: var(--visuauth-text-base);
+  color: var(--visuauth-fg);
+  background-color: var(--visuauth-elevated);
+  /* chevron drawn with a gradient so it themes automatically */
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--visuauth-muted) 50%),
+    linear-gradient(135deg, var(--visuauth-muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 16px) calc(50% + 1px),
+    calc(100% - 11px) calc(50% + 1px);
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  border: 1px solid var(--visuauth-border-strong);
+  border-radius: var(--visuauth-radius);
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  transition: border-color var(--visuauth-duration) var(--visuauth-ease),
+              box-shadow var(--visuauth-duration) var(--visuauth-ease);
+}
+
+.va-filter-select:hover { border-color: var(--visuauth-muted); }
+
+.va-filter-select:focus-visible {
+  outline: none;
+  border-color: var(--visuauth-primary);
+  box-shadow: 0 0 0 3px var(--visuauth-ring);
+}
+
+/* ===========================================================================
+   8. FORMS
+   =========================================================================== */
+.va-form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--visuauth-space-5);
+}
+
+@media (min-width: 720px) {
+  .va-form-grid { grid-template-columns: 1fr 1fr; }
+  .va-form-grid .va-field-full { grid-column: 1 / -1; }
+}
+
+.va-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--visuauth-space-2);
+  min-width: 0;
+}
+
+.va-field-label {
+  font-size: var(--visuauth-text-xs);
+  font-weight: var(--visuauth-fw-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--visuauth-muted);
+}
+
+.va-field-hint {
+  font-size: var(--visuauth-text-xs);
+  color: var(--visuauth-faint);
+  line-height: 1.45;
+}
+
+.va-input,
+.va-shell textarea {
+  width: 100%;
+  padding: var(--visuauth-space-2) var(--visuauth-space-3);
+  font-family: inherit;
+  font-size: var(--visuauth-text-base);
+  line-height: 1.5;
+  color: var(--visuauth-fg);
+  background: var(--visuauth-elevated);
+  border: 1px solid var(--visuauth-border-strong);
+  border-radius: var(--visuauth-radius);
+  transition: border-color var(--visuauth-duration) var(--visuauth-ease),
+              box-shadow var(--visuauth-duration) var(--visuauth-ease);
+}
+
+.va-input::placeholder { color: var(--visuauth-faint); }
+
+.va-input:hover,
+.va-shell textarea:hover { border-color: var(--visuauth-muted); }
+
+.va-input:focus-visible,
+.va-shell textarea:focus-visible {
+  outline: none;
+  border-color: var(--visuauth-primary);
+  box-shadow: 0 0 0 3px var(--visuauth-ring);
+}
+
+.va-input:disabled {
+  background: var(--visuauth-surface-2);
+  color: var(--visuauth-muted);
+  cursor: not-allowed;
+}
+
+/* Password field + show/hide toggle */
+.va-password-wrap {
+  position: relative;
+  display: flex;
+}
+
+.va-password-wrap .va-input { padding-right: var(--visuauth-space-10); }
+
+.va-password-toggle {
+  position: absolute;
+  top: 50%;
+  right: var(--visuauth-space-2);
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--visuauth-radius-sm);
+  background: transparent;
+  color: var(--visuauth-muted);
+  cursor: pointer;
+  transition: background-color var(--visuauth-duration) var(--visuauth-ease),
+              color var(--visuauth-duration) var(--visuauth-ease);
+}
+
+.va-password-toggle:hover {
+  background: var(--visuauth-hover);
+  color: var(--visuauth-fg);
+}
+
+.va-password-toggle svg { width: 16px; height: 16px; }
+
+/* Checkboxes */
+.va-checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--visuauth-space-2);
+  font-size: var(--visuauth-text-base);
+  color: var(--visuauth-fg);
+  cursor: pointer;
+}
+
+.va-checkbox input[type="checkbox"],
+.va-checkbox input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--visuauth-primary);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.va-fieldset {
+  border: 1px solid var(--visuauth-border);
+  border-radius: var(--visuauth-radius);
+  padding: var(--visuauth-space-4);
+  margin: 0;
+}
+
+.va-fieldset legend {
+  padding: 0 var(--visuauth-space-2);
+  font-size: var(--visuauth-text-xs);
+  font-weight: var(--visuauth-fw-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--visuauth-muted);
+}
+
+.va-checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--visuauth-space-3);
+}
+
+/* Input group — e.g. email + locked domain suffix */
+.va-input-group {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--visuauth-border-strong);
+  border-radius: var(--visuauth-radius);
+  background: var(--visuauth-elevated);
+  overflow: hidden;
+  transition: border-color var(--visuauth-duration) var(--visuauth-ease),
+              box-shadow var(--visuauth-duration) var(--visuauth-ease);
+}
+
+.va-input-group:focus-within {
+  border-color: var(--visuauth-primary);
+  box-shadow: 0 0 0 3px var(--visuauth-ring);
+}
+
+.va-input-group-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: var(--visuauth-space-2) var(--visuauth-space-3);
+  font-family: inherit;
+  font-size: var(--visuauth-text-base);
+  color: var(--visuauth-fg);
+  background: transparent;
+  border: 0;
+}
+
+.va-input-group-input:focus-visible { outline: none; }
+
+.va-input-group-at {
+  display: flex;
+  align-items: center;
+  padding: 0 var(--visuauth-space-1);
+  color: var(--visuauth-muted);
+  background: var(--visuauth-surface);
+  font-weight: var(--visuauth-fw-medium);
+}
+
+.va-input-group-suffix {
+  display: flex;
+  align-items: center;
+  padding: 0 var(--visuauth-space-3);
+  color: var(--visuauth-muted);
+  background: var(--visuauth-surface);
+  border-left: 1px solid var(--visuauth-border);
+  font-size: var(--visuauth-text-base);
+  white-space: nowrap;
+}
+
+.va-input-group-select {
+  border: 0;
+  border-left: 1px solid var(--visuauth-border);
+  background: var(--visuauth-surface);
+  color: var(--visuauth-fg);
+  padding: 0 var(--visuauth-space-3);
+  font-family: inherit;
+  font-size: var(--visuauth-text-base);
+  cursor: pointer;
+}
+
+.va-input-group-select:focus-visible { outline: none; }
+
+/* ===========================================================================
+   9. BUTTONS
+   =========================================================================== */
+.va-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--visuauth-space-2);
+  padding: var(--visuauth-space-2) var(--visuauth-space-4);
+  font-family: inherit;
+  font-size: var(--visuauth-text-base);
+  font-weight: var(--visuauth-fw-medium);
+  line-height: 1.2;
+  white-space: nowrap;
+  /* Default (variant-less) appearance = a neutral "secondary" button, so a
+     bare `.va-btn` (e.g. row "Edit" actions) still reads as a button rather
+     than plain text. The -primary / -danger / -ghost / -secondary variants
+     are defined AFTER this rule and override these three properties. */
+  color: var(--visuauth-fg);
+  background: var(--visuauth-elevated);
+  border: 1px solid var(--visuauth-border-strong);
+  border-radius: var(--visuauth-radius);
+  cursor: pointer;
+  user-select: none;
+  text-decoration: none;
+  transition: background-color var(--visuauth-duration) var(--visuauth-ease),
+              border-color var(--visuauth-duration) var(--visuauth-ease),
+              color var(--visuauth-duration) var(--visuauth-ease),
+              box-shadow var(--visuauth-duration) var(--visuauth-ease),
+              transform var(--visuauth-duration) var(--visuauth-ease);
+}
+
+.va-btn:active { transform: translateY(0.5px); }
+
+.va-btn svg { width: 16px; height: 16px; }
+
+.va-btn:disabled,
+.va-btn.va-disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Primary — indigo fill */
+.va-btn-primary {
+  background: var(--visuauth-primary);
+  color: var(--visuauth-primary-fg);
+  box-shadow: var(--visuauth-shadow-xs);
+}
+.va-btn-primary:hover { background: var(--visuauth-primary-hover); }
+.va-btn-primary:active { background: var(--visuauth-primary-active); }
+
+/* Danger — red fill */
+.va-btn-danger {
+  background: var(--visuauth-danger);
+  color: var(--visuauth-danger-fg);
+}
+.va-btn-danger:hover { background: var(--visuauth-danger-hover); }
+
+/* Warning — amber fill */
+.va-btn-warning {
+  background: var(--visuauth-warning);
+  color: var(--visuauth-warning-fg);
+}
+.va-btn-warning:hover { background: var(--visuauth-warning-hover); }
+
+/* Ghost — transparent, border appears on hover */
+.va-btn-ghost {
+  background: transparent;
+  color: var(--visuauth-fg);
+  border-color: transparent;
+}
+.va-btn-ghost:hover {
+  background: var(--visuauth-hover);
+  border-color: var(--visuauth-border);
+}
+
+/* Secondary — surface fill with primary border (login page) */
+.va-btn-secondary {
+  background: var(--visuauth-elevated);
+  color: var(--visuauth-fg);
+  border-color: var(--visuauth-border-strong);
+}
+.va-btn-secondary:hover {
+  border-color: var(--visuauth-primary);
+  color: var(--visuauth-primary-soft-fg);
+  background: var(--visuauth-primary-soft);
+}
+
+/* Small / compact */
+.va-btn-small {
+  padding: var(--visuauth-space-1) var(--visuauth-space-3);
+  font-size: var(--visuauth-text-sm);
+  gap: var(--visuauth-space-1);
+}
+.va-btn-small svg { width: 14px; height: 14px; }
+
+/* Provider — full-width external login button */
+.va-btn-provider {
+  width: 100%;
+  justify-content: center;
+  gap: var(--visuauth-space-3);
+  padding: var(--visuauth-space-3) var(--visuauth-space-4);
+  background: var(--visuauth-elevated);
+  color: var(--visuauth-fg);
+  border-color: var(--visuauth-border-strong);
+  font-weight: var(--visuauth-fw-medium);
+}
+.va-btn-provider:hover {
+  background: var(--visuauth-surface);
+  border-color: var(--visuauth-muted);
+}
+
+/* ===========================================================================
+   10. BADGES & PILLS
+   =========================================================================== */
+.va-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--visuauth-space-1);
+  padding: 0.15rem 0.6rem;
+  font-size: var(--visuauth-text-xs);
+  font-weight: var(--visuauth-fw-medium);
+  line-height: 1.4;
+  border-radius: var(--visuauth-radius-full);
+  background: var(--visuauth-surface-2);
+  color: var(--visuauth-fg);
+  border: 1px solid var(--visuauth-border);
+}
+
+.va-badge.va-success {
+  background: var(--visuauth-success-soft);
+  color: var(--visuauth-success-soft-fg);
+  border-color: transparent;
+}
+.va-badge.va-danger {
+  background: var(--visuauth-danger-soft);
+  color: var(--visuauth-danger-soft-fg);
+  border-color: transparent;
+}
+
+/* Pills — smaller, uppercase */
+.va-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--visuauth-space-1);
+  padding: 0.1rem 0.5rem;
+  font-size: 0.6875rem;            /* 11px */
+  font-weight: var(--visuauth-fw-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1.5;
+  border-radius: var(--visuauth-radius-full);
+}
+
+.va-pill::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: var(--visuauth-radius-full);
+  background: currentColor;
+  opacity: 0.9;
+}
+
+.va-pill-success {
+  background: var(--visuauth-success-soft);
+  color: var(--visuauth-success-soft-fg);
+}
+.va-pill-danger {
+  background: var(--visuauth-danger-soft);
+  color: var(--visuauth-danger-soft-fg);
+}
+.va-pill-muted {
+  background: var(--visuauth-surface-2);
+  color: var(--visuauth-muted);
+}
+
+/* ===========================================================================
+   11. ALERTS
+   =========================================================================== */
+.va-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--visuauth-space-3);
+  padding: var(--visuauth-space-3) var(--visuauth-space-4);
+  border-radius: var(--visuauth-radius);
+  border: 1px solid var(--visuauth-border);
+  background: var(--visuauth-surface);
+  color: var(--visuauth-fg);
+  font-size: var(--visuauth-text-base);
+  line-height: 1.5;
+  margin-bottom: var(--visuauth-space-4);
+}
+
+.va-alert svg { width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px; }
+
+.va-alert-success {
+  background: var(--visuauth-success-soft);
+  border-color: color-mix(in srgb, var(--visuauth-success) 30%, transparent);
+  color: var(--visuauth-success-soft-fg);
+}
+.va-alert-danger {
+  background: var(--visuauth-danger-soft);
+  border-color: color-mix(in srgb, var(--visuauth-danger) 30%, transparent);
+  color: var(--visuauth-danger-soft-fg);
+}
+.va-alert-info {
+  background: var(--visuauth-info-soft);
+  border-color: color-mix(in srgb, var(--visuauth-info) 30%, transparent);
+  color: var(--visuauth-info-soft-fg);
+}
+.va-alert-warning {
+  background: var(--visuauth-warning-soft);
+  border-color: color-mix(in srgb, var(--visuauth-warning) 35%, transparent);
+  color: var(--visuauth-warning-soft-fg);
+}
+
+/* ===========================================================================
+   12. PAGINATION
+   =========================================================================== */
+.va-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--visuauth-space-3);
+  padding: var(--visuauth-space-3) var(--visuauth-space-4);
+  border-top: 1px solid var(--visuauth-border);
+  font-size: var(--visuauth-text-sm);
+  color: var(--visuauth-muted);
+}
+
+.va-pagination-prev,
+.va-pagination-next {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--visuauth-space-1);
+  padding: var(--visuauth-space-1) var(--visuauth-space-3);
+  font-family: inherit;
+  font-size: var(--visuauth-text-sm);
+  font-weight: var(--visuauth-fw-medium);
+  color: var(--visuauth-link);
+  background: transparent;
+  border: 1px solid var(--visuauth-border);
+  border-radius: var(--visuauth-radius);
+  cursor: pointer;
+  transition: background-color var(--visuauth-duration) var(--visuauth-ease),
+              border-color var(--visuauth-duration) var(--visuauth-ease);
+}
+
+.va-pagination-prev:hover,
+.va-pagination-next:hover {
+  background: var(--visuauth-hover);
+  border-color: var(--visuauth-border-strong);
+}
+
+.va-pagination .va-disabled {
+  color: var(--visuauth-faint);
+  pointer-events: none;
+  border-color: var(--visuauth-border);
+  opacity: 0.6;
+}
+
+/* ===========================================================================
+   13. DASHBOARD
+   =========================================================================== */
+/* KPI grid */
+.va-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: var(--visuauth-space-4);
+  margin-bottom: var(--visuauth-space-6);
+}
+
+.va-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: var(--visuauth-space-2);
+  padding: var(--visuauth-space-5);
+  background: var(--visuauth-elevated);
+  border: 1px solid var(--visuauth-border);
+  border-radius: var(--visuauth-radius-lg);
+  box-shadow: var(--visuauth-shadow-xs);
+  text-decoration: none;
+  color: inherit;
+  transition: border-color var(--visuauth-duration) var(--visuauth-ease),
+              box-shadow var(--visuauth-duration) var(--visuauth-ease),
+              transform var(--visuauth-duration) var(--visuauth-ease);
+}
+
+.va-kpi:hover {
+  border-color: var(--visuauth-primary);
+  box-shadow: 0 0 0 3px var(--visuauth-ring), var(--visuauth-shadow-sm);
+}
+
+.va-kpi:hover .va-kpi-label { color: var(--visuauth-primary-soft-fg); }
+
+/* Variant tiles hover in their own theme colour, not indigo */
+.va-kpi-good:hover {
+  border-color: var(--visuauth-success);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--visuauth-success) 32%, transparent), var(--visuauth-shadow-sm);
+}
+.va-kpi-good:hover .va-kpi-label { color: var(--visuauth-success-soft-fg); }
+
+.va-kpi-warn:hover {
+  border-color: var(--visuauth-warning);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--visuauth-warning) 32%, transparent), var(--visuauth-shadow-sm);
+}
+.va-kpi-warn:hover .va-kpi-label { color: var(--visuauth-warning-soft-fg); }
+
+.va-kpi-label {
+  font-size: var(--visuauth-text-xs);
+  font-weight: var(--visuauth-fw-medium);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--visuauth-muted);
+}
+
+.va-kpi-value {
+  font-size: var(--visuauth-text-2xl);
+  font-weight: var(--visuauth-fw-bold);
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: var(--visuauth-fg);
+}
+
+.va-kpi-warn .va-kpi-value { color: var(--visuauth-warning); }
+.va-kpi-good .va-kpi-value { color: var(--visuauth-success); }
+.va-kpi-warn { border-top: 2px solid var(--visuauth-warning); }
+.va-kpi-good { border-top: 2px solid var(--visuauth-success); }
+
+/* 2-column dashboard layout */
+.va-dashboard-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--visuauth-space-5);
+  align-items: start;
+}
+
+.va-dashboard-chart,
+.va-dashboard-health,
+.va-dashboard-activity {
+  background: var(--visuauth-elevated);
+  border: 1px solid var(--visuauth-border);
+  border-radius: var(--visuauth-radius-lg);
+  box-shadow: var(--visuauth-shadow-xs);
+  padding: var(--visuauth-space-5);
+}
+
+.va-dashboard-activity { grid-column: 1 / -1; }
+
+.va-dashboard-chart h2,
+.va-dashboard-health h2,
+.va-dashboard-activity h2 {
+  margin: 0 0 var(--visuauth-space-4);
+  font-size: var(--visuauth-text-md);
+  font-weight: var(--visuauth-fw-semibold);
+  color: var(--visuauth-fg);
+}
+
+/* Bar chart — 7 columns */
+.va-bar-chart {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--visuauth-space-3);
+  align-items: end;
+  height: 200px;
+  padding-top: var(--visuauth-space-4);
+}
+
+.va-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--visuauth-space-2);
+  height: 100%;
+  justify-content: flex-end;
+}
+
+.va-bar-value {
+  font-size: var(--visuauth-text-xs);
+  font-weight: var(--visuauth-fw-semibold);
+  color: var(--visuauth-fg);
+}
+
+.va-bar-track {
+  width: 100%;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: flex-end;
+  background: var(--visuauth-surface-2);
+  border-radius: var(--visuauth-radius-sm);
+  overflow: hidden;
+}
+
+.va-bar-fill {
+  width: 100%;
+  height: var(--bar-height, 50%);
+  border-radius: var(--visuauth-radius-sm) var(--visuauth-radius-sm) 0 0;
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--visuauth-primary) 88%, white 12%),
+    var(--visuauth-primary));
+  transition: height 0.5s var(--visuauth-ease);
+}
+
+.va-bar-label {
+  font-size: var(--visuauth-text-xs);
+  color: var(--visuauth-muted);
+}
+
+/* Health key-value list */
+.va-health-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--visuauth-space-1);
+  margin: 0;
+}
+
+.va-health-list > div,
+.va-health-list dl > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--visuauth-space-3);
+  padding: var(--visuauth-space-2) 0;
+  border-bottom: 1px solid var(--visuauth-border);
+  font-size: var(--visuauth-text-base);
+}
+.va-health-list > div:last-child { border-bottom: 0; }
+
+.va-health-list dt { color: var(--visuauth-muted); margin: 0; }
+.va-health-list dd { margin: 0; font-weight: var(--visuauth-fw-medium); color: var(--visuauth-fg); }
+
+/* Activity feed */
+.va-activity-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.va-activity-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: var(--visuauth-space-4);
+  padding: var(--visuauth-space-3) 0;
+  border-bottom: 1px solid var(--visuauth-border);
+  font-size: var(--visuauth-text-base);
+}
+.va-activity-item:last-child { border-bottom: 0; }
+
+.va-activity-item time,
+.va-activity-item .va-activity-time {
+  font-family: var(--visuauth-font-mono);
+  font-size: var(--visuauth-text-xs);
+  color: var(--visuauth-muted);
+  white-space: nowrap;
+}
+
+.va-activity-item .va-activity-action { color: var(--visuauth-fg); }
+
+/* ===========================================================================
+   14. CODE & MONOSPACE
+   =========================================================================== */
+.va-code-snippet {
+  display: block;
+  padding: var(--visuauth-space-4);
+  font-family: var(--visuauth-font-mono);
+  font-size: var(--visuauth-text-sm);
+  line-height: 1.6;
+  color: #e2e8f0;
+  background: #0b1020;             /* fixed dark, intentional in both themes */
+  border: 1px solid #1e293b;
+  border-radius: var(--visuauth-radius);
+  overflow-x: auto;
+  white-space: pre;
+  margin: 0 0 var(--visuauth-space-4);
 }
 
 .va-detail-id,
 .va-tenant-id {
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: 0.8rem;
-    background: var(--visuauth-surface);
-    padding: 0.1rem 0.4rem;
-    border-radius: var(--visuauth-radius);
-    border: 1px solid var(--visuauth-border);
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.4rem;
+  font-family: var(--visuauth-font-mono);
+  font-size: 0.8125em;
+  color: var(--visuauth-muted);
+  background: var(--visuauth-surface-2);
+  border: 1px solid var(--visuauth-border);
+  border-radius: var(--visuauth-radius-sm);
 }
 
-.va-tenant-indicator {
-    display: flex;
-    flex-direction: column;
-    gap: 0.2rem;
-    /* Symmetric vertical margin so the tenant + language switchers
-     * (both .va-tenant-indicator) sit at the same distance from the
-     * nav above AND from each other. Margins collapse between
-     * consecutive siblings, so tenant-bottom 1.25rem + language-top
-     * 1.25rem still renders as a single 1.25rem gap — no double spacing. */
-    margin: 1.25rem 0;
-    padding: 0.5rem 0.75rem;
-    background: var(--visuauth-bg);
-    border: 1px dashed var(--visuauth-border);
-    border-radius: var(--visuauth-radius);
+/* ===========================================================================
+   15. UTILITIES
+   =========================================================================== */
+.va-muted { color: var(--visuauth-muted); }
+
+.va-required { color: var(--visuauth-danger); margin-left: 1px; }
+
+.va-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
 }
 
-.va-tenant-indicator .va-field-label {
-    font-size: 0.7rem;
+.va-disabled {
+  opacity: 0.55;
+  pointer-events: none;
 }
 
-.va-tenant-switcher {
-    width: 100%;
-    margin-top: 0.25rem;
+.va-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--visuauth-space-2);
+  padding: var(--visuauth-space-12) var(--visuauth-space-4);
+  text-align: center;
+  color: var(--visuauth-muted);
 }
 
-.va-lang-switcher {
-    display: flex;
-    flex-direction: column;
-    gap: 0.2rem;
-    margin-top: 1rem;
-}
+.va-empty svg { width: 32px; height: 32px; opacity: 0.5; }
 
-.va-lang-switcher select {
-    margin-top: 0.25rem;
+.va-back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--visuauth-space-1);
+  margin-bottom: var(--visuauth-space-4);
+  font-size: var(--visuauth-text-sm);
+  font-weight: var(--visuauth-fw-medium);
+  color: var(--visuauth-muted);
+  text-decoration: none;
+  transition: color var(--visuauth-duration) var(--visuauth-ease);
 }
+.va-back:hover { color: var(--visuauth-fg); }
+.va-back svg { width: 15px; height: 15px; }
 
-.va-detail-status {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem;
-    align-items: center;
-}
+/* ===========================================================================
+   15b. RAZOR TEMPLATE CLASSES (added)
+   ---------------------------------------------------------------------------
+   Styling for classes the Razor templates already emit. All rules consume the
+   existing --visuauth-* tokens, so light & dark themes work automatically.
+   =========================================================================== */
 
-.va-detail-card {
-    padding: 1.25rem 1.5rem;
-    margin-bottom: 1.5rem;
-}
-
-.va-detail-card h2 {
-    margin: 0 0 1rem;
-    font-size: 1.05rem;
-    color: var(--visuauth-fg);
-}
-
-.va-count {
-    font-weight: 400;
-    font-size: 0.9rem;
-}
-
-.va-dl {
-    display: grid;
-    grid-template-columns: 12rem 1fr;
-    gap: 0.5rem 1rem;
-    margin: 0;
-}
-
-.va-dl dt {
-    font-weight: 600;
-    color: var(--visuauth-muted);
-    font-size: 0.85rem;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    align-self: center;
-}
-
-.va-dl dd {
-    margin: 0;
-    color: var(--visuauth-fg);
-}
-
-.va-dl code,
-.va-table code {
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: 0.85rem;
-    background: var(--visuauth-surface);
-    padding: 0.1rem 0.35rem;
-    border-radius: 0.25rem;
-    border: 1px solid var(--visuauth-border);
-}
-
-.va-chip-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem;
-}
-
-.va-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    padding: 0.25rem 0.6rem;
-    background: var(--visuauth-surface);
-    border: 1px solid var(--visuauth-border);
-    border-radius: 9999px;
-    font-size: 0.85rem;
-}
-
-.va-chip-removable {
-    padding-right: 0.25rem;
-}
-
-.va-chip-removable form {
-    margin: 0;
-    display: inline-flex;
-}
-
-.va-chip-remove {
-    appearance: none;
-    border: none;
-    background: transparent;
-    color: var(--visuauth-muted);
-    cursor: pointer;
-    font-size: 1rem;
-    line-height: 1;
-    padding: 0 0.4rem;
-    border-radius: 9999px;
-    transition: background 120ms ease, color 120ms ease;
-}
-
-.va-chip-remove:hover,
-.va-chip-remove:focus-visible {
-    background: var(--visuauth-danger);
-    color: #ffffff;
-    outline: none;
-}
-
-.va-inline-form {
-    display: flex;
-    align-items: flex-end;
-    gap: 0.5rem;
-    margin-top: 1rem;
-    flex-wrap: wrap;
-}
-
-.va-inline-form .va-inline-field {
-    flex: 1 1 14rem;
-    min-width: 12rem;
-    margin: 0;
-}
-
-/* Edit grid used by the external-providers inline edit row — two-column
- * layout so ClientId + ClientSecret sit side-by-side on desktop and stack
- * cleanly on narrow screens. The "span 2" classes inside force checkboxes
- * to take the full width below the fields. */
-.va-edit-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: 0.75rem 1rem;
-    align-items: end;
-}
-
-.va-edit-grid > *:first-child {
-    grid-column: span 2;
-}
-
-.va-inline-form:has(.va-edit-grid) {
-    display: block;
-}
-.va-edit-grid .va-field {
-    min-width: 0;
-}
-.va-edit-grid .va-input {
-    width: 100%;
-}
-
-@media (max-width: 720px) {
-    .va-edit-grid {
-        grid-template-columns: minmax(0, 1fr);
-    }
-    .va-edit-grid > *:first-child {
-        grid-column: span 1;
-    }
-}
-
-.va-empty-inline {
-    margin: 0;
-    color: var(--visuauth-muted);
-    font-size: 0.9rem;
-}
-
-/* External providers admin — section heading shared by Active / Available /
- * Orphan blocks. Centres the title baseline with the muted hint to the right
- * so the page reads as four stacked groups instead of one long table. */
-.va-section-heading {
-    padding: 1rem 1rem 0.5rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: 1rem;
-    flex-wrap: wrap;
-}
-
-.va-section-heading h2 {
-    margin: 0;
-    font-size: 1.1rem;
-}
-
-/* "Available providers" grid — auto-fills 220px cards with a comfortable gap
- * so 20 entries lay out as 3–5 columns depending on viewport without
- * media-query gymnastics. */
+/* ── External-provider ghost cards (suggested / not-yet-configured) ──────── */
 .va-ghost-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 0.75rem;
-    padding: 0 1rem 1rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: var(--visuauth-space-4);
+  margin-bottom: var(--visuauth-space-6);
 }
 
 .va-ghost-card {
-    border: 1px dashed var(--visuauth-border);
-    border-radius: var(--visuauth-radius);
-    padding: 0.75rem;
-    background: var(--visuauth-surface);
-    opacity: 0.92;
+  display: flex;
+  flex-direction: column;
+  gap: var(--visuauth-space-3);
+  padding: var(--visuauth-space-4);
+  background: var(--visuauth-elevated);
+  border: 1px solid var(--visuauth-border);
+  border-radius: var(--visuauth-radius-lg);
+  box-shadow: var(--visuauth-shadow-xs);
+  opacity: 0.72;
+  transition: opacity var(--visuauth-duration) var(--visuauth-ease),
+              border-color var(--visuauth-duration) var(--visuauth-ease),
+              box-shadow var(--visuauth-duration) var(--visuauth-ease),
+              transform var(--visuauth-duration) var(--visuauth-ease);
 }
-
 .va-ghost-card:hover {
-    opacity: 1;
-    border-style: solid;
+  opacity: 1;
+  border-color: var(--visuauth-border-strong);
+  box-shadow: var(--visuauth-shadow-sm);
+  transform: translateY(-1px);
 }
 
 .va-ghost-card-header {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: var(--visuauth-space-3);
+  font-weight: var(--visuauth-fw-semibold);
+  color: var(--visuauth-fg);
 }
+.va-ghost-card-header svg,
+.va-ghost-card-header img { width: 20px; height: 20px; flex-shrink: 0; }
 
-.va-ghost-card-header > div:first-of-type {
-    flex: 1;
-    min-width: 0;
-}
-
+/* Muted "not wired" badge variant */
+.va-ghost-badge.va-badge,
 .va-ghost-badge {
-    font-size: 0.7rem;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
+  background: var(--visuauth-surface-2);
+  color: var(--visuauth-muted);
+  border-color: var(--visuauth-border);
+  align-self: flex-start;
 }
 
+.va-ghost-details { font-size: var(--visuauth-text-sm); }
 .va-ghost-details > summary {
-    cursor: pointer;
-    font-size: 0.85rem;
-    color: var(--visuauth-primary);
+  cursor: pointer;
+  color: var(--visuauth-muted);
+  padding: var(--visuauth-space-1) 0;
+  font-weight: var(--visuauth-fw-medium);
+  list-style: none;
 }
-
-/* Wiring snippet inside ghost-card — fixed-pitch font, scrolls horizontally
- * on overflow so long package ids don't break the card layout. */
-.va-code-snippet {
-    background: #0f172a;
-    color: #e2e8f0;
-    padding: 0.75rem;
-    border-radius: var(--visuauth-radius);
-    overflow-x: auto;
-    font-size: 0.78rem;
-    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
-    margin: 0.5rem 0;
-    white-space: pre;
+.va-ghost-details > summary::-webkit-details-marker { display: none; }
+.va-ghost-details > summary::before {
+  content: "▸";
+  display: inline-block;
+  margin-right: var(--visuauth-space-2);
+  transition: transform var(--visuauth-duration) var(--visuauth-ease);
 }
+.va-ghost-details[open] > summary::before { transform: rotate(90deg); }
+.va-ghost-details > summary:hover { color: var(--visuauth-fg); }
 
-.va-code-snippet code {
-    background: transparent;
-    color: inherit;
-    padding: 0;
-}
-
-/* Source badges next to Client ID / Secret cells on the external-providers
- * admin page. Two flavours (DB / code) with subtly different palettes so
- * the operator can tell at a glance where a value came from. Tooltip
- * (HTML title attribute) explains who wins when both badges render. */
-.va-source-row {
-    display: flex;
-    gap: 0.25rem;
-    margin-top: 0.25rem;
-    flex-wrap: wrap;
-}
-
-/* Icon-only badge — squarer footprint, no internal gap. The hover title
- * (and aria-label for screen readers) carries the prose; the icon shape
- * tells sighted users which source the value came from at a glance. */
-.va-source-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0.2rem;
-    border-radius: var(--visuauth-radius);
-    line-height: 1;
-    cursor: help;
-    border: 1px solid var(--visuauth-border);
-    background: var(--visuauth-surface);
-}
-
-.va-source-badge svg {
-    flex: 0 0 12px;
-}
-
-/* DB-sourced — uses the primary tint so it stands out as "this is the live
- * value the runtime uses". */
-.va-source-badge-db {
-    color: var(--visuauth-primary);
-    border-color: color-mix(in srgb, var(--visuauth-primary) 40%, transparent);
-    background: color-mix(in srgb, var(--visuauth-primary) 8%, var(--visuauth-surface));
-}
-
-/* Code-sourced — muted grey to read as "fallback" / "secondary" when paired
- * with a DB badge. */
-.va-source-badge-code {
-    color: var(--visuauth-muted);
-}
-
-/* Secret-present mask — five asterisks, monospace so the dots align and
- * letter-spaced so they read as a deliberate placeholder rather than text
- * we're trying to obscure. The badges underneath disclose the source. */
-.va-secret-mask {
-    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
-    letter-spacing: 0.15em;
-    color: var(--visuauth-muted);
-}
-
-/* Compact "docs ↗" inline link next to a provider's name on the Active
- * row. Sized small + muted so it doesn't compete with the provider
- * display name but stays one click away from the official setup page. */
-.va-docs-link-inline {
-    margin-left: 0.5rem;
-    font-size: 0.78rem;
-    color: var(--visuauth-primary);
-    text-decoration: none;
-    white-space: nowrap;
-}
-
-.va-docs-link-inline:hover {
-    text-decoration: underline;
-}
-
-/* Slightly larger banner shown inside the inline edit form — the moment
- * the admin is about to paste credentials is exactly when they want the
- * provider's docs handy. */
+/* Docs callout + links */
 .va-docs-banner {
-    margin-top: 0.4rem;
-    font-size: 0.85rem;
-    color: var(--visuauth-muted);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--visuauth-space-2);
+  margin-top: var(--visuauth-space-2);
+  padding: var(--visuauth-space-3);
+  background: var(--visuauth-info-soft);
+  color: var(--visuauth-info-soft-fg);
+  border: 1px solid color-mix(in srgb, var(--visuauth-info) 30%, transparent);
+  border-radius: var(--visuauth-radius);
+  font-size: var(--visuauth-text-sm);
+  line-height: 1.5;
 }
-
 .va-docs-link {
-    color: var(--visuauth-primary);
-    text-decoration: none;
-    font-weight: 500;
+  color: var(--visuauth-link);
+  font-weight: var(--visuauth-fw-medium);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.va-docs-link:hover { text-decoration: underline; }
+.va-docs-link-inline {
+  color: var(--visuauth-link);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
 }
 
-.va-docs-link:hover {
-    text-decoration: underline;
+/* ── Copy-to-clipboard (temp passwords / secrets) ────────────────────────── */
+.va-copy-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--visuauth-space-2);
+}
+.va-temp-password {
+  font-family: var(--visuauth-font-mono);
+  font-size: var(--visuauth-text-sm);
+  padding: 0.15rem 0.5rem;
+  background: var(--visuauth-surface-2);
+  border: 1px solid var(--visuauth-border);
+  border-radius: var(--visuauth-radius-sm);
+  color: var(--visuauth-fg);
+  user-select: all;
+  white-space: nowrap;
+}
+.va-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  padding: 0;
+  border: 1px solid var(--visuauth-border);
+  border-radius: var(--visuauth-radius-sm);
+  background: var(--visuauth-elevated);
+  color: var(--visuauth-muted);
+  cursor: pointer;
+  transition: background-color var(--visuauth-duration) var(--visuauth-ease),
+              color var(--visuauth-duration) var(--visuauth-ease),
+              border-color var(--visuauth-duration) var(--visuauth-ease);
+}
+.va-copy-btn:hover {
+  background: var(--visuauth-hover);
+  color: var(--visuauth-fg);
+  border-color: var(--visuauth-border-strong);
+}
+.va-copy-icon { width: 15px; height: 15px; }
+.va-copy-default,
+.va-copy-success { display: inline-flex; align-items: center; }
+.va-copy-success { color: var(--visuauth-success); }
+.va-copy-success svg { width: 15px; height: 15px; }
+
+.va-secret-mask {
+  font-family: var(--visuauth-font-mono);
+  letter-spacing: 0.12em;
+  color: var(--visuauth-muted);
 }
 
-/* Visually-hidden but accessible-tree visible. Used by form controls
- * whose label exists for screen readers but doesn't fit the inline
- * filter row visually (audit-log filters, etc). */
-.va-sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
+/* ── Removable role chips ────────────────────────────────────────────────── */
+.va-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--visuauth-space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.va-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--visuauth-space-2);
+  padding: 0.2rem 0.6rem;
+  background: var(--visuauth-surface-2);
+  border: 1px solid var(--visuauth-border);
+  border-radius: var(--visuauth-radius-full);
+  font-size: var(--visuauth-text-sm);
+  color: var(--visuauth-fg);
+}
+.va-chip-removable { padding-right: 0.3rem; }
+.va-chip-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--visuauth-radius-full);
+  background: transparent;
+  color: var(--visuauth-muted);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color var(--visuauth-duration) var(--visuauth-ease),
+              color var(--visuauth-duration) var(--visuauth-ease);
+}
+.va-chip-remove:hover { background: var(--visuauth-danger-soft); color: var(--visuauth-danger); }
+
+/* ── User-detail page layout ─────────────────────────────────────────────── */
+.va-dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--visuauth-space-2) var(--visuauth-space-6);
+  margin: 0;
+}
+.va-dl dt {
+  font-size: var(--visuauth-text-xs);
+  font-weight: var(--visuauth-fw-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--visuauth-muted);
+  align-self: center;
+}
+.va-dl dd { margin: 0; color: var(--visuauth-fg); }
+
+.va-edit-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--visuauth-space-5);
+}
+@media (min-width: 720px) {
+  .va-edit-grid { grid-template-columns: 1fr 1fr; }
+  .va-edit-grid .va-field-full { grid-column: 1 / -1; }
 }
 
-.va-detail-card .va-table {
-    border-top: 1px solid var(--visuauth-border);
+/* Danger zone — destructive-action card */
+.va-danger-zone {
+  border-color: color-mix(in srgb, var(--visuauth-danger) 35%, var(--visuauth-border));
+}
+.va-danger-zone .va-detail-card-header,
+.va-danger-zone .va-card-header {
+  border-bottom-color: color-mix(in srgb, var(--visuauth-danger) 22%, var(--visuauth-border));
+}
+.va-danger-zone .va-detail-card-header h2,
+.va-danger-zone .va-card-header h2,
+.va-danger-zone .va-section-heading { color: var(--visuauth-danger); }
+
+.va-form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--visuauth-space-2);
+  margin-top: var(--visuauth-space-6);
 }
 
-@media (max-width: 720px) {
-    .va-dl {
-        grid-template-columns: 1fr;
-        gap: 0.25rem;
-    }
-
-    .va-dl dt {
-        margin-top: 0.5rem;
-    }
+.va-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--visuauth-space-3);
+  margin-bottom: var(--visuauth-space-4);
+  font-size: var(--visuauth-text-md);
+  font-weight: var(--visuauth-fw-semibold);
+  color: var(--visuauth-fg);
 }
 
-.va-detail-card-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    margin-bottom: 1rem;
+.va-detail-subtitle {
+  margin: calc(-1 * var(--visuauth-space-2)) 0 var(--visuauth-space-4);
+  font-size: var(--visuauth-text-base);
 }
 
-.va-detail-card-header h2 {
-    margin: 0;
-    font-size: 1.05rem;
-    color: var(--visuauth-fg);
-}
-
-.va-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.4rem;
-    padding: 0.5rem 0.9rem;
-    border: 1px solid var(--visuauth-border);
-    background: var(--visuauth-bg);
-    color: var(--visuauth-fg);
-    border-radius: var(--visuauth-radius);
-    font-size: 0.9rem;
-    font-family: inherit;
-    cursor: pointer;
-    text-decoration: none;
-    line-height: 1.2;
-}
-
-.va-btn:hover {
-    background: var(--visuauth-surface);
-}
-
-.va-btn:focus-visible {
-    outline: 2px solid var(--visuauth-primary);
-    outline-offset: 1px;
-}
-
-.va-btn-primary {
-    background: var(--visuauth-primary);
-    color: var(--visuauth-primary-fg);
-    border-color: var(--visuauth-primary);
-}
-
-.va-btn-primary:hover {
-    filter: brightness(0.95);
-    background: var(--visuauth-primary);
-}
-
-.va-btn-warning {
-    background: #fef3c7;
-    color: #92400e;
-    border-color: #fde68a;
-}
-
-.va-btn-warning:hover {
-    background: #fde68a;
-}
-
-.va-btn-danger {
-    background: var(--visuauth-danger);
-    color: #ffffff;
-    border-color: var(--visuauth-danger);
-}
-
-.va-btn-danger:hover {
-    filter: brightness(0.92);
-    background: var(--visuauth-danger);
-}
-
-.va-btn-ghost {
-    background: transparent;
-}
-
-.va-btn-small {
-    padding: 0.3rem 0.65rem;
-    font-size: 0.8rem;
+.va-detail-status {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--visuauth-space-2);
 }
 
 .va-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-top: 1.25rem;
-    padding-top: 1.25rem;
-    border-top: 1px solid var(--visuauth-border);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--visuauth-space-2);
 }
 
-.va-actions form {
-    margin: 0;
+/* ── Card header + page-header bits ──────────────────────────────────────── */
+.va-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--visuauth-space-3);
+  padding: var(--visuauth-space-4) var(--visuauth-space-5);
+  border-bottom: 1px solid var(--visuauth-border);
 }
-
-.va-form-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 0.9rem;
-    margin-bottom: 1rem;
+.va-card-header h2,
+.va-card-header h3 {
+  margin: 0;
+  font-size: var(--visuauth-text-md);
+  font-weight: var(--visuauth-fw-semibold);
+  color: var(--visuauth-fg);
 }
-
-@media (min-width: 720px) {
-    .va-form-grid {
-        grid-template-columns: 1fr 1fr;
-    }
-}
-
-.va-field {
-    display: flex;
-    flex-direction: column;
-    gap: 0.3rem;
-}
-
-.va-field-label {
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: var(--visuauth-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-}
-
-.va-input {
-    padding: 0.5rem 0.75rem;
-    border: 1px solid var(--visuauth-border);
-    border-radius: var(--visuauth-radius);
-    font-size: 0.95rem;
-    font-family: inherit;
-    background: var(--visuauth-bg);
-    color: var(--visuauth-fg);
-}
-
-/* Password show / hide widget — wrap input + button absolutely positioned
- * on the right edge so the eye sits inside the field's padding. The input
- * gets extra right-padding so the typed value never collides with the icon. */
-.va-password-wrap {
-    position: relative;
-    display: block;
-}
-
-.va-password-wrap .va-input {
-    padding-right: 2.5rem;
-    width: 100%;
-}
-
-/* Edge/IE add a native eye and X button inside password inputs via the
- * `::-ms-reveal` and `::-ms-clear` pseudo-elements. They would stack next
- * to our custom toggle and confuse the user — hide them. */
-.va-password-wrap .va-input::-ms-reveal,
-.va-password-wrap .va-input::-ms-clear {
-    display: none;
-    width: 0;
-    height: 0;
-}
-
-.va-password-toggle {
-    position: absolute;
-    right: 0.4rem;
-    top: 50%;
-    transform: translateY(-50%);
-    appearance: none;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    padding: 0.3rem;
-    color: var(--visuauth-muted);
-    border-radius: var(--visuauth-radius);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.va-password-toggle:hover {
-    color: var(--visuauth-fg);
-}
-
-.va-password-toggle:focus-visible {
-    outline: 2px solid var(--visuauth-primary);
-    outline-offset: 1px;
-}
-
-/*
- * Visibility is controlled by the HTML `hidden` attribute — JS flips it
- * directly on each SVG when the user clicks the toggle. Browser user-agent
- * styles map [hidden] to display:none with high enough specificity to win
- * against any stray rule, so we keep the CSS here strictly to size /
- * style the icons.
- */
-.va-icon-eye,
-.va-icon-eye-off {
-    width: 18px;
-    height: 18px;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 2;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-}
-
-/* Some legacy browsers ignore [hidden] when a more specific display rule
- * fires. Force the fallback here so the icon never leaks through. */
-.va-icon-eye[hidden],
-.va-icon-eye-off[hidden] {
-    display: none !important;
-}
-
-.va-input:focus {
-    outline: 2px solid var(--visuauth-primary);
-    outline-offset: -1px;
-    border-color: var(--visuauth-primary);
-}
-
-.va-form-actions {
-    display: flex;
-    gap: 0.5rem;
-    margin-top: 0.5rem;
-    align-items: center;
-}
-
-.va-checkbox {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin: 0.25rem 0 1rem;
-    font-size: 0.95rem;
-    cursor: pointer;
-}
-
-.va-checkbox input {
-    width: 1.05rem;
-    height: 1.05rem;
-}
-
-.va-required {
-    color: var(--visuauth-danger);
-}
-
-.va-fieldset {
-    border: 1px solid var(--visuauth-border);
-    border-radius: var(--visuauth-radius);
-    padding: 0.75rem 1rem 1rem;
-    margin: 0 0 1rem;
-}
-
-.va-fieldset legend {
-    padding: 0 0.4rem;
-}
-
-.va-checkbox-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
-    gap: 0.25rem 0.75rem;
-    margin-top: 0.5rem;
-}
-
-.va-checkbox-grid .va-checkbox {
-    margin: 0;
-}
-
-.va-col-actions {
-    width: 1%;
-    white-space: nowrap;
-    text-align: right;
-}
-
-.va-row-actions {
-    display: inline-flex;
-    gap: 0.4rem;
-    align-items: center;
-    justify-content: flex-end;
-}
-
-.va-row-actions form {
-    margin: 0;
-}
-
-.va-danger-zone {
-    border-color: #fecaca;
-}
-
-.va-danger-zone h2 {
-    color: var(--visuauth-danger);
-}
-
-.va-alert {
-    /* display: block so semantic <output> elements (used for post-form
-     * success notifications, where the implicit "status" role is desirable)
-     * render as a full-width banner like the <div role="alert"> ones, not
-     * as inline. */
-    display: block;
-    padding: 0.85rem 1rem;
-    border-radius: var(--visuauth-radius);
-    border: 1px solid var(--visuauth-border);
-    background: var(--visuauth-surface);
-    margin-bottom: 1.25rem;
-    font-size: 0.9rem;
-}
-
-.va-alert p {
-    margin: 0 0 0.5rem;
-}
-
-.va-alert p:last-child {
-    margin-bottom: 0;
-}
-
-.va-alert ul {
-    margin: 0.25rem 0 0;
-    padding-left: 1.25rem;
-}
-
-.va-alert-success {
-    background: #ecfdf5;
-    border-color: #bbf7d0;
-    color: #065f46;
-}
-
-.va-alert-danger {
-    background: #fef2f2;
-    border-color: #fecaca;
-    color: #991b1b;
-}
-
-.va-alert-info {
-    background: #eef2ff;
-    border-color: #c7d2fe;
-    color: #3730a3;
-}
-
-.va-temp-password {
-    display: inline-block;
-    padding: 0.5rem 0.75rem;
-    font-size: 1.05rem;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    background: var(--visuauth-bg);
-    border: 1px solid var(--visuauth-border);
-    border-radius: var(--visuauth-radius);
-    user-select: all;
-}
-
-.va-copy-wrap {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-top: 0.25rem;
-    flex-wrap: wrap;
-}
-
-.va-copy-btn {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.4rem 0.7rem;
-    border: 1px solid var(--visuauth-border);
-    border-radius: var(--visuauth-radius);
-    background: var(--visuauth-bg);
-    color: var(--visuauth-fg);
-    font-size: 0.85rem;
-    font-family: inherit;
-    cursor: pointer;
-    line-height: 1.2;
-    transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
-}
-
-.va-copy-btn:hover {
-    background: var(--visuauth-surface);
-}
-
-.va-copy-btn:focus-visible {
-    outline: 2px solid var(--visuauth-primary);
-    outline-offset: 1px;
-}
-
-/* State machine for the copy button. Two distinct rules per child, no
- * shared selectors — keeps cascade reasoning trivial and survives any
- * stylesheet ordering quirks. */
-.va-copy-btn .va-copy-default {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-}
-
-.va-copy-btn .va-copy-success {
-    display: none;
-    align-items: center;
-    gap: 0.35rem;
-}
-
-.va-copy-btn.va-copied {
-    background: #ecfdf5;
-    border-color: #bbf7d0;
-    color: var(--visuauth-success);
-    animation: va-copy-pop 350ms ease;
-}
-
-.va-copy-btn.va-copied .va-copy-default {
-    display: none;
-}
-
-.va-copy-btn.va-copied .va-copy-success {
-    display: inline-flex;
-    animation: va-copy-fade 220ms ease;
-}
-
-.va-copy-icon {
-    display: block;
-    width: 14px;
-    height: 14px;
-    fill: none;
-    stroke: currentColor;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-}
-
-@keyframes va-copy-pop {
-    0%   { transform: scale(1); }
-    35%  { transform: scale(1.08); }
-    100% { transform: scale(1); }
-}
-
-@keyframes va-copy-fade {
-    from { opacity: 0; transform: translateY(2px); }
-    to   { opacity: 1; transform: translateY(0); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .va-copy-btn,
-    .va-copy-btn.va-copied,
-    .va-copy-btn.va-copied .va-copy-success {
-        animation: none;
-        transition: none;
-    }
-}
-
-/* ===========================================================================
-   Admin dashboard (/visuauth/admin) — KPI tiles, 7-day login bar chart,
-   system-health card, recent-activity list. Pure CSS, no chart library:
-   bar heights are driven by the --bar-height custom property the cshtml
-   sets per <li>. All new tokens fall back to existing --visuauth-* vars
-   so consumer themes (CLAUDE.md §8.4 layer 1+2) pick up the dashboard
-   automatically without extra opt-in.
-   =========================================================================== */
 
 .va-page-actions {
-    display: inline-flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
+  display: flex;
+  align-items: center;
+  gap: var(--visuauth-space-2);
 }
 
-.va-kpi-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-    /* Matches the gap admin list pages leave between filters and the
-     * results card (.va-filters margin-bottom 1rem) so the eye reads
-     * the KPI strip + the lower cards as a single rhythm. */
-    gap: 1rem;
-    margin: 0 0 1.5rem;
+.va-count {
+  margin-left: var(--visuauth-space-2);
+  font-weight: var(--visuauth-fw-normal);
 }
 
-.va-kpi {
-    display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
-    /* Mirrors .va-detail-card's 1.25rem × 1.5rem so a KPI tile sits at
-     * the same visual depth as the panels below it in the dashboard
-     * grid. Using the existing token would also work but the tile is
-     * a slightly different shape (no header / single value), so the
-     * literal keeps the relationship explicit. */
-    padding: 1.25rem 1.5rem;
-    background: var(--visuauth-bg, #fff);
-    border: 1px solid var(--visuauth-border, #e2e6ed);
-    border-radius: var(--visuauth-radius, 10px);
-    color: inherit;
-    text-decoration: none;
-    transition: border-color 0.15s ease, transform 0.05s ease;
-}
-
-.va-kpi:hover,
-.va-kpi:focus-visible {
-    border-color: var(--visuauth-primary, #4f46e5);
-    outline: none;
-}
-
-.va-kpi:active {
-    transform: translateY(1px);
-}
-
-.va-kpi-label {
-    font-size: 0.78rem;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--visuauth-muted, #6b7280);
-}
-
-.va-kpi-value {
-    font-size: 1.7rem;
-    font-weight: 600;
-    color: var(--visuauth-text, #111827);
-    font-variant-numeric: tabular-nums;
-}
-
-.va-kpi-warn .va-kpi-value { color: var(--visuauth-warning, #b45309); }
-.va-kpi-good .va-kpi-value { color: var(--visuauth-success, #047857); }
-
-.va-dashboard-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 2fr) minmax(220px, 1fr);
-    grid-template-areas:
-        "chart health"
-        "activity activity";
-    /* Same 1rem the KPI strip uses for inter-tile spacing, and the
-     * same 1.5rem the .va-detail-card uses for its bottom margin —
-     * keeps the page rhythm uniform. */
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-}
-
-@media (max-width: 900px) {
-    .va-dashboard-grid {
-        grid-template-columns: 1fr;
-        grid-template-areas:
-            "chart"
-            "health"
-            "activity";
-    }
-}
-
-/* .va-card itself has padding: 0 (it wraps tables that span edge-to-
- * edge); the dashboard panels carry text + lists + a chart and need
- * the same internal padding as .va-detail-card so titles and content
- * don't touch the border. */
-.va-dashboard-chart,
-.va-dashboard-health,
-.va-dashboard-activity {
-    padding: 1.25rem 1.5rem;
-}
-
-.va-dashboard-chart    { grid-area: chart; }
-.va-dashboard-health   { grid-area: health; }
-.va-dashboard-activity { grid-area: activity; }
-
-.va-card-header {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 0.75rem;
-    /* Same 1rem .va-detail-card h2 uses below its title so headers in
-     * either card style sit at the same distance from their content. */
-    margin: 0 0 1rem;
-}
-
-.va-card-header h2 {
-    margin: 0;
-    /* Matches .va-detail-card h2 — keeps dashboard panel titles and
-     * detail-card titles at the same hierarchy weight. */
-    font-size: 1.05rem;
-    font-weight: 600;
-    color: var(--visuauth-fg, inherit);
-}
-
-.va-small  { font-size: 0.78rem; }
-.va-link   {
-    color: var(--visuauth-primary, #4f46e5);
-    text-decoration: none;
+.va-link {
+  color: var(--visuauth-link);
+  text-decoration: none;
+  font-weight: var(--visuauth-fw-medium);
 }
 .va-link:hover { text-decoration: underline; }
 
-/* Bar chart: ordered list with one bar per day. --bar-height is the
-   server-rendered scale (0-100). The .va-bar-track is a fixed-height
-   shell so all bars share a baseline. */
-.va-bar-chart {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    align-items: end;
-    gap: 0.4rem;
-    height: 180px;
+.va-small { font-size: 0.8125rem; }
+
+.va-empty-inline {
+  padding: var(--visuauth-space-2) 0;
+  font-size: var(--visuauth-text-sm);
 }
 
-.va-bar {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-end;
-    height: 100%;
-    gap: 0.25rem;
-}
-
-.va-bar-value {
-    font-size: 0.7rem;
-    color: var(--visuauth-muted, #6b7280);
-    font-variant-numeric: tabular-nums;
-}
-
-.va-bar-track {
-    width: 100%;
-    max-width: 36px;
-    height: 100%;
-    display: flex;
-    align-items: flex-end;
-    background: var(--visuauth-bar-track, #f3f4f6);
-    border-radius: 4px;
-    overflow: hidden;
-}
-
-.va-bar-fill {
-    width: 100%;
-    height: var(--bar-height, 0%);
-    background: var(--visuauth-primary, #4f46e5);
-    min-height: 2px;
-    transition: height 0.25s ease;
-}
-
-.va-bar-label {
-    font-size: 0.7rem;
-    color: var(--visuauth-muted, #6b7280);
-    font-variant-numeric: tabular-nums;
-}
-
-/* System health: definition list with right-aligned values. */
-.va-health-list {
-    margin: 0;
-    display: grid;
-    gap: 0.55rem;
-}
-
-.va-health-list > div {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 0.75rem;
-}
-
-.va-health-list dt {
-    font-size: 0.82rem;
-    color: var(--visuauth-muted, #6b7280);
-    font-weight: 500;
-}
-
-.va-health-list dd {
-    margin: 0;
-    text-align: right;
-    font-size: 0.82rem;
-}
-
-.va-health-list dd code {
-    font-family: var(--visuauth-mono, ui-monospace, SFMono-Regular, monospace);
-    font-size: 0.78rem;
-    background: var(--visuauth-code-bg, #f3f4f6);
-    padding: 0.1rem 0.35rem;
-    border-radius: 4px;
-    /* InformationalVersion can be very long (semver + commit hash from
-     * CI), so let the code chip wrap rather than blow out the card. */
-    word-break: break-all;
-}
-
-/* Pills: status badges used in the health card and activity feed. */
-.va-pill {
-    display: inline-block;
-    padding: 0.12rem 0.55rem;
-    border-radius: 999px;
-    font-size: 0.72rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-}
-
-.va-pill-success { background: var(--visuauth-success-soft, #d1fae5); color: var(--visuauth-success, #047857); }
-.va-pill-danger  { background: var(--visuauth-danger-soft, #fee2e2);  color: var(--visuauth-danger, #b91c1c); }
-.va-pill-muted   { background: var(--visuauth-muted-soft, #f3f4f6);   color: var(--visuauth-muted, #6b7280); }
-
-/* Recent activity list: compact row per audit entry, mostly text. */
-.va-activity-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: grid;
-    gap: 0.4rem;
-}
-
-.va-activity-item {
-    display: grid;
-    grid-template-columns: 4rem minmax(10rem, 1fr) auto minmax(10rem, 2fr);
-    align-items: center;
-    gap: 0.6rem;
-    padding: 0.45rem 0.5rem;
-    border-radius: 6px;
-    font-size: 0.85rem;
-}
-
-.va-activity-item:hover {
-    background: var(--visuauth-row-hover, #f9fafb);
-}
-
-@media (max-width: 700px) {
-    .va-activity-item {
-        grid-template-columns: 1fr auto;
-        grid-template-areas:
-            "action outcome"
-            "target target"
-            "when when";
-    }
-    .va-activity-when    { grid-area: when; }
-    .va-activity-action  { grid-area: action; }
-    .va-activity-outcome { grid-area: outcome; }
-    .va-activity-target  { grid-area: target; }
-}
-
+/* ── Activity feed cells ─────────────────────────────────────────────────── */
 .va-activity-when {
-    font-variant-numeric: tabular-nums;
-    color: var(--visuauth-muted, #6b7280);
-    font-size: 0.78rem;
+  color: var(--visuauth-muted);
+  font-family: var(--visuauth-font-mono);
+  font-size: var(--visuauth-text-xs);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
-
-.va-activity-action {
-    font-weight: 500;
-    font-family: var(--visuauth-mono, ui-monospace, SFMono-Regular, monospace);
-    font-size: 0.78rem;
-}
-
 .va-activity-target {
-    color: var(--visuauth-text, #111827);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--visuauth-link);
+}
+.va-activity-outcome { justify-self: start; }
+
+/* ── Inline forms (assign role, rename tenant, config source) ────────────── */
+.va-inline-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--visuauth-space-2);
+}
+.va-inline-field {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--visuauth-space-2);
+}
+.va-inline-field .va-field-label { white-space: nowrap; }
+
+.va-source-row {
+  display: flex;
+  align-items: center;
+  gap: var(--visuauth-space-2);
+  font-size: var(--visuauth-text-sm);
+  color: var(--visuauth-muted);
+}
+
+/* Sidebar tenant dropdown — full-width select that reads on the sidebar bg */
+.va-tenant-switcher {
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: var(--visuauth-space-8);
+  background-color: var(--visuauth-elevated);
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--visuauth-muted) 50%),
+    linear-gradient(135deg, var(--visuauth-muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 16px) calc(50% + 1px),
+    calc(100% - 11px) calc(50% + 1px);
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  cursor: pointer;
 }
 
 /* ===========================================================================
-   Input group — used on /admin/users/new when the backend reports an
-   EmailDomainSuffix (Entra ID workforce). The operator types the local
-   part in a free input; the @domain suffix is a non-editable visual
-   "addon" so the verified-domain constraint is obvious before submit.
+   16. RESPONSIVE — mobile breakpoint at 640px
    =========================================================================== */
+@media (max-width: 640px) {
+  .va-shell,
+  .va-shell.va-collapsed {
+    grid-template-columns: 1fr;
+  }
 
-.va-input-group {
-    display: flex;
-    align-items: stretch;
-    border: 1px solid var(--visuauth-border, #e2e6ed);
-    border-radius: var(--visuauth-radius, 6px);
-    overflow: hidden;
-    background: var(--visuauth-bg, #fff);
-}
+  /* Collapse toggle is meaningless in the top-bar layout; head not needed */
+  .va-collapse-btn { display: none; }
+  .va-sidebar-head { display: none; }
 
-.va-input-group:focus-within {
-    border-color: var(--visuauth-primary, #4f46e5);
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--visuauth-primary, #4f46e5) 18%, transparent);
-}
+  /* Sidebar becomes a horizontal top bar, sticking below the header */
+  .va-sidebar {
+    position: sticky;
+    top: var(--visuauth-header-h);
+    z-index: 20;
+    height: auto;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--visuauth-space-2);
+    padding: var(--visuauth-space-2) var(--visuauth-space-3);
+    border-right: 0;
+    border-bottom: 1px solid var(--visuauth-border);
+    overflow-x: auto;
+  }
 
-.va-input-group-input {
+  .va-nav {
+    flex-direction: row;
+    overflow-x: auto;
     flex: 1 1 auto;
-    min-width: 0;
-    border: none;
-    background: transparent;
-    outline: none;
-    box-shadow: none;
-    border-radius: 0;
-}
+  }
+  .va-nav a,
+  .va-nav .va-nav-item { white-space: nowrap; }
 
-.va-input-group-input:focus {
-    outline: none;
-    box-shadow: none;
-    border: none;
-}
+  .va-tenant-indicator {
+    margin-top: 0;
+    flex-direction: row;
+    border-top: 0;
+    padding-top: 0;
+    flex-shrink: 0;
+  }
 
-.va-input-group-suffix {
-    flex: 0 0 auto;
-    display: inline-flex;
-    align-items: center;
-    padding: 0 0.75rem;
-    background: var(--visuauth-surface, #f5f6f8);
-    color: var(--visuauth-muted, #6b7280);
-    border-left: 1px solid var(--visuauth-border, #e2e6ed);
-    font-family: var(--visuauth-mono, ui-monospace, SFMono-Regular, monospace);
-    font-size: 0.92em;
-    user-select: all;
-    white-space: nowrap;
-}
+  .va-main { padding: var(--visuauth-space-5) var(--visuauth-space-4); }
 
-/* The literal "@" separating the local-part input from the domain dropdown
-   in the multi-domain create-user field. Sits flush between the two without
-   the surface fill of a suffix chip. */
-.va-input-group-at {
-    flex: 0 0 auto;
-    display: inline-flex;
-    align-items: center;
-    padding: 0 0.4rem;
-    color: var(--visuauth-muted, #6b7280);
-    font-family: var(--visuauth-mono, ui-monospace, SFMono-Regular, monospace);
-    font-size: 0.92em;
-    white-space: nowrap;
-    user-select: none;
-}
+  .va-header {
+    padding: 0 var(--visuauth-space-4);
+    gap: var(--visuauth-space-2);
+  }
+  .va-header .va-brand span { display: none; }       /* mark only on mobile */
+  .va-header .va-filter-select { max-width: 9rem; }
+  .va-header .va-user-meta { display: none; }
+  .va-header-sep { display: none; }
 
-.va-input-group-select {
-    flex: 0 0 auto;
-    min-width: 0;
-    max-width: 60%;
-    border: none;
-    border-left: 1px solid var(--visuauth-border, #e2e6ed);
-    background: var(--visuauth-surface, #f5f6f8);
-    color: var(--visuauth-fg, #1f2430);
-    border-radius: 0;
-    outline: none;
-    box-shadow: none;
-    cursor: pointer;
-}
+  .va-form-grid { grid-template-columns: 1fr; }
 
-.va-input-group-select:focus {
-    outline: none;
-    box-shadow: none;
-}
+  .va-dashboard-grid { grid-template-columns: 1fr; }
+  .va-dashboard-activity { grid-column: auto; }
 
-.va-field-hint {
-    display: block;
-    margin-top: 0.3rem;
-    font-size: 0.78rem;
-    line-height: 1.35;
+  .va-kpi-grid { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+
+  .va-activity-item {
+    grid-template-columns: 1fr auto;
+    gap: var(--visuauth-space-2);
+  }
+
+  .va-page-header { gap: var(--visuauth-space-3); }
 }
 
 /* ===========================================================================
-   DARK THEME + LIGHT/DARK TOGGLE
-   ---------------------------------------------------------------------------
-   Dark applies in two situations, both resolving to the same token overrides:
-     • :root[data-theme="dark"]            — explicit user toggle (va-theme-init.js)
-     • @media (prefers-color-scheme: dark) — system default, unless the user
-                                             has forced light ([data-theme="light"])
-   Consumers still re-theme by overriding the --visuauth-* tokens; this only
-   adds the dark palette + a few re-skins for rules that bake light hexes.
-   The data-theme condition is wrapped in :where() so the dark token block
-   keeps the SAME specificity as a bare :root (0,1,0). That way the inline
-   <va-theme-style /> :root override, which the layout emits AFTER this
-   stylesheet, still wins by source order — programmatic / per-tenant / CSS
-   token overrides layer on top in BOTH themes, exactly as documented.
+   17. DARK THEME
+   ----------------------------------------------------------------------------
+   The SAME token overrides are applied in two ways:
+     • Explicit:  :root[data-theme="dark"]
+     • System:    prefers-color-scheme: dark, unless user forced light
+   Near-black slate surfaces, brightened indigo for legibility on dark.
    =========================================================================== */
+/* :where() keeps this block at the SAME specificity as a bare :root (0,1,0),
+   so a consumer's inline <va-theme-style> :root overrides (Layer 2 /
+   BrandTheme.cs) and any Layer-1 CSS token overrides still win in dark mode
+   by source order — exactly as they do in light. */
 :root:where([data-theme="dark"]) {
-    --visuauth-primary: #818cf8;
-    --visuauth-primary-fg: #0b1020;
-    --visuauth-bg: #10151f;
-    --visuauth-fg: #e7ebf3;
-    --visuauth-muted: #97a2b6;
-    --visuauth-border: #29313f;
-    --visuauth-surface: #181f2b;
-    --visuauth-danger: #f87171;
-    --visuauth-success: #34d399;
-    --visuauth-warning: #fbbf24;
-    --visuauth-text: var(--visuauth-fg);
-    --visuauth-bar-track: #232c3a;
-    --visuauth-code-bg: #1d2533;
-    --visuauth-row-hover: #1b2330;
-    --visuauth-success-soft: rgba(52, 211, 153, 0.16);
-    --visuauth-danger-soft: rgba(248, 113, 113, 0.16);
-    --visuauth-info-soft: rgba(129, 140, 248, 0.16);
-    --visuauth-warning-soft: rgba(251, 191, 36, 0.16);
-    --visuauth-muted-soft: #232c3a;
-    --visuauth-card-shadow: 0 12px 30px -18px rgba(0, 0, 0, 0.6);
-    color-scheme: dark;
+  --visuauth-primary: #6366f1;
+  --visuauth-primary-hover: #818cf8;
+  --visuauth-primary-active: #a5b4fc;
+  --visuauth-primary-fg: #ffffff;
+  --visuauth-primary-soft: rgba(99, 102, 241, 0.16);
+  --visuauth-primary-soft-fg: #c7d2fe;
+  --visuauth-link: #a5b4fc;
+  --visuauth-ring: rgba(129, 140, 248, 0.50);
+
+  --visuauth-bg: #0a0c10;
+  --visuauth-fg: #e8ebf2;
+  --visuauth-muted: #8b94a8;
+  --visuauth-faint: #5c6678;
+  --visuauth-border: #1e242f;
+  --visuauth-border-strong: #2c3340;
+  --visuauth-surface: #11141b;
+  --visuauth-surface-2: #161a22;
+  --visuauth-elevated: #14181f;
+  --visuauth-hover: #1a1f29;
+  --visuauth-sidebar-bg: #0c0f15;
+
+  --visuauth-danger: #ef4444;
+  --visuauth-danger-hover: #dc2626;
+  --visuauth-danger-fg: #ffffff;
+  --visuauth-danger-soft: rgba(239, 68, 68, 0.14);
+  --visuauth-danger-soft-fg: #fca5a5;
+
+  --visuauth-success: #22c55e;
+  --visuauth-success-hover: #16a34a;
+  --visuauth-success-fg: #04150b;
+  --visuauth-success-soft: rgba(34, 197, 94, 0.14);
+  --visuauth-success-soft-fg: #86efac;
+
+  --visuauth-warning: #f59e0b;
+  --visuauth-warning-hover: #d97706;
+  --visuauth-warning-fg: #1a1206;
+  --visuauth-warning-soft: rgba(245, 158, 11, 0.14);
+  --visuauth-warning-soft-fg: #fcd34d;
+
+  --visuauth-info: #3b82f6;
+  --visuauth-info-soft: rgba(59, 130, 246, 0.14);
+  --visuauth-info-soft-fg: #93c5fd;
+
+  --visuauth-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --visuauth-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5);
+  --visuauth-shadow-md: 0 2px 6px rgba(0, 0, 0, 0.5), 0 12px 28px -8px rgba(0, 0, 0, 0.6);
+  --visuauth-shadow-lg: 0 16px 48px -12px rgba(0, 0, 0, 0.7);
 }
 
 @media (prefers-color-scheme: dark) {
-    :root:where(:not([data-theme="light"])) {
-        --visuauth-primary: #818cf8;
-        --visuauth-primary-fg: #0b1020;
-        --visuauth-bg: #10151f;
-        --visuauth-fg: #e7ebf3;
-        --visuauth-muted: #97a2b6;
-        --visuauth-border: #29313f;
-        --visuauth-surface: #181f2b;
-        --visuauth-danger: #f87171;
-        --visuauth-success: #34d399;
-        --visuauth-warning: #fbbf24;
-        --visuauth-text: var(--visuauth-fg);
-        --visuauth-bar-track: #232c3a;
-        --visuauth-code-bg: #1d2533;
-        --visuauth-row-hover: #1b2330;
-        --visuauth-success-soft: rgba(52, 211, 153, 0.16);
-        --visuauth-danger-soft: rgba(248, 113, 113, 0.16);
-        --visuauth-info-soft: rgba(129, 140, 248, 0.16);
-        --visuauth-warning-soft: rgba(251, 191, 36, 0.16);
-        --visuauth-muted-soft: #232c3a;
-        --visuauth-card-shadow: 0 12px 30px -18px rgba(0, 0, 0, 0.6);
-        color-scheme: dark;
-    }
+  :root:not([data-theme="light"]) {
+    --visuauth-primary: #6366f1;
+    --visuauth-primary-hover: #818cf8;
+    --visuauth-primary-active: #a5b4fc;
+    --visuauth-primary-fg: #ffffff;
+    --visuauth-primary-soft: rgba(99, 102, 241, 0.16);
+    --visuauth-primary-soft-fg: #c7d2fe;
+    --visuauth-link: #a5b4fc;
+    --visuauth-ring: rgba(129, 140, 248, 0.50);
+
+    --visuauth-bg: #0a0c10;
+    --visuauth-fg: #e8ebf2;
+    --visuauth-muted: #8b94a8;
+    --visuauth-faint: #5c6678;
+    --visuauth-border: #1e242f;
+    --visuauth-border-strong: #2c3340;
+    --visuauth-surface: #11141b;
+    --visuauth-surface-2: #161a22;
+    --visuauth-elevated: #14181f;
+    --visuauth-hover: #1a1f29;
+    --visuauth-sidebar-bg: #0c0f15;
+
+    --visuauth-danger: #ef4444;
+    --visuauth-danger-hover: #dc2626;
+    --visuauth-danger-fg: #ffffff;
+    --visuauth-danger-soft: rgba(239, 68, 68, 0.14);
+    --visuauth-danger-soft-fg: #fca5a5;
+
+    --visuauth-success: #22c55e;
+    --visuauth-success-hover: #16a34a;
+    --visuauth-success-fg: #04150b;
+    --visuauth-success-soft: rgba(34, 197, 94, 0.14);
+    --visuauth-success-soft-fg: #86efac;
+
+    --visuauth-warning: #f59e0b;
+    --visuauth-warning-hover: #d97706;
+    --visuauth-warning-fg: #1a1206;
+    --visuauth-warning-soft: rgba(245, 158, 11, 0.14);
+    --visuauth-warning-soft-fg: #fcd34d;
+
+    --visuauth-info: #3b82f6;
+    --visuauth-info-soft: rgba(59, 130, 246, 0.14);
+    --visuauth-info-soft-fg: #93c5fd;
+
+    --visuauth-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --visuauth-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5);
+    --visuauth-shadow-md: 0 2px 6px rgba(0, 0, 0, 0.5), 0 12px 28px -8px rgba(0, 0, 0, 0.6);
+    --visuauth-shadow-lg: 0 16px 48px -12px rgba(0, 0, 0, 0.7);
+  }
 }
 
-/* Re-skin the few rules that hard-code light hex values so nothing glows
-   white in dark. A grouped selector can't span a media query, so these are
-   written twice — once for the explicit toggle, once for the system default. */
-:root[data-theme="dark"] .va-badge.va-success { background: var(--visuauth-success-soft); border-color: transparent; }
-:root[data-theme="dark"] .va-badge.va-danger  { background: var(--visuauth-danger-soft);  border-color: transparent; }
-:root[data-theme="dark"] .va-alert-success { background: var(--visuauth-success-soft); border-color: transparent; color: #6ee7b7; }
-:root[data-theme="dark"] .va-alert-danger  { background: var(--visuauth-danger-soft);  border-color: transparent; color: #fca5a5; }
-:root[data-theme="dark"] .va-alert-info    { background: var(--visuauth-info-soft); border-color: transparent; color: #c7d2fe; }
-:root[data-theme="dark"] .va-alert-warning { background: var(--visuauth-warning-soft); border-color: transparent; color: #fcd34d; }
-:root[data-theme="dark"] .va-btn-warning { background: var(--visuauth-warning-soft); color: #fcd34d; border-color: transparent; }
-:root[data-theme="dark"] .va-btn-warning:hover { background: rgba(251,191,36,0.26); }
-:root[data-theme="dark"] .va-danger-zone { border-color: rgba(248,113,113,0.4); }
-:root[data-theme="dark"] .va-pill-success { background: var(--visuauth-success-soft); color: #6ee7b7; }
-:root[data-theme="dark"] .va-pill-danger  { background: var(--visuauth-danger-soft);  color: #fca5a5; }
-:root[data-theme="dark"] .va-code-snippet { background: #0b101b; }
-:root[data-theme="dark"] .va-enduser-card { box-shadow: var(--visuauth-card-shadow); }
-
-@media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) .va-badge.va-success { background: var(--visuauth-success-soft); border-color: transparent; }
-    :root:not([data-theme="light"]) .va-badge.va-danger  { background: var(--visuauth-danger-soft);  border-color: transparent; }
-    :root:not([data-theme="light"]) .va-alert-success { background: var(--visuauth-success-soft); border-color: transparent; color: #6ee7b7; }
-    :root:not([data-theme="light"]) .va-alert-danger  { background: var(--visuauth-danger-soft);  border-color: transparent; color: #fca5a5; }
-    :root:not([data-theme="light"]) .va-alert-info    { background: var(--visuauth-info-soft); border-color: transparent; color: #c7d2fe; }
-    :root:not([data-theme="light"]) .va-alert-warning { background: var(--visuauth-warning-soft); border-color: transparent; color: #fcd34d; }
-    :root:not([data-theme="light"]) .va-btn-warning { background: var(--visuauth-warning-soft); color: #fcd34d; border-color: transparent; }
-    :root:not([data-theme="light"]) .va-btn-warning:hover { background: rgba(251,191,36,0.26); }
-    :root:not([data-theme="light"]) .va-danger-zone { border-color: rgba(248,113,113,0.4); }
-    :root:not([data-theme="light"]) .va-pill-success { background: var(--visuauth-success-soft); color: #6ee7b7; }
-    :root:not([data-theme="light"]) .va-pill-danger  { background: var(--visuauth-danger-soft);  color: #fca5a5; }
-    :root:not([data-theme="light"]) .va-code-snippet { background: #0b101b; }
-    :root:not([data-theme="light"]) .va-enduser-card { box-shadow: var(--visuauth-card-shadow); }
-}
-
-/* Token-driven polish that tracks light/dark + any consumer palette.
-   (The active-nav pill lives in the base .va-nav a.va-active rule above so
-   there's no duplicate selector.) */
-.va-kpi,
-.va-detail-card,
-.va-dashboard-chart,
-.va-dashboard-health,
-.va-dashboard-activity {
-    box-shadow: var(--visuauth-card-shadow);
-}
-
-/* Light/dark toggle button (rendered in the sidebar foot / end-user card by
-   the layouts). Quiet ghost control; the icon swap is pure CSS via the
-   data-theme attribute, so no JS touches the icons. */
+/* ===========================================================================
+   18. LIGHT/DARK TOGGLE BUTTON
+   ---------------------------------------------------------------------------
+   The layouts render a <button class="va-theme-toggle" data-va-theme-toggle>
+   in the sidebar foot (and the end-user card). va-theme-init.js flips +
+   persists the choice; the moon/sun icon swap is pure CSS via data-theme, so
+   no JS touches the icons. (Carried over so this stylesheet fully styles the
+   toggle the shipped layouts emit — the base design-system sheet predated it.)
+   =========================================================================== */
 .va-theme-toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    width: 100%;
-    margin-top: 0.75rem;
-    padding: 0.5rem 0.75rem;
-    font: inherit;
-    font-size: 0.95rem;
-    color: var(--visuauth-fg);
-    background: transparent;
-    border: 1px solid var(--visuauth-border);
-    border-radius: var(--visuauth-radius);
-    cursor: pointer;
-    text-align: left;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--visuauth-space-2);
+  width: 100%;
+  margin-top: var(--visuauth-space-3);
+  padding: var(--visuauth-space-2) var(--visuauth-space-3);
+  font: inherit;
+  font-size: var(--visuauth-text-base);
+  font-weight: var(--visuauth-fw-medium);
+  color: var(--visuauth-fg);
+  background: transparent;
+  border: 1px solid var(--visuauth-border);
+  border-radius: var(--visuauth-radius);
+  cursor: pointer;
+  text-align: left;
+  transition: background-color var(--visuauth-duration) var(--visuauth-ease),
+              border-color var(--visuauth-duration) var(--visuauth-ease);
 }
-.va-theme-toggle:hover { background: var(--visuauth-surface); }
+.va-theme-toggle:hover { background: var(--visuauth-hover); border-color: var(--visuauth-border-strong); }
 .va-theme-toggle:focus-visible { outline: 2px solid var(--visuauth-primary); outline-offset: 1px; }
 .va-theme-toggle .va-theme-toggle-icon { width: 16px; height: 16px; flex: 0 0 16px; }
 
 /* End-user variant: centered, under the language switcher. */
-.va-enduser-theme-toggle { margin-top: 1rem; justify-content: center; text-align: center; }
+.va-enduser-theme-toggle { margin-top: var(--visuauth-space-4); justify-content: center; text-align: center; }
 
 /* Icon swap — moon in light (action: go dark), sun in dark. */
 .va-theme-toggle .va-icon-sun { display: none; }
-:root[data-theme="dark"] .va-theme-toggle .va-icon-sun  { display: inline; }
-:root[data-theme="dark"] .va-theme-toggle .va-icon-moon { display: none; }
+:root:where([data-theme="dark"]) .va-theme-toggle .va-icon-sun  { display: inline; }
+:root:where([data-theme="dark"]) .va-theme-toggle .va-icon-moon { display: none; }
 @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) .va-theme-toggle .va-icon-sun  { display: inline; }
-    :root:not([data-theme="light"]) .va-theme-toggle .va-icon-moon { display: none; }
+  :root:not([data-theme="light"]) .va-theme-toggle .va-icon-sun  { display: inline; }
+  :root:not([data-theme="light"]) .va-theme-toggle .va-icon-moon { display: none; }
 }
+
+/* Collapsed sidebar: hide the toggle label, center the icon. */
+.va-shell.va-collapsed .va-theme-toggle { justify-content: center; }
+.va-shell.va-collapsed .va-theme-toggle span:not(.va-theme-toggle-icon) { display: none; }
+
+/* ===========================================================================
+   19. TOP HEADER — user/account menu (native <details>) + header theme toggle
+   ---------------------------------------------------------------------------
+   The optional top header (rendered when the layout wraps everything in
+   `.va-app`) carries the brand, language switcher, an icon-only theme toggle,
+   and a user/account menu. The menu is a native <details>/<summary> so it
+   works with zero JS (SSR-safe); va-header.js only adds outside-click / Esc
+   close + the sidebar collapse toggle as progressive enhancement.
+   =========================================================================== */
+
+/* Account menu — <details> drives open/close; menu positions under the card. */
+.va-user-details { position: relative; }
+.va-user-details > summary {
+  list-style: none;
+  cursor: pointer;
+}
+.va-user-details > summary::-webkit-details-marker { display: none; }
+.va-user-details > summary::marker { content: ""; }
+.va-user-details[open] > summary .va-user-caret { transform: rotate(180deg); }
+.va-user-caret { transition: transform var(--visuauth-duration) var(--visuauth-ease); }
+.va-user-details .va-user-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 230px;
+}
+
+/* Header icon-only theme toggle — same moon/sun CSS swap as the sidebar one. */
+.va-header-theme .va-icon-sun { display: none; }
+:root:where([data-theme="dark"]) .va-header-theme .va-icon-sun  { display: inline; }
+:root:where([data-theme="dark"]) .va-header-theme .va-icon-moon { display: none; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .va-header-theme .va-icon-sun  { display: inline; }
+  :root:not([data-theme="light"]) .va-header-theme .va-icon-moon { display: none; }
+}
+
+/* On small screens the sidebar collapses to an icon rail automatically when
+   the header's collapse toggle is used; nothing header-specific to add here —
+   the base `.va-shell.va-collapsed` rules (section 4) handle it. */
+
+/* Filled-button borders track their own fill (the base `.va-btn` default now
+   carries a neutral border for variant-less buttons; these keep the solid
+   variants looking borderless). Appended last so they win on source order. */
+.va-btn-primary { border-color: var(--visuauth-primary); }
+.va-btn-primary:hover { border-color: var(--visuauth-primary-hover); }
+.va-btn-primary:active { border-color: var(--visuauth-primary-active); }
+.va-btn-danger { border-color: var(--visuauth-danger); }
+.va-btn-danger:hover { border-color: var(--visuauth-danger-hover); }
+.va-btn-warning { border-color: var(--visuauth-warning); }
+.va-btn-warning:hover { border-color: var(--visuauth-warning-hover); }
+.va-btn-ghost { border-color: transparent; }

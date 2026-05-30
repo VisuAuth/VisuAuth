@@ -37,6 +37,9 @@
   "Sidebar.TenantScope": "Tenant scope",
   "Sidebar.ThemeLabel": "Theme",
   "Sidebar.ThemeToggle": "Toggle light / dark theme",
+  "Sidebar.Collapse": "Toggle sidebar",
+
+  "Account.SignOut": "Sign out",
 
   "Users.Title": "Users",
   "Users.PageTitle": "Users — VisuAuth Admin",

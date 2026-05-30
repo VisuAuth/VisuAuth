@@ -195,7 +195,6 @@ None right now.
 
 ## Future ideas (no commitment)
 
-- Audit log plugin writing to a separate table with retention policy
 - Outbound webhooks on user events
 - Bulk CSV import of users
 - Cloud-hosted VisuAuth tier (managed offering)

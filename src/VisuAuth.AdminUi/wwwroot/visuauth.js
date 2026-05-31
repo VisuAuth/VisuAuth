@@ -108,8 +108,12 @@
 
         var eye = button.querySelector('.va-icon-eye');
         var eyeOff = button.querySelector('.va-icon-eye-off');
-        if (eye) { eye.hidden = willReveal; }
-        if (eyeOff) { eyeOff.hidden = !willReveal; }
+        // SVGElement does not implement the `hidden` IDL property (it lives on
+        // HTMLElement), so `svg.hidden = …` would set a no-op expando and leave
+        // the content attribute untouched. Toggle the attribute directly so the
+        // CSS `svg[hidden]` rule actually swaps the eye / eye-off icons.
+        if (eye) { eye.toggleAttribute('hidden', willReveal); }
+        if (eyeOff) { eyeOff.toggleAttribute('hidden', !willReveal); }
 
         button.setAttribute('aria-label', willReveal ? 'Hide password' : 'Show password');
         button.setAttribute('aria-pressed', willReveal ? 'true' : 'false');

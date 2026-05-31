@@ -740,3 +740,17 @@ body {
   :root:not([data-theme="light"]) .va-theme-toggle .va-icon-sun  { display: inline; }
   :root:not([data-theme="light"]) .va-theme-toggle .va-icon-moon { display: none; }
 }
+
+/* End-user variant: compact, icon-only square — same look as the header
+   toggle (no label). display:flex lets margin:auto center the fixed-width
+   button inside the block card. */
+.va-enduser-theme-toggle {
+  display: flex;
+  width: 34px;
+  height: 34px;
+  margin: var(--visuauth-space-4) auto 0;
+  padding: 0;
+  justify-content: center;
+  align-items: center;
+  border-radius: var(--visuauth-radius-sm);
+}

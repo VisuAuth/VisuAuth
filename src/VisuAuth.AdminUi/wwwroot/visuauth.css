@@ -2224,6 +2224,23 @@ body {
    row. Let them size to content so the filter bar stays a single row. */
 .va-filters .va-filter-select { width: auto; }
 
+/* The selects carry both .va-filter-select (which draws the dropdown chevron
+   via background-image and hides the native arrow with appearance:none) and
+   .va-input (whose `background` shorthand, declared later, resets that
+   background-image — wiping the chevron). Re-assert the chevron with higher
+   specificity so the arrow shows again. */
+.va-filter-select.va-input {
+  background-color: var(--visuauth-elevated);
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--visuauth-muted) 50%),
+    linear-gradient(135deg, var(--visuauth-muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 16px) calc(50% + 1px),
+    calc(100% - 11px) calc(50% + 1px);
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+
 /* 3. An action row sitting directly under a definition list (the user Security
    section: Lock / Reset password / ...) hugged the last row — give it room. */
 .va-dl + .va-actions { margin-top: var(--visuauth-space-5); }

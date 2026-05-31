@@ -754,3 +754,16 @@ body {
   align-items: center;
   border-radius: var(--visuauth-radius-sm);
 }
+
+/* Preferences row: language switcher + theme toggle side by side and centered,
+   mirroring the header's right-hand cluster. Zero the children's own margins so
+   the row controls spacing. */
+.va-enduser-prefs {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--visuauth-space-3);
+  margin-top: var(--visuauth-space-5);
+}
+.va-enduser-prefs .va-enduser-lang,
+.va-enduser-prefs .va-enduser-theme-toggle { margin: 0; }

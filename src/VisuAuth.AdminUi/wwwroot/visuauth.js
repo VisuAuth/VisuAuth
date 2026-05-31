@@ -159,4 +159,32 @@
             target.close();
         }
     });
+
+    //
+    // Language switcher: close the open flag popover on outside-click / Escape.
+    //
+    // The switcher is a native <details class="va-lang">, so it already toggles
+    // and selects with zero JS; this only adds the niceties. Delegated on
+    // document so it works after htmx swaps and on both admin and end-user pages.
+    //
+    document.addEventListener('click', function (event) {
+        document.querySelectorAll('details.va-lang[open]').forEach(function (d) {
+            if (!d.contains(event.target)) {
+                d.removeAttribute('open');
+            }
+        });
+    });
+
+    document.addEventListener('keydown', function (event) {
+        if (event.key !== 'Escape') {
+            return;
+        }
+        document.querySelectorAll('details.va-lang[open]').forEach(function (d) {
+            d.removeAttribute('open');
+            var summary = d.querySelector('summary');
+            if (summary) {
+                summary.focus();
+            }
+        });
+    });
 })();

@@ -889,6 +889,12 @@ body {
   stroke-linejoin: round;
 }
 
+/* Edge/IE render their own password reveal + clear controls inside the
+   <input>, which doubles up with our .va-password-toggle eye. Hide them so
+   only our toggle shows. */
+.va-password-wrap input::-ms-reveal,
+.va-password-wrap input::-ms-clear { display: none; }
+
 /* Checkboxes */
 .va-checkbox {
   display: flex;

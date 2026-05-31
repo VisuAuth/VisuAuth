@@ -478,6 +478,9 @@ body {
   border: 1px solid var(--visuauth-border);
   border-radius: var(--visuauth-radius);
   box-shadow: var(--visuauth-shadow-md);
+  /* Clip item hover/danger backgrounds to the rounded menu so they don't
+     poke past the corners (menu padding < item radius). */
+  overflow: hidden;
 }
 .va-user-menu-head {
   display: flex;
@@ -873,7 +876,15 @@ body {
   color: var(--visuauth-fg);
 }
 
-.va-password-toggle svg { width: 16px; height: 16px; }
+.va-password-toggle svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 
 /* Checkboxes */
 .va-checkbox {

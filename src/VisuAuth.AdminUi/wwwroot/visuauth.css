@@ -889,6 +889,12 @@ body {
   stroke-linejoin: round;
 }
 
+/* The eye-off SVG starts with the `hidden` attribute and visuauth.js toggles
+   it. The UA `[hidden] { display: none }` rule is HTML-namespaced in several
+   browsers and does NOT apply to inline SVG, so without this explicit rule
+   both the eye and eye-off icons paint at once. */
+.va-password-toggle svg[hidden] { display: none; }
+
 /* Edge/IE render their own password reveal + clear controls inside the
    <input>, which doubles up with our .va-password-toggle eye. Hide them so
    only our toggle shows. */

@@ -1340,7 +1340,9 @@ body {
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: var(--visuauth-space-5);
-  align-items: start;
+  /* Stretch so the chart and system-health cards in the top row share the
+     same height instead of the shorter one hugging its content. */
+  align-items: stretch;
 }
 
 .va-dashboard-chart,
@@ -1435,7 +1437,10 @@ body {
 .va-health-list > div:last-child { border-bottom: 0; }
 
 .va-health-list dt { color: var(--visuauth-muted); margin: 0; }
-.va-health-list dd { margin: 0; font-weight: var(--visuauth-fw-medium); color: var(--visuauth-fg); }
+.va-health-list dd { margin: 0; min-width: 0; font-weight: var(--visuauth-fw-medium); color: var(--visuauth-fg); text-align: right; }
+/* Long values (e.g. the version with a +<commit> suffix) must wrap instead of
+   overflowing the card — break the unbreakable token at any point. */
+.va-health-list dd code { overflow-wrap: anywhere; word-break: break-word; }
 
 /* Activity feed */
 .va-activity-list {

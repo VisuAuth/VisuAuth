@@ -765,5 +765,12 @@ body {
   gap: var(--visuauth-space-3);
   margin-top: var(--visuauth-space-5);
 }
-.va-enduser-prefs .va-enduser-lang,
 .va-enduser-prefs .va-enduser-theme-toggle { margin: 0; }
+/* Drop the language switcher's footer separator (margin/padding/border-top)
+   inside the row — otherwise it draws a stray bar above the flag and pushes it
+   out of vertical alignment with the toggle. */
+.va-enduser-prefs .va-enduser-lang {
+  margin: 0;
+  padding-top: 0;
+  border-top: 0;
+}

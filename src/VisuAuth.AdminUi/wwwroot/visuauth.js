@@ -108,10 +108,80 @@
 
         var eye = button.querySelector('.va-icon-eye');
         var eyeOff = button.querySelector('.va-icon-eye-off');
-        if (eye) { eye.hidden = willReveal; }
-        if (eyeOff) { eyeOff.hidden = !willReveal; }
+        // SVGElement does not implement the `hidden` IDL property (it lives on
+        // HTMLElement), so `svg.hidden = …` would set a no-op expando and leave
+        // the content attribute untouched. Toggle the attribute directly so the
+        // CSS `svg[hidden]` rule actually swaps the eye / eye-off icons.
+        if (eye) { eye.toggleAttribute('hidden', willReveal); }
+        if (eyeOff) { eyeOff.toggleAttribute('hidden', !willReveal); }
 
         button.setAttribute('aria-label', willReveal ? 'Hide password' : 'Show password');
         button.setAttribute('aria-pressed', willReveal ? 'true' : 'false');
+    });
+
+    //
+    // Modal dialogs (native <dialog>).
+    //
+    // [data-va-modal-open="<dialog-id>"] opens the matching <dialog> via
+    // showModal() (free backdrop, Esc-to-close, focus trap). [data-va-modal-close]
+    // closes the enclosing dialog, and a click on the backdrop (the <dialog>
+    // element itself, outside its content) closes it too. Delegated on document
+    // so htmx-swapped cards keep working.
+    //
+    document.addEventListener('click', function (event) {
+        const target = event.target;
+
+        const opener = target?.closest?.('[data-va-modal-open]');
+        if (opener) {
+            event.preventDefault();
+            const dialog = document.getElementById(opener.dataset.vaModalOpen);
+            if (dialog && typeof dialog.showModal === 'function') {
+                dialog.showModal();
+            }
+            return;
+        }
+
+        const closer = target?.closest?.('[data-va-modal-close]');
+        if (closer) {
+            event.preventDefault();
+            const owning = closer.closest('dialog');
+            if (owning) {
+                owning.close();
+            }
+            return;
+        }
+
+        // Click on the backdrop (the dialog element, not its inner content).
+        if (target?.tagName === 'DIALOG' && target.classList.contains('va-modal')) {
+            target.close();
+        }
+    });
+
+    //
+    // Language switcher: close the open flag popover on outside-click / Escape.
+    //
+    // The switcher is a native <details class="va-lang">, so it already toggles
+    // and selects with zero JS; this only adds the niceties. Delegated on
+    // document so it works after htmx swaps and on both admin and end-user pages.
+    //
+    document.addEventListener('click', function (event) {
+        document.querySelectorAll('details.va-lang[open]').forEach(function (d) {
+            if (!d.contains(event.target)) {
+                d.removeAttribute('open');
+            }
+        });
+    });
+
+    document.addEventListener('keydown', function (event) {
+        if (event.key !== 'Escape') {
+            return;
+        }
+        document.querySelectorAll('details.va-lang[open]').forEach(function (d) {
+            d.removeAttribute('open');
+            const summary = d.querySelector('summary');
+            if (summary) {
+                summary.focus();
+            }
+        });
     });
 })();

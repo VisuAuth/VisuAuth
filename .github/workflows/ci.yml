@@ -89,8 +89,7 @@ jobs:
         run: |
           dotnet test tests/VisuAuth.UnitTests/VisuAuth.UnitTests.csproj \
             --configuration Release --no-build --verbosity minimal \
-            --collect:"XPlat Code Coverage" --results-directory ./coverage \
-            -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+            --collect:"XPlat Code Coverage;Format=opencover" --results-directory ./coverage
 
       - name: Integration tests
         # Run integration even if unit failed so the report shows both
@@ -99,8 +98,7 @@ jobs:
         run: |
           dotnet test tests/VisuAuth.IntegrationTests/VisuAuth.IntegrationTests.csproj \
             --configuration Release --no-build --verbosity minimal \
-            --collect:"XPlat Code Coverage" --results-directory ./coverage \
-            -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+            --collect:"XPlat Code Coverage;Format=opencover" --results-directory ./coverage
 
       - name: SonarScanner end
         if: '!cancelled()'

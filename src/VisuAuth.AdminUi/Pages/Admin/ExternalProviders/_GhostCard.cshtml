@@ -30,17 +30,29 @@
             @Ls["ExternalProviders.Ghost.NotWired"]
         </span>
     </header>
-    <details class="va-ghost-details" id="@detailsId">
-        <summary>@Ls["ExternalProviders.Ghost.HowToActivate"]</summary>
-        <p class="va-muted" style="margin:0.5rem 0;">
-            @Ls["ExternalProviders.Ghost.Package"]: <code>@Model.NuGetPackageId</code>
-        </p>
-        <pre class="va-code-snippet"><code>@snippet</code></pre>
-        @if (Model.DocsUrl is { Length: > 0 } docs)
-        {
-            <a href="@docs" target="_blank" rel="noopener noreferrer" class="va-btn va-btn-ghost va-btn-small">
-                @Ls["ExternalProviders.Ghost.OpenDocs"] ↗
-            </a>
-        }
-    </details>
+    <button type="button"
+            class="va-btn va-btn-ghost va-btn-small"
+            data-va-modal-open="@detailsId">
+        @Ls["ExternalProviders.Ghost.HowToActivate"]
+    </button>
+    <dialog class="va-modal" id="@detailsId" aria-labelledby="@(detailsId)-title">
+        <div class="va-modal-head">
+            <h3 class="va-modal-title" id="@(detailsId)-title">
+                @Ls["ExternalProviders.Ghost.HowToActivate"] — @Model.DisplayName
+            </h3>
+            <button type="button" class="va-modal-close" data-va-modal-close aria-label="@Ls["Common.Cancel"]">×</button>
+        </div>
+        <div class="va-modal-body">
+            <p class="va-muted" style="margin:0 0 0.5rem;">
+                @Ls["ExternalProviders.Ghost.Package"]: <code>@Model.NuGetPackageId</code>
+            </p>
+            <pre class="va-code-snippet"><code>@snippet</code></pre>
+            @if (Model.DocsUrl is { Length: > 0 } docs)
+            {
+                <a href="@docs" target="_blank" rel="noopener noreferrer" class="va-btn va-btn-ghost va-btn-small">
+                    @Ls["ExternalProviders.Ghost.OpenDocs"] ↗
+                </a>
+            }
+        </div>
+    </dialog>
 </article>

@@ -37,6 +37,9 @@
   "Sidebar.TenantScope": "Escopo de tenant",
   "Sidebar.ThemeLabel": "Tema",
   "Sidebar.ThemeToggle": "Alternar tema claro / escuro",
+  "Sidebar.Collapse": "Recolher menu",
+
+  "Account.SignOut": "Sair",
 
   "Users.Title": "Usuários",
   "Users.PageTitle": "Usuários — VisuAuth Admin",

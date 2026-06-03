@@ -46,14 +46,16 @@ jobs:
         run: mkdocs build --strict
 
       - name: Upload Pages artifact
-        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
         uses: actions/upload-pages-artifact@v3
         with:
           path: site
 
   deploy:
-    # Only publish from main (and manual dispatch) — PR builds validate only.
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    # Only publish from main — PR / feature-branch builds validate only and
+    # never touch the github-pages environment (whose protection rules would
+    # otherwise fail the run at startup on a non-main ref).
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     needs: build
     runs-on: ubuntu-latest
     permissions:

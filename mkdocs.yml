@@ -11,10 +11,10 @@
 site_name: VisuAuth
 site_description: The visual admin for ASP.NET Core Identity — drop-in admin dashboard, multi-tenancy, and themeable end-user auth pages.
 site_author: Thiago Luga and VisuAuth contributors
-site_url: https://visuauth.github.io/visuauth/
+site_url: https://visuauth.github.io/VisuAuth/
 
-repo_name: VisuAuth/visuauth
-repo_url: https://github.com/VisuAuth/visuauth
+repo_name: VisuAuth/VisuAuth
+repo_url: https://github.com/VisuAuth/VisuAuth
 edit_uri: edit/main/docs/
 
 copyright: Copyright &copy; 2026 Thiago Luga and VisuAuth contributors — Apache 2.0

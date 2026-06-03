@@ -12,7 +12,7 @@ adapts: a backend that does not own the login form (Entra) automatically gets a
 
 > **This page is being expanded for the v1.0 documentation site.**
 > The package-level contract reference already lives in
-> [`src/VisuAuth.Abstractions/README.md`](https://github.com/VisuAuth/visuauth/blob/main/src/VisuAuth.Abstractions/README.md),
+> [`src/VisuAuth.Abstractions/README.md`](https://github.com/VisuAuth/VisuAuth/blob/main/src/VisuAuth.Abstractions/README.md),
 > which carries the v1.0 stability guarantee.
 
 ## Planned outline

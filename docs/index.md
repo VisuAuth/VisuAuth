@@ -8,13 +8,17 @@ per-tenant isolation; and **themeable end-user authentication pages** — all
 wired in two lines of code, the same way Hangfire ships its dashboard.
 
 ```csharp
-// The entire integration story.
+// Register the admin UI + end-user pages, then map the routes.
 builder.Services.AddVisuAuth<ApplicationUser>();
 app.MapVisuAuth();
 ```
 
 Navigate to `/visuauth/admin` for the dashboard and `/visuauth/login` for the
 sign-in page.
+
+> The sign-in pages and the mobile API also need a JWT issuer
+> (`AddVisuAuthJwt<TUser>(…)`) — the **[Getting started](getting-started.md)**
+> guide shows the complete, runnable setup.
 
 ![VisuAuth admin dashboard](assets/screenshots/admin-dashboard.svg)
 
@@ -62,4 +66,4 @@ Then follow the **[Getting started](getting-started.md)** guide.
 
 ---
 
-Apache 2.0 licensed. Source on [GitHub](https://github.com/VisuAuth/visuauth).
+Apache 2.0 licensed. Source on [GitHub](https://github.com/VisuAuth/VisuAuth).

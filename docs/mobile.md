@@ -17,12 +17,37 @@ issuer — the only difference is how the request arrives.
 
 ## JWT
 
-- HS256 with a symmetric key from configuration (`VisuAuth:Jwt:SigningKey`).
+Register the issuer with `AddVisuAuthJwt<TUser>(…)` and configure it through
+`JwtOptions` in the lambda — there is no built-in configuration-binding key, so
+load secrets yourself (here from a `VisuAuth:Jwt:SigningKey` config entry that
+*you* define):
+
+```csharp
+using VisuAuth.Identity.Authentication;
+
+builder.Services.AddVisuAuthJwt<ApplicationUser>(options =>
+{
+    options.SigningKey = builder.Configuration["VisuAuth:Jwt:SigningKey"]!; // 32+ UTF-8 bytes
+    options.Issuer = "VisuAuth";        // iss claim   (default "VisuAuth")
+    options.Audience = "VisuAuth";      // aud claim   (default "VisuAuth")
+    options.LifetimeMinutes = 60;       // token lifetime (default 60)
+    options.ClockSkewMinutes = 5;       // validation skew (default 5)
+});
+```
+
+This also adds the JWT bearer authentication scheme, so the same token
+authenticates callers against any `[Authorize]`-protected endpoint you mount.
+
+- **HS256** with a symmetric signing key (must be at least 32 UTF-8 bytes — the
+  issuer throws at startup on a shorter key).
 - Claims: `sub` (user id), `email`, `tenant_id` (when multi-tenant), `roles`,
   `exp`.
-- Default lifetime one hour, configurable.
+- Default lifetime 60 minutes, configurable via `JwtOptions.LifetimeMinutes`.
 - No discovery endpoint, no JWKS, no rotation — by design. VisuAuth is not an
   OIDC server; pair it with Duende IdentityServer or similar if you need one.
+
+> `AddVisuAuthJwt` is **required** for the end-user sign-in pages too, not just
+> the mobile API — see [Getting started](getting-started.md).
 
 ## Planned outline
 

@@ -12,7 +12,7 @@ four steps. It assumes you are comfortable with ASP.NET Core and EF Core.
 >   VisuAuth ships its CSS and the embedded htmx asset as static web assets.
 >
 > A complete reference consumer lives in
-> [`samples/Sample.WebApp`](https://github.com/VisuAuth/visuauth/tree/main/samples/Sample.WebApp);
+> [`samples/Sample.WebApp`](https://github.com/VisuAuth/VisuAuth/tree/main/samples/Sample.WebApp);
 > it exercises every public surface.
 
 ## 1. Install
@@ -57,6 +57,7 @@ dotnet ef database update
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using VisuAuth;
+using VisuAuth.Identity.Authentication;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -68,8 +69,16 @@ builder.Services
     .AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders();
 
-// Two-line drop-in — registers the Identity adapter + admin UI + end-user UI.
+// The drop-in: registers the Identity adapter + admin UI + end-user UI.
 builder.Services.AddVisuAuth<ApplicationUser>();
+
+// The end-user sign-in pages and the mobile API issue JWTs, so register an
+// issuer. HS256 — the signing key must be at least 32 UTF-8 bytes. Load it
+// from configuration or a secret store; never hard-code it.
+builder.Services.AddVisuAuthJwt<ApplicationUser>(options =>
+{
+    options.SigningKey = builder.Configuration["VisuAuth:Jwt:SigningKey"]!;
+});
 
 var app = builder.Build();
 
@@ -82,16 +91,31 @@ app.MapVisuAuth();
 app.Run();
 ```
 
-That is the entire integration. No Node.js, no build step, no Razor file
-copying, no manual middleware wiring.
+`AddVisuAuth<ApplicationUser>()` is the drop-in; `AddVisuAuthJwt<ApplicationUser>()`
+wires the JWT issuer the end-user pages and the mobile API depend on. No
+Node.js, no build step, no Razor file copying, no manual middleware wiring.
 
-The snippet above reads a `Default` connection string — add one to
-`appsettings.json` (SQLite shown; swap the provider to match your database):
+> **Why the JWT issuer is required.** Even the web sign-in page mints a JWT (for
+> the [WebView / mobile return flow](mobile.md)), so it resolves `IJwtIssuer`
+> from DI. Without `AddVisuAuthJwt`, `/visuauth/login` and the
+> `/visuauth/api/auth/*` endpoints fail at runtime. The admin dashboard alone
+> does not need it.
+
+The snippet above reads a `Default` connection string and a JWT signing key —
+add both to `appsettings.json` (SQLite shown; swap the provider to match your
+database). The signing key is **your** secret: VisuAuth does not bind it for
+you, so in production load it from user-secrets / environment / a vault rather
+than committing it:
 
 ```json
 {
   "ConnectionStrings": {
     "Default": "Data Source=app.db"
+  },
+  "VisuAuth": {
+    "Jwt": {
+      "SigningKey": "change-me-to-a-32-byte-or-longer-random-secret"
+    }
   }
 }
 ```

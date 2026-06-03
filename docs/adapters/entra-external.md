@@ -7,9 +7,9 @@ to the External ID specifics (tenant domain, customer user flows).
 
 > **This page is being expanded for the v1.0 documentation site.**
 > The package-level references already live in
-> [`src/VisuAuth.EntraExternal/README.md`](https://github.com/VisuAuth/visuauth/blob/main/src/VisuAuth.EntraExternal/README.md)
+> [`src/VisuAuth.EntraExternal/README.md`](https://github.com/VisuAuth/VisuAuth/blob/main/src/VisuAuth.EntraExternal/README.md)
 > and
-> [`src/VisuAuth.EntraExternal.Web/README.md`](https://github.com/VisuAuth/visuauth/blob/main/src/VisuAuth.EntraExternal.Web/README.md).
+> [`src/VisuAuth.EntraExternal.Web/README.md`](https://github.com/VisuAuth/VisuAuth/blob/main/src/VisuAuth.EntraExternal.Web/README.md).
 
 ## Planned outline
 

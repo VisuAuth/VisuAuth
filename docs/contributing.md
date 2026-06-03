@@ -3,7 +3,7 @@
 Issues, discussions, and pull requests are welcome.
 
 The authoritative contribution policy lives in
-[`CONTRIBUTING.md`](https://github.com/VisuAuth/visuauth/blob/main/CONTRIBUTING.md)
+[`CONTRIBUTING.md`](https://github.com/VisuAuth/VisuAuth/blob/main/CONTRIBUTING.md)
 at the repository root. In short:
 
 - **Trunk-based.** `main` is the only long-lived branch; every change lands
@@ -18,7 +18,7 @@ at the repository root. In short:
 ## Editing these docs
 
 The documentation site is built with [MkDocs Material](https://squidfunk.github.io/mkdocs-material/)
-from the plain Markdown under [`docs/`](https://github.com/VisuAuth/visuauth/tree/main/docs).
+from the plain Markdown under [`docs/`](https://github.com/VisuAuth/VisuAuth/tree/main/docs).
 The same files render both on GitHub and on the published site, so keep image
 paths repo-relative and avoid Material-only Markdown extensions.
 
@@ -30,5 +30,5 @@ mkdocs serve   # http://127.0.0.1:8000
 ```
 
 Screenshots and GIFs live under `docs/assets/`. When adding UI imagery, follow
-[`docs/CAPTURE_CHECKLIST.md`](https://github.com/VisuAuth/visuauth/blob/main/docs/CAPTURE_CHECKLIST.md)
+[`docs/CAPTURE_CHECKLIST.md`](https://github.com/VisuAuth/VisuAuth/blob/main/docs/CAPTURE_CHECKLIST.md)
 so captures stay consistent (page, theme, sample data).

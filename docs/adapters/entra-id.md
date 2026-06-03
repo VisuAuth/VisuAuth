@@ -12,7 +12,7 @@ a "Sign in with Microsoft" button automatically (see
 
 > **This page is being expanded for the v1.0 documentation site.**
 > The package-level reference already lives in
-> [`src/VisuAuth.Entra/README.md`](https://github.com/VisuAuth/visuauth/blob/main/src/VisuAuth.Entra/README.md).
+> [`src/VisuAuth.Entra/README.md`](https://github.com/VisuAuth/VisuAuth/blob/main/src/VisuAuth.Entra/README.md).
 
 ## Planned outline
 

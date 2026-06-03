@@ -8,7 +8,7 @@ real captures as they are produced.
 
 ## Capture conventions
 
-- **Source.** Run [`samples/Sample.WebApp`](https://github.com/VisuAuth/visuauth/tree/main/samples/Sample.WebApp) —
+- **Source.** Run [`samples/Sample.WebApp`](https://github.com/VisuAuth/VisuAuth/tree/main/samples/Sample.WebApp) —
   it exercises every surface and has seedable demo data.
 - **Viewport.** 1280×720 for full pages; crop tightly for component shots. Keep
   a consistent browser zoom (100%).

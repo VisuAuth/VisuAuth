@@ -19,11 +19,15 @@ Drop-in admin dashboard, multi-tenancy, and themeable end-user auth pages — wi
 VisuAuth fills the gap that ASP.NET Core Identity leaves: it ships a complete admin UI for users/roles/claims, a multi-tenancy layer with per-tenant isolation, and themeable end-user authentication pages — all drop-in via two lines of code, the same way Hangfire ships its dashboard.
 
 ```csharp
-// Two-line drop-in — the form recommended for most consumers.
+// The drop-in — the form recommended for most consumers.
 builder.Services.AddVisuAuth<ApplicationUser>();
 
 app.MapVisuAuth();
 ```
+
+> The end-user sign-in pages and the mobile API also need a JWT issuer
+> (`AddVisuAuthJwt<ApplicationUser>(…)`) — see [Getting started](#getting-started)
+> for the complete, runnable setup.
 
 Need finer control? The same call has a fluent form so you can pick the
 surfaces you want:
@@ -127,7 +131,7 @@ visuauth/
 ├── samples/
 │   ├── Sample.WebApp/             # Drop-in example (Identity + Entra toggle)
 │   └── Sample.EntraWebApp/        # Minimal Entra-only reference
-└── docs/                          # (Docusaurus, coming soon)
+└── docs/                          # Documentation site source (MkDocs Material)
 ```
 
 ## Getting started
@@ -172,6 +176,7 @@ add tables of its own in v0.1.
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using VisuAuth;
+using VisuAuth.Identity.Authentication;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -183,8 +188,16 @@ builder.Services
     .AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders();
 
-// Two-line drop-in — registers Identity adapter + admin UI + end-user UI.
+// The drop-in — registers Identity adapter + admin UI + end-user UI.
 builder.Services.AddVisuAuth<ApplicationUser>();
+
+// The end-user sign-in pages and the mobile API issue JWTs, so register an
+// issuer. HS256 — the signing key must be 32+ UTF-8 bytes; load it from
+// configuration or a secret store, never hard-code it.
+builder.Services.AddVisuAuthJwt<ApplicationUser>(options =>
+{
+    options.SigningKey = builder.Configuration["VisuAuth:Jwt:SigningKey"]!;
+});
 
 var app = builder.Build();
 
@@ -196,6 +209,13 @@ app.MapVisuAuth();
 
 app.Run();
 ```
+
+> **Why `AddVisuAuthJwt` is required.** Even the web sign-in page mints a JWT
+> (for the WebView / mobile return flow), so it resolves `IJwtIssuer` from DI.
+> Without it, `/visuauth/login` and `/visuauth/api/auth/*` fail at runtime. The
+> admin dashboard alone does not need it. The signing key is *your* secret —
+> VisuAuth does not bind it from configuration for you; load it from
+> user-secrets / environment / a vault in production.
 
 ### 4. Try it
 

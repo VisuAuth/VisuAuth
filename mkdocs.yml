@@ -1,0 +1,91 @@
+# VisuAuth documentation site — MkDocs + Material.
+#
+# Single-source: every page under docs/ is plain Markdown that renders both
+# on GitHub (browse docs/ directly) and through this generator. Keep image
+# paths repo-relative and avoid Material-only Markdown (tabbed blocks, custom
+# superfences) so the GitHub view never diverges from the published site.
+#
+# Build locally:  pip install mkdocs-material && mkdocs serve
+# Deploy:         pushed to main, .github/workflows/docs.yml publishes to Pages.
+
+site_name: VisuAuth
+site_description: The visual admin for ASP.NET Core Identity — drop-in admin dashboard, multi-tenancy, and themeable end-user auth pages.
+site_author: Thiago Luga and VisuAuth contributors
+site_url: https://visuauth.github.io/VisuAuth/
+
+repo_name: VisuAuth/VisuAuth
+repo_url: https://github.com/VisuAuth/VisuAuth
+edit_uri: edit/main/docs/
+
+copyright: Copyright &copy; 2026 Thiago Luga and VisuAuth contributors — Apache 2.0
+
+docs_dir: docs
+
+# Markdown files that intentionally live under docs/ but are not site pages,
+# so `mkdocs build --strict` does not flag them as missing from the nav.
+not_in_nav: |
+  /CAPTURE_CHECKLIST.md
+  /assets/README.md
+
+theme:
+  name: material
+  language: en
+  icon:
+    repo: fontawesome/brands/github
+  palette:
+    # Light mode.
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep purple
+      accent: deep purple
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    # Dark mode.
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep purple
+      accent: deep purple
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - content.code.copy
+    - content.action.edit
+    - search.suggest
+    - search.highlight
+    - toc.follow
+
+markdown_extensions:
+  # Kept deliberately small + GitHub-compatible. pymdownx.highlight/superfences
+  # only affect rendering on the site; the same fenced ``` blocks still render
+  # on GitHub. No tabbed/admonition syntax in authored content — blockquotes
+  # are used for callouts so they read correctly in both places.
+  - toc:
+      permalink: true
+  - tables
+  - attr_list
+  - md_in_html
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.inlinehilite
+
+nav:
+  - Home: index.md
+  - Getting started: getting-started.md
+  - Concepts:
+      - Backend abstraction & capabilities: concepts/backend-abstraction.md
+      - Multi-tenancy: concepts/multi-tenancy.md
+  - Theming: theming.md
+  - Mobile & JWT: mobile.md
+  - Adapters:
+      - ASP.NET Core Identity: adapters/aspnet-identity.md
+      - Microsoft Entra ID: adapters/entra-id.md
+      - Microsoft Entra External ID: adapters/entra-external.md
+  - Contributing: contributing.md

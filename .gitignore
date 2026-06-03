@@ -4,6 +4,9 @@ obj/
 out/
 publish/
 
+# MkDocs documentation site build output
+site/
+
 # IDE files
 .vs/
 .idea/

@@ -36,6 +36,20 @@ public sealed class EfCoreAdapterConfigStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task SaveAsync_WithNoValues_ReturnsSuccessWithoutTouchingTheStore()
+    {
+        var result = await _store.SaveAsync(new SaveAdapterConfigCommand
+        {
+            Adapter = Adapter,
+            Values = [],
+        });
+
+        result.IsSuccess.Should().BeTrue("an empty save is a no-op, not an error");
+        (await _db.VisuAuthAdapterConfigs.CountAsync()).Should().Be(0,
+            "nothing should be written when there are no values to apply");
+    }
+
+    [Fact]
     public async Task SaveAsync_SecretValue_IsEncryptedAtRest()
     {
         await _store.SaveAsync(Set("ClientSecret", "super-secret", isSecret: true));

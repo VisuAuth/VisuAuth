@@ -136,6 +136,11 @@
 
   /* ── Sidebar width ─────────────────────────────────────────── */
   --visuauth-sidebar-w: 240px;
+  --visuauth-sidebar-w-collapsed: 72px;
+
+  /* Top header height: 0 by default; .va-app restores 56px when the optional
+     header is rendered. */
+  --visuauth-header-h: 0px;
 
   /* Smooth theme transition */
   transition: background-color 0.2s, color 0.2s, border-color 0.2s;
@@ -190,11 +195,11 @@ body {
    the full viewport height with no blank strip. When the optional top header
    IS rendered, the layout wraps everything in `.va-app`, which restores the
    56px so the sticky sidebar tucks beneath the header. */
-:root { --visuauth-header-h: 0px; }
-.va-app { --visuauth-header-h: 56px; }
-
-/* App wrapper: full-width header on top, sidebar+main row beneath */
+/* App wrapper: full-width header on top, sidebar+main row beneath. Restores
+   --visuauth-header-h to 56px (it defaults to 0 on :root) so the sticky
+   sidebar tucks beneath the header. */
 .va-app {
+  --visuauth-header-h: 56px;
   min-height: 100vh;
   background: var(--visuauth-bg);
   color: var(--visuauth-fg);
@@ -462,7 +467,7 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.va-user-caret { flex-shrink: 0; color: var(--visuauth-muted); display: inline-flex; }
+.va-user-caret { flex-shrink: 0; color: var(--visuauth-muted); display: inline-flex; transition: transform var(--visuauth-duration) var(--visuauth-ease); }
 
 /* Vertical separator in the header */
 .va-header-sep {
@@ -616,8 +621,6 @@ body {
 }
 
 /* ── Collapsed sidebar (icons only) ─────────────────────────── */
-:root { --visuauth-sidebar-w-collapsed: 72px; }
-
 .va-shell.va-collapsed { grid-template-columns: var(--visuauth-sidebar-w-collapsed) 1fr; }
 
 .va-shell.va-collapsed .va-sidebar { padding-left: var(--visuauth-space-2); padding-right: var(--visuauth-space-2); }
@@ -1050,28 +1053,32 @@ body {
   pointer-events: none;
 }
 
-/* Primary — indigo fill */
+/* Primary — indigo fill. border-color tracks the fill so the variant looks
+   borderless over the base .va-btn neutral border (which is declared earlier). */
 .va-btn-primary {
   background: var(--visuauth-primary);
   color: var(--visuauth-primary-fg);
+  border-color: var(--visuauth-primary);
   box-shadow: var(--visuauth-shadow-xs);
 }
-.va-btn-primary:hover { background: var(--visuauth-primary-hover); }
-.va-btn-primary:active { background: var(--visuauth-primary-active); }
+.va-btn-primary:hover { background: var(--visuauth-primary-hover); border-color: var(--visuauth-primary-hover); }
+.va-btn-primary:active { background: var(--visuauth-primary-active); border-color: var(--visuauth-primary-active); }
 
 /* Danger — red fill */
 .va-btn-danger {
   background: var(--visuauth-danger);
   color: var(--visuauth-danger-fg);
+  border-color: var(--visuauth-danger);
 }
-.va-btn-danger:hover { background: var(--visuauth-danger-hover); }
+.va-btn-danger:hover { background: var(--visuauth-danger-hover); border-color: var(--visuauth-danger-hover); }
 
 /* Warning — amber fill */
 .va-btn-warning {
   background: var(--visuauth-warning);
   color: var(--visuauth-warning-fg);
+  border-color: var(--visuauth-warning);
 }
-.va-btn-warning:hover { background: var(--visuauth-warning-hover); }
+.va-btn-warning:hover { background: var(--visuauth-warning-hover); border-color: var(--visuauth-warning-hover); }
 
 /* Ghost — transparent, border appears on hover */
 .va-btn-ghost {
@@ -2175,7 +2182,6 @@ body {
 .va-user-details > summary::-webkit-details-marker { display: none; }
 .va-user-details > summary::marker { content: ""; }
 .va-user-details[open] > summary .va-user-caret { transform: rotate(180deg); }
-.va-user-caret { transition: transform var(--visuauth-duration) var(--visuauth-ease); }
 .va-user-details .va-user-menu {
   position: absolute;
   top: calc(100% + 6px);
@@ -2196,17 +2202,8 @@ body {
    the header's collapse toggle is used; nothing header-specific to add here —
    the base `.va-shell.va-collapsed` rules (section 4) handle it. */
 
-/* Filled-button borders track their own fill (the base `.va-btn` default now
-   carries a neutral border for variant-less buttons; these keep the solid
-   variants looking borderless). Appended last so they win on source order. */
-.va-btn-primary { border-color: var(--visuauth-primary); }
-.va-btn-primary:hover { border-color: var(--visuauth-primary-hover); }
-.va-btn-primary:active { border-color: var(--visuauth-primary-active); }
-.va-btn-danger { border-color: var(--visuauth-danger); }
-.va-btn-danger:hover { border-color: var(--visuauth-danger-hover); }
-.va-btn-warning { border-color: var(--visuauth-warning); }
-.va-btn-warning:hover { border-color: var(--visuauth-warning-hover); }
-.va-btn-ghost { border-color: transparent; }
+/* (Filled-button border-colors now live in each variant rule above, after the
+   base `.va-btn` neutral border, so no end-of-file override block is needed.) */
 
 /* ===========================================================================
    Layout fixes (design-system review, issue #55)

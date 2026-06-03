@@ -1237,7 +1237,8 @@ body {
 }
 
 .va-pagination-prev,
-.va-pagination-next {
+.va-pagination-next,
+.va-pagination a {
   display: inline-flex;
   align-items: center;
   gap: var(--visuauth-space-1);
@@ -1255,9 +1256,11 @@ body {
 }
 
 .va-pagination-prev:hover,
-.va-pagination-next:hover {
+.va-pagination-next:hover,
+.va-pagination a:hover {
   background: var(--visuauth-hover);
   border-color: var(--visuauth-border-strong);
+  text-decoration: none;
 }
 
 .va-pagination .va-disabled {
@@ -2314,3 +2317,10 @@ body {
 .va-lang > summary { list-style: none; }
 .va-lang > summary::-webkit-details-marker { display: none; }
 .va-lang > summary::marker { content: ""; }
+
+/* 8. htmx request indicators: hidden until a request is in flight. htmx can
+   inject these by default, but declare them explicitly so the "searching…"
+   indicators stay hidden even if that injection is disabled. */
+.htmx-indicator { opacity: 0; transition: opacity 200ms ease-in; }
+.htmx-request .htmx-indicator,
+.htmx-request.htmx-indicator { opacity: 1; }

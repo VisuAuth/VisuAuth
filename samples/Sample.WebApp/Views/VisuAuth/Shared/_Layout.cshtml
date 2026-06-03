@@ -52,8 +52,9 @@
     }
     var initials = Initials(displayName);
 
-    // Safe localization: fall back to clean English if a key isn't in the .resx
-    // yet (Account.SignOut / Sidebar.Collapse are new — see README to add them).
+    // Safe localization: fall back to clean English if a key isn't in the JSON
+    // localizer (AdminSharedResources.*.json) yet (Account.SignOut /
+    // Sidebar.Collapse are new — see README to add them).
     string Loc(LocalizedString s, string fallback) => s.ResourceNotFound ? fallback : s.Value;
 }<!doctype html>
 <html lang="@pageLang">

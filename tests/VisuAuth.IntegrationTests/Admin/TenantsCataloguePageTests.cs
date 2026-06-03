@@ -168,6 +168,8 @@ public sealed class TenantsCataloguePageTests : IClassFixture<VisuAuthTestFactor
 
         body.Should().Contain("va-tenant-switcher",
             "the header must render the tenant scope dropdown when multi-tenancy is on");
+        body.Should().Contain("va-header-tenant",
+            "the switcher must render in the header variant, not the sidebar one");
         body.Should().Contain("value=\"acme\"");
         body.Should().Contain("value=\"globex\"");
         body.Should().Contain("value=\"initech\"");
@@ -186,11 +188,11 @@ public sealed class TenantsCataloguePageTests : IClassFixture<VisuAuthTestFactor
         var response = await client.GetAsync(new Uri("/visuauth/admin/users", UriKind.Relative));
         var body = await response.Content.ReadAsStringAsync();
 
-        // Match the switcher form by its va-tenant-indicator class regardless of
-        // any additional classes (the header variant also carries va-header-tenant).
+        // Match the header switcher form by its header-only class so the test
+        // can't accidentally pass against a (future) re-introduced sidebar form.
         var switcherFormMatch = Regex.Match(
             body,
-            @"<form[^>]*\bclass=""[^""]*\bva-tenant-indicator\b[^""]*""[^>]*>([\s\S]*?)</form>");
+            @"<form[^>]*\bclass=""[^""]*\bva-header-tenant\b[^""]*""[^>]*>([\s\S]*?)</form>");
         switcherFormMatch.Success.Should().BeTrue("the switcher form must be rendered");
 
         switcherFormMatch.Groups[1].Value.Should().Contain("__RequestVerificationToken",

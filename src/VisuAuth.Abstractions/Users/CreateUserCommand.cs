@@ -17,7 +17,7 @@ public sealed record CreateUserCommand
     public bool EmailConfirmed { get; init; }
 
     /// <summary>Roles to assign on creation.</summary>
-    public IReadOnlyCollection<string> Roles { get; init; } = [];
+    public IReadOnlyList<string> Roles { get; init; } = [];
 }
 
 public sealed record UpdateUserCommand

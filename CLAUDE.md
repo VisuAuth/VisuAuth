@@ -180,8 +180,8 @@ Conversations between contributors can happen in any language; the project owner
 - `record` for DTOs / value-like types, `class` for types with behavior
 - `async`/`await` always with `CancellationToken` for any I/O
 - `TimeProvider` instead of `DateTime.Now` / `DateTime.UtcNow`
-- Result-style returns for expected errors (`UserResult.Failure(...)`), exceptions only for programmer errors and truly exceptional conditions
-- One public type per file
+- Result-style returns for expected errors (`StoreResult.Failure(...)`), exceptions only for programmer errors and truly exceptional conditions
+- One public type per file — except an interface (or primary type) may live alongside its small, directly-associated companion types (its result/options record, a closely-bound enum), which keeps a contract and its DTOs readable in one place
 - Members ordered: const, fields, ctor, properties, public methods, private methods
 - See `.editorconfig` for the enforced rules
 

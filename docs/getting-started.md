@@ -85,6 +85,17 @@ app.Run();
 That is the entire integration. No Node.js, no build step, no Razor file
 copying, no manual middleware wiring.
 
+The snippet above reads a `Default` connection string — add one to
+`appsettings.json` (SQLite shown; swap the provider to match your database):
+
+```json
+{
+  "ConnectionStrings": {
+    "Default": "Data Source=app.db"
+  }
+}
+```
+
 ### Prefer finer control?
 
 `AddVisuAuth<TUser>()` is the recommended shorthand. The same registration has

@@ -127,7 +127,7 @@ visuauth/
 ├── samples/
 │   ├── Sample.WebApp/             # Drop-in example (Identity + Entra toggle)
 │   └── Sample.EntraWebApp/        # Minimal Entra-only reference
-└── docs/                          # (Docusaurus, coming soon)
+└── docs/                          # Documentation site source (MkDocs Material)
 ```
 
 ## Getting started

@@ -195,13 +195,13 @@ public sealed class AspNetIdentityUserStore<TUser>(
     }
 
     /// <inheritdoc />
-    public async Task<UserResult> CreateAsync(CreateUserCommand command, CancellationToken cancellationToken = default)
+    public async Task<StoreResult> CreateAsync(CreateUserCommand command, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
 
         if (string.IsNullOrWhiteSpace(command.Email))
         {
-            return UserResult.Failure("Email is required.");
+            return StoreResult.Failure("Email is required.");
         }
 
         cancellationToken.ThrowIfCancellationRequested();
@@ -236,17 +236,17 @@ public sealed class AspNetIdentityUserStore<TUser>(
 
         if (temporary is not null)
         {
-            return UserResult.Success(user.Id, new Dictionary<string, string>
+            return StoreResult.Success(user.Id, new Dictionary<string, string>
             {
                 ["temporaryPassword"] = temporary,
             });
         }
 
-        return UserResult.Success(user.Id);
+        return StoreResult.Success(user.Id);
     }
 
     /// <inheritdoc />
-    public async Task<UserResult> UpdateAsync(string id, UpdateUserCommand command, CancellationToken cancellationToken = default)
+    public async Task<StoreResult> UpdateAsync(string id, UpdateUserCommand command, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
         ArgumentNullException.ThrowIfNull(command);
@@ -254,7 +254,7 @@ public sealed class AspNetIdentityUserStore<TUser>(
         var user = await _userManager.FindByIdAsync(id);
         if (user is null)
         {
-            return UserResult.Failure($"User '{id}' was not found.");
+            return StoreResult.Failure($"User '{id}' was not found.");
         }
 
         cancellationToken.ThrowIfCancellationRequested();
@@ -280,38 +280,38 @@ public sealed class AspNetIdentityUserStore<TUser>(
         }
 
         return errors.Count == 0
-            ? UserResult.Success(user.Id)
-            : UserResult.Failure("Update failed.", errors);
+            ? StoreResult.Success(user.Id)
+            : StoreResult.Failure("Update failed.", errors);
     }
 
     /// <inheritdoc />
-    public async Task<UserResult> DeleteAsync(string id, CancellationToken cancellationToken = default)
+    public async Task<StoreResult> DeleteAsync(string id, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
 
         var user = await _userManager.FindByIdAsync(id);
         if (user is null)
         {
-            return UserResult.Failure($"User '{id}' was not found.");
+            return StoreResult.Failure($"User '{id}' was not found.");
         }
 
         cancellationToken.ThrowIfCancellationRequested();
 
         var result = await _userManager.DeleteAsync(user);
         return result.Succeeded
-            ? UserResult.Success(user.Id)
+            ? StoreResult.Success(user.Id)
             : ToFailure(result, "Failed to delete user.");
     }
 
     /// <inheritdoc />
-    public async Task<UserResult> SetEnabledAsync(string id, bool enabled, CancellationToken cancellationToken = default)
+    public async Task<StoreResult> SetEnabledAsync(string id, bool enabled, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
 
         var user = await _userManager.FindByIdAsync(id);
         if (user is null)
         {
-            return UserResult.Failure($"User '{id}' was not found.");
+            return StoreResult.Failure($"User '{id}' was not found.");
         }
 
         cancellationToken.ThrowIfCancellationRequested();
@@ -338,26 +338,26 @@ public sealed class AspNetIdentityUserStore<TUser>(
             // Reset the failed-attempts counter so the user does not get
             // re-locked on the next misclick.
             await _userManager.ResetAccessFailedCountAsync(user);
-            return UserResult.Success(user.Id);
+            return StoreResult.Success(user.Id);
         }
 
         // DateTimeOffset.MaxValue is the convention Identity itself uses
         // for "locked out forever".
         var lockResult = await _userManager.SetLockoutEndDateAsync(user, DateTimeOffset.MaxValue);
         return lockResult.Succeeded
-            ? UserResult.Success(user.Id)
+            ? StoreResult.Success(user.Id)
             : ToFailure(lockResult, "Failed to lock user.");
     }
 
     /// <inheritdoc />
-    public async Task<UserResult> ResetPasswordAsync(string id, CancellationToken cancellationToken = default)
+    public async Task<StoreResult> ResetPasswordAsync(string id, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
 
         var user = await _userManager.FindByIdAsync(id);
         if (user is null)
         {
-            return UserResult.Failure($"User '{id}' was not found.");
+            return StoreResult.Failure($"User '{id}' was not found.");
         }
 
         cancellationToken.ThrowIfCancellationRequested();
@@ -375,21 +375,21 @@ public sealed class AspNetIdentityUserStore<TUser>(
         // user must use the new temporary password to sign in again.
         await _userManager.UpdateSecurityStampAsync(user);
 
-        return UserResult.Success(user.Id, new Dictionary<string, string>
+        return StoreResult.Success(user.Id, new Dictionary<string, string>
         {
             ["temporaryPassword"] = temporary,
         });
     }
 
     /// <inheritdoc />
-    public async Task<UserResult> ResetTwoFactorAsync(string id, CancellationToken cancellationToken = default)
+    public async Task<StoreResult> ResetTwoFactorAsync(string id, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
 
         var user = await _userManager.FindByIdAsync(id);
         if (user is null)
         {
-            return UserResult.Failure($"User '{id}' was not found.");
+            return StoreResult.Failure($"User '{id}' was not found.");
         }
 
         cancellationToken.ThrowIfCancellationRequested();
@@ -408,25 +408,25 @@ public sealed class AspNetIdentityUserStore<TUser>(
             return ToFailure(resetKey, "Failed to reset authenticator key.");
         }
 
-        return UserResult.Success(user.Id);
+        return StoreResult.Success(user.Id);
     }
 
     /// <inheritdoc />
-    public async Task<UserResult> RevokeSessionsAsync(string id, CancellationToken cancellationToken = default)
+    public async Task<StoreResult> RevokeSessionsAsync(string id, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
 
         var user = await _userManager.FindByIdAsync(id);
         if (user is null)
         {
-            return UserResult.Failure($"User '{id}' was not found.");
+            return StoreResult.Failure($"User '{id}' was not found.");
         }
 
         cancellationToken.ThrowIfCancellationRequested();
 
         var stamp = await _userManager.UpdateSecurityStampAsync(user);
         return stamp.Succeeded
-            ? UserResult.Success(user.Id)
+            ? StoreResult.Success(user.Id)
             : ToFailure(stamp, "Failed to revoke sessions.");
     }
 
@@ -442,10 +442,10 @@ public sealed class AspNetIdentityUserStore<TUser>(
         }
     }
 
-    private static UserResult ToFailure(IdentityResult result, string fallback)
+    private static StoreResult ToFailure(IdentityResult result, string fallback)
     {
         var messages = result.Errors.Select(e => e.Description).ToList();
-        return UserResult.Failure(
+        return StoreResult.Failure(
             messages.Count == 0 ? fallback : messages[0],
             messages);
     }

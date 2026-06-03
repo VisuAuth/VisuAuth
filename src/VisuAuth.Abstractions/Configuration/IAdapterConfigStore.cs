@@ -49,7 +49,7 @@ public interface IAdapterConfigStore
     /// override (fall back to code/appsettings), and any other string sets it
     /// (encrypted when <see cref="AdapterConfigValue.IsSecret"/>).
     /// </summary>
-    Task<UserResult> SaveAsync(SaveAdapterConfigCommand command, CancellationToken cancellationToken = default);
+    Task<StoreResult> SaveAsync(SaveAdapterConfigCommand command, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -60,17 +60,29 @@ public interface IAdapterConfigStore
 /// </summary>
 public sealed record AdapterConfigEntryView
 {
+    /// <summary>Storage key for the setting.</summary>
     public required string Key { get; init; }
+
+    /// <summary>True when the value is a secret (its plaintext is never returned here).</summary>
     public bool IsSecret { get; init; }
+
+    /// <summary>True when a value (secret or not) is stored for this key.</summary>
     public bool HasValue { get; init; }
+
+    /// <summary>The stored value for non-secret keys; always <see langword="null"/> for secrets.</summary>
     public string? Value { get; init; }
+
+    /// <summary>When this setting was last saved.</summary>
     public DateTimeOffset UpdatedAt { get; init; }
 }
 
 /// <summary>Write shape for a batch of adapter-config overrides.</summary>
 public sealed record SaveAdapterConfigCommand
 {
+    /// <summary>Adapter key the settings belong to.</summary>
     public required string Adapter { get; init; }
+
+    /// <summary>The per-key values to apply in this save.</summary>
     public required IReadOnlyList<AdapterConfigValue> Values { get; init; }
 }
 
@@ -81,7 +93,12 @@ public sealed record SaveAdapterConfigCommand
 /// </summary>
 public sealed record AdapterConfigValue
 {
+    /// <summary>Storage key being set.</summary>
     public required string Key { get; init; }
+
+    /// <summary>True when the value should be stored encrypted as a secret.</summary>
     public bool IsSecret { get; init; }
+
+    /// <summary>Tri-state: <see langword="null"/> preserves the stored value, <c>""</c> clears the override, any other string sets it.</summary>
     public string? Value { get; init; }
 }

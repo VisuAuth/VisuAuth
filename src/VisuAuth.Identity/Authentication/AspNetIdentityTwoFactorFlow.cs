@@ -78,7 +78,7 @@ public sealed class AspNetIdentityTwoFactorFlow<TUser>(
     }
 
     /// <inheritdoc />
-    public async Task<UserResult> ResetAuthenticatorKeyAsync(
+    public async Task<StoreResult> ResetAuthenticatorKeyAsync(
         string userId,
         CancellationToken cancellationToken = default)
     {
@@ -88,18 +88,18 @@ public sealed class AspNetIdentityTwoFactorFlow<TUser>(
         var user = await _userManager.FindByIdAsync(userId);
         if (user is null)
         {
-            return UserResult.Failure(UserNotFoundError);
+            return StoreResult.Failure(UserNotFoundError);
         }
 
         // Disable 2FA before rotating the key so a stale code from the old
         // authenticator can never satisfy the new one.
         await _userManager.SetTwoFactorEnabledAsync(user, false);
         var reset = await _userManager.ResetAuthenticatorKeyAsync(user);
-        return reset.Succeeded ? UserResult.Success(user.Id) : ToFailure(reset, "Failed to reset authenticator key.");
+        return reset.Succeeded ? StoreResult.Success(user.Id) : ToFailure(reset, "Failed to reset authenticator key.");
     }
 
     /// <inheritdoc />
-    public async Task<UserResult> EnableTwoFactorAsync(
+    public async Task<StoreResult> EnableTwoFactorAsync(
         string userId,
         string code,
         CancellationToken cancellationToken = default)
@@ -110,13 +110,13 @@ public sealed class AspNetIdentityTwoFactorFlow<TUser>(
         var normalized = OtpAuthUriBuilder.Normalize(code);
         if (normalized is null)
         {
-            return UserResult.Failure("Verification code is required.");
+            return StoreResult.Failure("Verification code is required.");
         }
 
         var user = await _userManager.FindByIdAsync(userId);
         if (user is null)
         {
-            return UserResult.Failure(UserNotFoundError);
+            return StoreResult.Failure(UserNotFoundError);
         }
 
         var verified = await _userManager.VerifyTwoFactorTokenAsync(
@@ -125,15 +125,15 @@ public sealed class AspNetIdentityTwoFactorFlow<TUser>(
             normalized);
         if (!verified)
         {
-            return UserResult.Failure("Verification code is invalid.");
+            return StoreResult.Failure("Verification code is invalid.");
         }
 
         var enable = await _userManager.SetTwoFactorEnabledAsync(user, true);
-        return enable.Succeeded ? UserResult.Success(user.Id) : ToFailure(enable, "Failed to enable two-factor authentication.");
+        return enable.Succeeded ? StoreResult.Success(user.Id) : ToFailure(enable, "Failed to enable two-factor authentication.");
     }
 
     /// <inheritdoc />
-    public async Task<UserResult> DisableTwoFactorAsync(
+    public async Task<StoreResult> DisableTwoFactorAsync(
         string userId,
         CancellationToken cancellationToken = default)
     {
@@ -143,7 +143,7 @@ public sealed class AspNetIdentityTwoFactorFlow<TUser>(
         var user = await _userManager.FindByIdAsync(userId);
         if (user is null)
         {
-            return UserResult.Failure(UserNotFoundError);
+            return StoreResult.Failure(UserNotFoundError);
         }
 
         var disable = await _userManager.SetTwoFactorEnabledAsync(user, false);
@@ -156,7 +156,7 @@ public sealed class AspNetIdentityTwoFactorFlow<TUser>(
         // ResetAuthenticatorKeyAsync would replace it with a fresh secret,
         // which would silently be ready to use the moment 2FA is flipped on.
         await _userManager.RemoveAuthenticationTokenAsync(user, "[AspNetUserStore]", "AuthenticatorKey");
-        return UserResult.Success(user.Id);
+        return StoreResult.Success(user.Id);
     }
 
     /// <inheritdoc />
@@ -172,7 +172,7 @@ public sealed class AspNetIdentityTwoFactorFlow<TUser>(
     }
 
     /// <inheritdoc />
-    public async Task<UserResult> GenerateRecoveryCodesAsync(
+    public async Task<StoreResult> GenerateRecoveryCodesAsync(
         string userId,
         int count,
         CancellationToken cancellationToken = default)
@@ -184,22 +184,22 @@ public sealed class AspNetIdentityTwoFactorFlow<TUser>(
         var user = await _userManager.FindByIdAsync(userId);
         if (user is null)
         {
-            return UserResult.Failure(UserNotFoundError);
+            return StoreResult.Failure(UserNotFoundError);
         }
 
         if (!await _userManager.GetTwoFactorEnabledAsync(user))
         {
-            return UserResult.Failure("Two-factor authentication must be enabled before generating recovery codes.");
+            return StoreResult.Failure("Two-factor authentication must be enabled before generating recovery codes.");
         }
 
         var codes = await _userManager.GenerateNewTwoFactorRecoveryCodesAsync(user, count);
         if (codes is null)
         {
-            return UserResult.Failure("Failed to generate recovery codes.");
+            return StoreResult.Failure("Failed to generate recovery codes.");
         }
 
         var list = codes.ToArray();
-        return UserResult.Success(user.Id, new Dictionary<string, string>
+        return StoreResult.Success(user.Id, new Dictionary<string, string>
         {
             ["recoveryCodes"] = string.Join('\n', list),
         });
@@ -270,10 +270,10 @@ public sealed class AspNetIdentityTwoFactorFlow<TUser>(
         return SignInResult.InvalidCredentials();
     }
 
-    private static UserResult ToFailure(IdentityResult result, string fallback)
+    private static StoreResult ToFailure(IdentityResult result, string fallback)
     {
         var messages = result.Errors.Select(e => e.Description).ToList();
-        return UserResult.Failure(
+        return StoreResult.Failure(
             messages.Count == 0 ? fallback : messages[0],
             messages);
     }

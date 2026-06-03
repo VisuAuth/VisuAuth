@@ -105,18 +105,18 @@ public sealed class EntraRoleStore(
     }
 
     /// <inheritdoc />
-    public Task<UserResult> CreateAsync(string name, string? tenantId, CancellationToken cancellationToken = default)
+    public Task<StoreResult> CreateAsync(string name, string? tenantId, CancellationToken cancellationToken = default)
         => throw new NotSupportedException(
             "App roles are declared in the Entra app manifest, not at runtime. "
             + "Open the app registration in the Entra portal and add the role there, "
             + "then refresh this page.");
 
     /// <inheritdoc />
-    public Task<UserResult> RenameAsync(string id, string newName, CancellationToken cancellationToken = default)
+    public Task<StoreResult> RenameAsync(string id, string newName, CancellationToken cancellationToken = default)
         => throw new NotSupportedException("Renaming app roles is not supported by Microsoft Graph at runtime.");
 
     /// <inheritdoc />
-    public Task<UserResult> DeleteAsync(string id, CancellationToken cancellationToken = default)
+    public Task<StoreResult> DeleteAsync(string id, CancellationToken cancellationToken = default)
         => throw new NotSupportedException("Deleting app roles is not supported by Microsoft Graph at runtime.");
 
     /// <inheritdoc />
@@ -144,7 +144,7 @@ public sealed class EntraRoleStore(
     }
 
     /// <inheritdoc />
-    public async Task<UserResult> AssignRoleAsync(string userId, string roleName, CancellationToken cancellationToken = default)
+    public async Task<StoreResult> AssignRoleAsync(string userId, string roleName, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(userId);
         ArgumentException.ThrowIfNullOrWhiteSpace(roleName);
@@ -153,13 +153,13 @@ public sealed class EntraRoleStore(
             var (servicePrincipalId, appRoles) = await LoadTargetAppAsync(cancellationToken);
             if (servicePrincipalId is null)
             {
-                return UserResult.Failure("Target app's service principal not found.");
+                return StoreResult.Failure("Target app's service principal not found.");
             }
 
             var role = FindRoleByName(appRoles, roleName);
             if (role?.Id is null)
             {
-                return UserResult.Failure($"Role '{roleName}' is not declared on the target app.");
+                return StoreResult.Failure($"Role '{roleName}' is not declared on the target app.");
             }
 
             await Graph.Users[userId].AppRoleAssignments.PostAsync(new AppRoleAssignment
@@ -172,20 +172,20 @@ public sealed class EntraRoleStore(
                 ResourceId = Guid.Parse(servicePrincipalId),
             }, cancellationToken: cancellationToken);
 
-            return UserResult.Success(userId);
+            return StoreResult.Success(userId);
         }
         catch (ODataError ex)
         {
-            return UserResult.Failure(ex.Error?.Message ?? "Failed to assign role.");
+            return StoreResult.Failure(ex.Error?.Message ?? "Failed to assign role.");
         }
         catch (FormatException)
         {
-            return UserResult.Failure("User id must be a valid GUID for the Entra adapter.");
+            return StoreResult.Failure("User id must be a valid GUID for the Entra adapter.");
         }
     }
 
     /// <inheritdoc />
-    public async Task<UserResult> RemoveRoleAsync(string userId, string roleName, CancellationToken cancellationToken = default)
+    public async Task<StoreResult> RemoveRoleAsync(string userId, string roleName, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(userId);
         ArgumentException.ThrowIfNullOrWhiteSpace(roleName);
@@ -195,7 +195,7 @@ public sealed class EntraRoleStore(
             var role = FindRoleByName(appRoles, roleName);
             if (role?.Id is null)
             {
-                return UserResult.Failure($"Role '{roleName}' is not declared on the target app.");
+                return StoreResult.Failure($"Role '{roleName}' is not declared on the target app.");
             }
 
             var assignments = await Graph.Users[userId].AppRoleAssignments
@@ -205,19 +205,19 @@ public sealed class EntraRoleStore(
                 .FirstOrDefault(a => a.AppRoleId == role.Id);
             if (target?.Id is null)
             {
-#pragma warning disable IDE0028 // UserResult.Metadata expects IReadOnlyDictionary — explicit Dictionary<,> here is intentional.
-                return UserResult.Success(userId, metadata: new Dictionary<string, string> { ["noop"] = "true" });
+#pragma warning disable IDE0028 // StoreResult.Metadata expects IReadOnlyDictionary — explicit Dictionary<,> here is intentional.
+                return StoreResult.Success(userId, metadata: new Dictionary<string, string> { ["noop"] = "true" });
 #pragma warning restore IDE0028
             }
 
             await Graph.Users[userId].AppRoleAssignments[target.Id]
                 .DeleteAsync(cancellationToken: cancellationToken);
 
-            return UserResult.Success(userId);
+            return StoreResult.Success(userId);
         }
         catch (ODataError ex)
         {
-            return UserResult.Failure(ex.Error?.Message ?? "Failed to remove role.");
+            return StoreResult.Failure(ex.Error?.Message ?? "Failed to remove role.");
         }
     }
 

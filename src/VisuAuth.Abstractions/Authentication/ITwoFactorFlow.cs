@@ -27,20 +27,20 @@ public interface ITwoFactorFlow
     /// by the admin "Reset 2FA" path and by an end user who wants to re-enroll
     /// from scratch.
     /// </summary>
-    Task<UserResult> ResetAuthenticatorKeyAsync(string userId, CancellationToken cancellationToken = default);
+    Task<StoreResult> ResetAuthenticatorKeyAsync(string userId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Verifies <paramref name="code"/> against the authenticator shared key
     /// and, on success, flips the user's two-factor flag on. Returns failure
     /// (without enabling) when the code is wrong or the user is missing.
     /// </summary>
-    Task<UserResult> EnableTwoFactorAsync(string userId, string code, CancellationToken cancellationToken = default);
+    Task<StoreResult> EnableTwoFactorAsync(string userId, string code, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Disables two-factor authentication for the user and clears the
     /// authenticator shared key so re-enrollment requires a fresh setup.
     /// </summary>
-    Task<UserResult> DisableTwoFactorAsync(string userId, CancellationToken cancellationToken = default);
+    Task<StoreResult> DisableTwoFactorAsync(string userId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns <c>true</c> when the user has the authenticator app enrolled
@@ -50,11 +50,11 @@ public interface ITwoFactorFlow
 
     /// <summary>
     /// Generates a fresh batch of recovery codes, replacing any previous set.
-    /// The plain-text codes are surfaced once via <see cref="UserResult.Metadata"/>
+    /// The plain-text codes are surfaced once via <see cref="StoreResult.Metadata"/>
     /// under the key <c>recoveryCodes</c> (newline-joined) — the caller MUST
     /// show them once and never persist them.
     /// </summary>
-    Task<UserResult> GenerateRecoveryCodesAsync(string userId, int count, CancellationToken cancellationToken = default);
+    Task<StoreResult> GenerateRecoveryCodesAsync(string userId, int count, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Completes a sign-in challenge using a TOTP code. Requires the partial

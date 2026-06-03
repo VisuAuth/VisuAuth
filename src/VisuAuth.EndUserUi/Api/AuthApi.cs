@@ -129,13 +129,13 @@ public static class AuthApi
         {
             Action = AuditActions.UserRegistered,
             TargetType = AuditTargetTypes.User,
-            TargetId = registerResult.UserId,
+            TargetId = registerResult.ResourceId,
             TargetLabel = attemptedEmail,
             Outcome = AuditOutcome.Success,
             Payload = new Dictionary<string, string?> { [SignInAuditEmitter.ChannelPayloadKey] = "api" },
         }, cancellationToken);
 
-        return await IssueOrUnauthorized(issuer, registerResult.UserId!, cancellationToken);
+        return await IssueOrUnauthorized(issuer, registerResult.ResourceId!, cancellationToken);
     }
 
     private static async Task<IResult> RefreshAsync(

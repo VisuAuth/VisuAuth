@@ -96,7 +96,7 @@ internal static class EntraCapabilities
         // through Graph's POST /users (which EntraUserStore.CreateAsync
         // already implements). Flipping to true unblocks the admin
         // surface; the end-user /register page still resolves to
-        // UserResult.Failure via EntraAuthenticationFlow.RegisterAsync,
+        // StoreResult.Failure via EntraAuthenticationFlow.RegisterAsync,
         // so the "self-service" half stays honest. v0.3 splits this into
         // a dedicated SupportsAdminUserCreation capability.
         SupportsRegistration = true,

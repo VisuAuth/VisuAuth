@@ -27,7 +27,7 @@ public sealed class EntraCapabilitiesTests
         // former (Microsoft owns the tenant signup flow), but the
         // latter works via Graph POST /users — keeping the capability
         // true unblocks the admin "Criar usuário" page. The end-user
-        // /register page still resolves to UserResult.Failure via
+        // /register page still resolves to StoreResult.Failure via
         // EntraAuthenticationFlow.RegisterAsync, so the "self-service"
         // half stays honest from a behaviour standpoint. v0.3 splits
         // these into separate capabilities.

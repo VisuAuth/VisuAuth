@@ -128,7 +128,7 @@ internal static class EntraUserMapper
     /// <summary>
     /// Builds the <see cref="GraphUser"/> Graph wants for a new directory
     /// account. Returns the generated password too — the consumer wraps it
-    /// into <see cref="VisuAuth.Abstractions.Common.UserResult.Metadata"/>
+    /// into <see cref="VisuAuth.Abstractions.Common.StoreResult.Metadata"/>
     /// so the admin UI can display the one-time password widget exactly
     /// like the Identity adapter does.
     /// </summary>

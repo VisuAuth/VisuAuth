@@ -212,7 +212,7 @@ public sealed class EntraUserStoreGraphTests
         var result = await sut.CreateAsync(new CreateUserCommand { Email = "new@contoso.com" });
 
         result.IsSuccess.Should().BeTrue();
-        result.UserId.Should().Be("u-new");
+        result.ResourceId.Should().Be("u-new");
         result.Metadata.Should().ContainKey(EntraUserStore.TemporaryPasswordMetadataKey);
         result.Metadata![EntraUserStore.TemporaryPasswordMetadataKey].Should().NotBeEmpty(
             "Create must surface the generated temp password so the admin can hand it over");
@@ -241,7 +241,7 @@ public sealed class EntraUserStoreGraphTests
         var result = await sut.UpdateAsync("u-1", new UpdateUserCommand { UserName = "Updated Display" });
 
         result.IsSuccess.Should().BeTrue();
-        result.UserId.Should().Be("u-1");
+        result.ResourceId.Should().Be("u-1");
     }
 
     [Fact]
@@ -362,7 +362,7 @@ public sealed class EntraUserStoreGraphTests
         var result = await sut.ResetTwoFactorAsync("u-1");
 
         result.IsSuccess.Should().BeTrue();
-        result.UserId.Should().Be("u-1");
+        result.ResourceId.Should().Be("u-1");
     }
 
     [Fact]
@@ -391,6 +391,107 @@ public sealed class EntraUserStoreGraphTests
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("UserAuthenticationMethod");
+    }
+
+    [Fact]
+    public async Task CreateAsync_WhenGraphReturnsNoId_ReturnsFailure()
+    {
+        // Graph accepted the POST but the response body carries no id — a
+        // pathological-but-possible shape the store must guard against
+        // rather than NRE on created.Id downstream.
+        var handler = new FakeGraphHandler()
+            .SetupPostJson("/users", """{"userPrincipalName":"new@contoso.com"}""");
+        var sut = BuildStore(handler);
+
+        var result = await sut.CreateAsync(new CreateUserCommand { Email = "new@contoso.com" });
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("no user id");
+    }
+
+    [Fact]
+    public async Task UpdateAsync_OnNonNotFoundError_SurfacesGraphMessage()
+    {
+        var handler = new FakeGraphHandler()
+            .SetupError(HttpMethod.Patch, "/users/u-1", HttpStatusCode.Forbidden,
+                "Authorization_RequestDenied", "missing User.ReadWrite.All");
+        var sut = BuildStore(handler);
+
+        var result = await sut.UpdateAsync("u-1", new UpdateUserCommand { UserName = "x" });
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("User.ReadWrite.All",
+            "a non-404 failure must surface the Graph message, not the user-not-found shortcut");
+    }
+
+    [Fact]
+    public async Task DeleteAsync_OnNonNotFoundError_SurfacesGraphMessage()
+    {
+        var handler = new FakeGraphHandler()
+            .SetupError(HttpMethod.Delete, "/users/u-1", HttpStatusCode.Forbidden,
+                "Authorization_RequestDenied", "delete not permitted");
+        var sut = BuildStore(handler);
+
+        var result = await sut.DeleteAsync("u-1");
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("delete not permitted");
+    }
+
+    [Fact]
+    public async Task SetEnabledAsync_OnNotFound_ReturnsUserNotFound()
+    {
+        var handler = new FakeGraphHandler()
+            .SetupError(HttpMethod.Patch, "/users/missing", HttpStatusCode.NotFound,
+                "Request_ResourceNotFound", "x");
+        var sut = BuildStore(handler);
+
+        var result = await sut.SetEnabledAsync("missing", false);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Be("User not found.");
+    }
+
+    [Fact]
+    public async Task ResetPasswordAsync_OnNotFound_ReturnsUserNotFound()
+    {
+        var handler = new FakeGraphHandler()
+            .SetupError(HttpMethod.Patch, "/users/missing", HttpStatusCode.NotFound,
+                "Request_ResourceNotFound", "x");
+        var sut = BuildStore(handler);
+
+        var result = await sut.ResetPasswordAsync("missing");
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Be("User not found.");
+    }
+
+    [Fact]
+    public async Task RevokeSessionsAsync_OnNotFound_ReturnsUserNotFound()
+    {
+        var handler = new FakeGraphHandler()
+            .SetupError(HttpMethod.Post, "/users/missing/revokeSignInSessions", HttpStatusCode.NotFound,
+                "Request_ResourceNotFound", "x");
+        var sut = BuildStore(handler);
+
+        var result = await sut.RevokeSessionsAsync("missing");
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Be("User not found.");
+    }
+
+    [Fact]
+    public async Task RevokeSessionsAsync_OnNonNotFoundError_SurfacesGraphMessage()
+    {
+        var handler = new FakeGraphHandler()
+            .SetupError(HttpMethod.Post, "/users/u-1/revokeSignInSessions", HttpStatusCode.Forbidden,
+                "Authorization_RequestDenied", "missing User.RevokeSessions.All");
+        var sut = BuildStore(handler);
+
+        var result = await sut.RevokeSessionsAsync("u-1");
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("RevokeSessions");
     }
 
     private static EntraUserStore BuildStore(FakeGraphHandler handler)

@@ -228,7 +228,7 @@ public sealed class IndexModel(
         string scheme,
         string displayName,
         string? secretToSave,
-        UserResult result,
+        StoreResult result,
         CancellationToken cancellationToken)
     {
         if (!result.IsSuccess)

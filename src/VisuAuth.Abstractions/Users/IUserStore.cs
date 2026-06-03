@@ -16,6 +16,7 @@ public interface IUserStore
     /// <summary>Features this backend supports. Inspected at runtime by the UI.</summary>
     UserBackendCapabilities Capabilities { get; }
 
+    /// <summary>Loads the list projection of a user, or <c>null</c> when no user matches <paramref name="id"/>.</summary>
     Task<UserSummary?> GetAsync(string id, CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -24,51 +25,53 @@ public interface IUserStore
     /// </summary>
     Task<UserDetail?> GetDetailAsync(string id, CancellationToken cancellationToken = default);
 
+    /// <summary>Returns a filtered, cursor-paginated page of users.</summary>
     Task<PagedResult<UserSummary>> ListAsync(UserFilter filter, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Creates a new user. When <see cref="CreateUserCommand.Password"/> is left
     /// blank, the adapter generates a policy-compliant temporary password and
-    /// returns it under <see cref="UserResult.Metadata"/> key <c>"temporaryPassword"</c>.
+    /// returns it under <see cref="StoreResult.Metadata"/> key <c>"temporaryPassword"</c>.
     /// </summary>
-    Task<UserResult> CreateAsync(CreateUserCommand command, CancellationToken cancellationToken = default);
+    Task<StoreResult> CreateAsync(CreateUserCommand command, CancellationToken cancellationToken = default);
 
-    Task<UserResult> UpdateAsync(string id, UpdateUserCommand command, CancellationToken cancellationToken = default);
+    /// <summary>Updates the user's profile (email / user name / phone); <see langword="null"/> command fields are left unchanged.</summary>
+    Task<StoreResult> UpdateAsync(string id, UpdateUserCommand command, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Deletes the user permanently. Implementations are free to soft-delete,
     /// but the ASP.NET Identity adapter performs a hard delete via
     /// <c>UserManager.DeleteAsync</c>.
     /// </summary>
-    Task<UserResult> DeleteAsync(string id, CancellationToken cancellationToken = default);
+    Task<StoreResult> DeleteAsync(string id, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Enables or disables the user. When <paramref name="enabled"/> is <c>false</c>
     /// the user is locked out indefinitely (until an admin unlocks them).
     /// </summary>
-    Task<UserResult> SetEnabledAsync(string id, bool enabled, CancellationToken cancellationToken = default);
+    Task<StoreResult> SetEnabledAsync(string id, bool enabled, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Resets the user's password to a freshly generated, policy-compliant temporary
     /// value that the admin hands back to the user.
     /// </summary>
     /// <remarks>
-    /// On success the result's <see cref="UserResult.Metadata"/> contains
+    /// On success the result's <see cref="StoreResult.Metadata"/> contains
     /// <c>"temporaryPassword"</c> with the plaintext temporary password. The admin
     /// UI surfaces it once — VisuAuth does not persist the plaintext anywhere.
     /// </remarks>
-    Task<UserResult> ResetPasswordAsync(string id, CancellationToken cancellationToken = default);
+    Task<StoreResult> ResetPasswordAsync(string id, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Disables two-factor for the user and clears any authenticator keys, so the
     /// user can re-enrol from scratch.
     /// </summary>
-    Task<UserResult> ResetTwoFactorAsync(string id, CancellationToken cancellationToken = default);
+    Task<StoreResult> ResetTwoFactorAsync(string id, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Forces sign-out from every active session by rotating the user's security
     /// stamp. Existing cookies / refresh tokens become invalid on the next request
     /// that validates the stamp.
     /// </summary>
-    Task<UserResult> RevokeSessionsAsync(string id, CancellationToken cancellationToken = default);
+    Task<StoreResult> RevokeSessionsAsync(string id, CancellationToken cancellationToken = default);
 }

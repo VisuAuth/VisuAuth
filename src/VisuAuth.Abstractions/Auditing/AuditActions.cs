@@ -1,5 +1,10 @@
 namespace VisuAuth.Abstractions.Auditing;
 
+// The audit action / target-type codes below are self-descriptive string
+// constants — their names ARE the documentation, so CS1591 is suppressed for
+// this file rather than restating each identifier in a <summary>.
+#pragma warning disable CS1591
+
 /// <summary>
 /// Centralised registry of action codes VisuAuth itself emits. Consumers
 /// are free to use ad-hoc strings for their own audit events; this class
@@ -95,3 +100,4 @@ public static class AuditTargetTypes
     public const string System = "System";
     public const string Session = "Session";
 }
+#pragma warning restore CS1591

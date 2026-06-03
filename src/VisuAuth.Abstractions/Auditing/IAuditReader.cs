@@ -34,6 +34,7 @@ public interface IAuditReader
     /// </param>
     /// <param name="fromInclusive">Lower bound for <c>Timestamp</c> (inclusive).</param>
     /// <param name="toInclusive">Upper bound for <c>Timestamp</c> (inclusive).</param>
+    /// <param name="cancellationToken">Token to cancel the operation.</param>
     /// <returns>
     /// Days with at least one entry, ordered ascending by date. Days with
     /// zero entries are omitted — the caller fills the gap if it needs a
@@ -90,13 +91,28 @@ public sealed record AuditFilter
 /// </summary>
 public sealed record AuditEntryView
 {
+    /// <summary>Unique id of the audit entry.</summary>
     public required Guid Id { get; init; }
+
+    /// <summary>When the audited action occurred.</summary>
     public required DateTimeOffset Timestamp { get; init; }
+
+    /// <summary>Stable action code (see <see cref="AuditActions"/>).</summary>
     public required string Action { get; init; }
+
+    /// <summary>Type of the affected entity (see <see cref="AuditTargetTypes"/>).</summary>
     public required string TargetType { get; init; }
+
+    /// <summary>Id of the affected entity, when the action had a specific target.</summary>
     public string? TargetId { get; init; }
+
+    /// <summary>Display label for the target, when recorded.</summary>
     public string? TargetLabel { get; init; }
+
+    /// <summary>Whether the action succeeded or failed.</summary>
     public AuditOutcome Outcome { get; init; }
+
+    /// <summary>Reason for a failure, when the outcome was a failure.</summary>
     public string? FailureReason { get; init; }
 
     /// <summary>User id of the actor when present; null for anonymous events (failed login attempts before auth).</summary>
@@ -105,8 +121,13 @@ public sealed record AuditEntryView
     /// <summary>Best-effort display label (email or username) for the actor.</summary>
     public string? ActorEmail { get; init; }
 
+    /// <summary>IP address the action came from, when captured.</summary>
     public string? ActorIpAddress { get; init; }
+
+    /// <summary>User-agent string of the actor's client, when captured.</summary>
     public string? ActorUserAgent { get; init; }
+
+    /// <summary>Tenant the entry belongs to, when multi-tenancy is enabled.</summary>
     public string? TenantId { get; init; }
 
     /// <summary>Raw JSON of the payload dictionary (or null when no payload was recorded).</summary>

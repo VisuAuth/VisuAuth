@@ -26,7 +26,7 @@ namespace VisuAuth.EntraCore.Infrastructure;
 /// rather than erroring — the goal is "drop the second factors", not
 /// "delete the only credential". <see cref="ODataError"/> propagates to
 /// the caller so each store maps it to its own
-/// <c>UserResult</c> shape (404 → "user not found", etc.).
+/// <c>StoreResult</c> shape (404 → "user not found", etc.).
 /// </para>
 /// </remarks>
 public static class EntraTwoFactorReset

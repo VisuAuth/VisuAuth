@@ -31,6 +31,7 @@ public interface IExternalLoginFlow
     /// First-time strategy applied when the external login is not yet
     /// linked to a local account.
     /// </param>
+    /// <param name="cancellationToken">Token to cancel the operation.</param>
     Task<ExternalSignInResult> CompleteSignInAsync(
         ExternalLoginFirstTimeStrategy strategy,
         CancellationToken cancellationToken = default);
@@ -61,9 +62,16 @@ public interface IExternalLoginFlow
 /// </summary>
 public sealed record ExternalPendingInfo
 {
+    /// <summary>Provider scheme name (e.g. <c>"Microsoft"</c>).</summary>
     public required string Provider { get; init; }
+
+    /// <summary>Provider-issued stable user key.</summary>
     public required string ProviderKey { get; init; }
+
+    /// <summary>Email claim from the provider, when present.</summary>
     public string? Email { get; init; }
+
+    /// <summary>Display-name claim from the provider, when present.</summary>
     public string? DisplayName { get; init; }
 }
 
@@ -148,6 +156,7 @@ public enum ExternalSignInOutcome
 /// </summary>
 public sealed record ExternalSignInResult
 {
+    /// <summary>What happened during the external sign-in attempt.</summary>
     public required ExternalSignInOutcome Outcome { get; init; }
 
     /// <summary>Identifier of the signed-in local user (set on <see cref="ExternalSignInOutcome.Success"/>).</summary>
@@ -168,12 +177,14 @@ public sealed record ExternalSignInResult
     /// <summary>Validation / Identity errors when <see cref="Outcome"/> is <see cref="ExternalSignInOutcome.Failed"/>.</summary>
     public IReadOnlyList<string> Errors { get; init; } = [];
 
+    /// <summary>Creates a successful result for the given signed-in local user.</summary>
     public static ExternalSignInResult Success(string userId) => new()
     {
         Outcome = ExternalSignInOutcome.Success,
         UserId = userId,
     };
 
+    /// <summary>Creates a result that asks the caller to render the new-account confirmation page, pre-filled with the provider's claims.</summary>
     public static ExternalSignInResult RequiresConfirmation(
         string provider,
         string providerKey,
@@ -187,21 +198,25 @@ public sealed record ExternalSignInResult
         PendingDisplayName = displayName,
     };
 
+    /// <summary>Creates a result indicating the external cookie was missing or expired.</summary>
     public static ExternalSignInResult NoExternalSession() => new()
     {
         Outcome = ExternalSignInOutcome.NoExternalSession,
     };
 
+    /// <summary>Creates a result indicating the linked local account is locked out.</summary>
     public static ExternalSignInResult LockedOut() => new()
     {
         Outcome = ExternalSignInOutcome.LockedOut,
     };
 
+    /// <summary>Creates a result indicating the linked local account is barred from signing in.</summary>
     public static ExternalSignInResult NotAllowed() => new()
     {
         Outcome = ExternalSignInOutcome.NotAllowed,
     };
 
+    /// <summary>Creates a failure result carrying the validation / Identity errors.</summary>
     public static ExternalSignInResult Failed(IReadOnlyList<string> errors) => new()
     {
         Outcome = ExternalSignInOutcome.Failed,

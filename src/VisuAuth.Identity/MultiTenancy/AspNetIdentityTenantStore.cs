@@ -82,24 +82,24 @@ public sealed class AspNetIdentityTenantStore<TUser>(
     }
 
     /// <inheritdoc />
-    public async Task<UserResult> CreateAsync(string id, string? displayName, CancellationToken cancellationToken = default)
+    public async Task<StoreResult> CreateAsync(string id, string? displayName, CancellationToken cancellationToken = default)
     {
         var trimmedId = id?.Trim();
         if (string.IsNullOrWhiteSpace(trimmedId))
         {
-            return UserResult.Failure("Tenant id is required.");
+            return StoreResult.Failure("Tenant id is required.");
         }
 
         // The id doubles as a URL / header value — keep it boring.
         if (trimmedId.Length > 64 || trimmedId.Any(c => !IsAllowedIdChar(c)))
         {
-            return UserResult.Failure(
+            return StoreResult.Failure(
                 "Tenant id must be 1-64 characters of letters, digits, '-', '_' or '.'.");
         }
 
         if (await _metadata.VisuAuthTenants.AnyAsync(t => t.Id == trimmedId, cancellationToken))
         {
-            return UserResult.Failure($"Tenant '{trimmedId}' already exists.");
+            return StoreResult.Failure($"Tenant '{trimmedId}' already exists.");
         }
 
         var tenant = new VisuAuthTenant
@@ -111,32 +111,32 @@ public sealed class AspNetIdentityTenantStore<TUser>(
 
         _metadata.VisuAuthTenants.Add(tenant);
         await _metadata.SaveChangesAsync(cancellationToken);
-        return UserResult.Success(tenant.Id);
+        return StoreResult.Success(tenant.Id);
     }
 
     /// <inheritdoc />
-    public async Task<UserResult> RenameAsync(string id, string newDisplayName, CancellationToken cancellationToken = default)
+    public async Task<StoreResult> RenameAsync(string id, string newDisplayName, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
         if (string.IsNullOrWhiteSpace(newDisplayName))
         {
-            return UserResult.Failure("Display name is required.");
+            return StoreResult.Failure("Display name is required.");
         }
 
         var tenant = await _metadata.VisuAuthTenants
             .FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
         if (tenant is null)
         {
-            return UserResult.Failure($"Tenant '{id}' was not found.");
+            return StoreResult.Failure($"Tenant '{id}' was not found.");
         }
 
         tenant.DisplayName = newDisplayName.Trim();
         await _metadata.SaveChangesAsync(cancellationToken);
-        return UserResult.Success(tenant.Id);
+        return StoreResult.Success(tenant.Id);
     }
 
     /// <inheritdoc />
-    public async Task<UserResult> DeleteAsync(string id, CancellationToken cancellationToken = default)
+    public async Task<StoreResult> DeleteAsync(string id, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
 
@@ -144,7 +144,7 @@ public sealed class AspNetIdentityTenantStore<TUser>(
             .FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
         if (tenant is null)
         {
-            return UserResult.Failure($"Tenant '{id}' was not found.");
+            return StoreResult.Failure($"Tenant '{id}' was not found.");
         }
 
         var memberCount = await _userManager.Users
@@ -152,13 +152,13 @@ public sealed class AspNetIdentityTenantStore<TUser>(
             .CountAsync(u => u.TenantId == id, cancellationToken);
         if (memberCount > 0)
         {
-            return UserResult.Failure(
+            return StoreResult.Failure(
                 $"Tenant '{id}' still has {memberCount} user(s). Reassign or delete them before removing the tenant.");
         }
 
         _metadata.VisuAuthTenants.Remove(tenant);
         await _metadata.SaveChangesAsync(cancellationToken);
-        return UserResult.Success(tenant.Id);
+        return StoreResult.Success(tenant.Id);
     }
 
     private static bool IsAllowedIdChar(char c) =>

@@ -76,11 +76,11 @@ public sealed class AspNetIdentityRoleStore<TUser, TRole>(
     }
 
     /// <inheritdoc />
-    public async Task<UserResult> CreateAsync(string name, string? tenantId, CancellationToken cancellationToken = default)
+    public async Task<StoreResult> CreateAsync(string name, string? tenantId, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(name))
         {
-            return UserResult.Failure("Role name is required.");
+            return StoreResult.Failure("Role name is required.");
         }
 
         _ = tenantId; // see ListAsync — multi-tenancy aware in a later PR
@@ -89,23 +89,23 @@ public sealed class AspNetIdentityRoleStore<TUser, TRole>(
         var role = new TRole { Name = name.Trim() };
         var result = await _roleManager.CreateAsync(role);
         return result.Succeeded
-            ? UserResult.Success(role.Id)
+            ? StoreResult.Success(role.Id)
             : ToFailure(result, "Failed to create role.");
     }
 
     /// <inheritdoc />
-    public async Task<UserResult> RenameAsync(string id, string newName, CancellationToken cancellationToken = default)
+    public async Task<StoreResult> RenameAsync(string id, string newName, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
         if (string.IsNullOrWhiteSpace(newName))
         {
-            return UserResult.Failure("New role name is required.");
+            return StoreResult.Failure("New role name is required.");
         }
 
         var role = await _roleManager.FindByIdAsync(id);
         if (role is null)
         {
-            return UserResult.Failure($"Role '{id}' was not found.");
+            return StoreResult.Failure($"Role '{id}' was not found.");
         }
 
         cancellationToken.ThrowIfCancellationRequested();
@@ -120,26 +120,26 @@ public sealed class AspNetIdentityRoleStore<TUser, TRole>(
         // so the normalised name re-indexes too.
         var update = await _roleManager.UpdateAsync(role);
         return update.Succeeded
-            ? UserResult.Success(role.Id)
+            ? StoreResult.Success(role.Id)
             : ToFailure(update, "Failed to persist role rename.");
     }
 
     /// <inheritdoc />
-    public async Task<UserResult> DeleteAsync(string id, CancellationToken cancellationToken = default)
+    public async Task<StoreResult> DeleteAsync(string id, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
 
         var role = await _roleManager.FindByIdAsync(id);
         if (role is null)
         {
-            return UserResult.Failure($"Role '{id}' was not found.");
+            return StoreResult.Failure($"Role '{id}' was not found.");
         }
 
         cancellationToken.ThrowIfCancellationRequested();
 
         var result = await _roleManager.DeleteAsync(role);
         return result.Succeeded
-            ? UserResult.Success(role.Id)
+            ? StoreResult.Success(role.Id)
             : ToFailure(result, "Failed to delete role.");
     }
 
@@ -162,70 +162,70 @@ public sealed class AspNetIdentityRoleStore<TUser, TRole>(
     }
 
     /// <inheritdoc />
-    public async Task<UserResult> AssignRoleAsync(string userId, string roleName, CancellationToken cancellationToken = default)
+    public async Task<StoreResult> AssignRoleAsync(string userId, string roleName, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(userId);
         if (string.IsNullOrWhiteSpace(roleName))
         {
-            return UserResult.Failure("Role name is required.");
+            return StoreResult.Failure("Role name is required.");
         }
 
         var user = await _userManager.FindByIdAsync(userId);
         if (user is null)
         {
-            return UserResult.Failure($"User '{userId}' was not found.");
+            return StoreResult.Failure($"User '{userId}' was not found.");
         }
 
         cancellationToken.ThrowIfCancellationRequested();
 
         if (!await _roleManager.RoleExistsAsync(roleName))
         {
-            return UserResult.Failure($"Role '{roleName}' does not exist.");
+            return StoreResult.Failure($"Role '{roleName}' does not exist.");
         }
 
         if (await _userManager.IsInRoleAsync(user, roleName))
         {
-            return UserResult.Failure($"User is already in role '{roleName}'.");
+            return StoreResult.Failure($"User is already in role '{roleName}'.");
         }
 
         var result = await _userManager.AddToRoleAsync(user, roleName);
         return result.Succeeded
-            ? UserResult.Success(user.Id)
+            ? StoreResult.Success(user.Id)
             : ToFailure(result, "Failed to assign role.");
     }
 
     /// <inheritdoc />
-    public async Task<UserResult> RemoveRoleAsync(string userId, string roleName, CancellationToken cancellationToken = default)
+    public async Task<StoreResult> RemoveRoleAsync(string userId, string roleName, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(userId);
         if (string.IsNullOrWhiteSpace(roleName))
         {
-            return UserResult.Failure("Role name is required.");
+            return StoreResult.Failure("Role name is required.");
         }
 
         var user = await _userManager.FindByIdAsync(userId);
         if (user is null)
         {
-            return UserResult.Failure($"User '{userId}' was not found.");
+            return StoreResult.Failure($"User '{userId}' was not found.");
         }
 
         cancellationToken.ThrowIfCancellationRequested();
 
         if (!await _userManager.IsInRoleAsync(user, roleName))
         {
-            return UserResult.Failure($"User is not in role '{roleName}'.");
+            return StoreResult.Failure($"User is not in role '{roleName}'.");
         }
 
         var result = await _userManager.RemoveFromRoleAsync(user, roleName);
         return result.Succeeded
-            ? UserResult.Success(user.Id)
+            ? StoreResult.Success(user.Id)
             : ToFailure(result, "Failed to remove role.");
     }
 
-    private static UserResult ToFailure(IdentityResult result, string fallback)
+    private static StoreResult ToFailure(IdentityResult result, string fallback)
     {
         var messages = result.Errors.Select(e => e.Description).ToList();
-        return UserResult.Failure(
+        return StoreResult.Failure(
             messages.Count == 0 ? fallback : messages[0],
             messages);
     }

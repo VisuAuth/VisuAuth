@@ -139,14 +139,14 @@ public sealed class EntraRoleStoreGraphTests
             "00000000-0000-0000-0000-000000000099", "Admin");
 
         result.IsSuccess.Should().BeTrue();
-        result.UserId.Should().Be("00000000-0000-0000-0000-000000000099");
+        result.ResourceId.Should().Be("00000000-0000-0000-0000-000000000099");
     }
 
     [Fact]
     public async Task AssignRoleAsync_NonGuidUserId_ReturnsFailureWithFormatHint()
     {
         // Guid.Parse on a non-GUID userId throws FormatException, which
-        // the store catches and surfaces as an actionable UserResult.
+        // the store catches and surfaces as an actionable StoreResult.
         var handler = new FakeGraphHandler()
             .SetupGet("/servicePrincipals", ServicePrincipalJson)
             .SetupPostJson("/users/not-a-guid/appRoleAssignments", "{}");
@@ -201,6 +201,49 @@ public sealed class EntraRoleStoreGraphTests
         var result = await BuildStore(handler).RemoveRoleAsync("u-1", "DoesNotExist");
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("DoesNotExist");
+    }
+
+    [Fact]
+    public async Task AssignRoleAsync_WhenServicePrincipalMissing_ReturnsFailure()
+    {
+        // No target service principal means there's nothing to assign
+        // against — the store bails before it ever inspects roles.
+        var handler = new FakeGraphHandler().SetupGet("/servicePrincipals", EmptyServicePrincipalJson);
+
+        var result = await BuildStore(handler).AssignRoleAsync(
+            "00000000-0000-0000-0000-000000000099", "Admin");
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("service principal");
+    }
+
+    [Fact]
+    public async Task AssignRoleAsync_OnGraphError_SurfacesGraphMessage()
+    {
+        var handler = new FakeGraphHandler()
+            .SetupGet("/servicePrincipals", ServicePrincipalJson)
+            .SetupError(HttpMethod.Post, "/users/00000000-0000-0000-0000-000000000099/appRoleAssignments",
+                HttpStatusCode.Forbidden, "Authorization_RequestDenied", "missing AppRoleAssignment.ReadWrite.All");
+
+        var result = await BuildStore(handler).AssignRoleAsync(
+            "00000000-0000-0000-0000-000000000099", "Admin");
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("AppRoleAssignment.ReadWrite.All");
+    }
+
+    [Fact]
+    public async Task RemoveRoleAsync_OnGraphError_SurfacesGraphMessage()
+    {
+        var handler = new FakeGraphHandler()
+            .SetupGet("/servicePrincipals", ServicePrincipalJson)
+            .SetupError(HttpMethod.Get, "/users/u-1/appRoleAssignments",
+                HttpStatusCode.Forbidden, "Authorization_RequestDenied", "missing Directory.Read.All");
+
+        var result = await BuildStore(handler).RemoveRoleAsync("u-1", "Admin");
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Directory.Read.All");
     }
 
     private static EntraRoleStore BuildStore(FakeGraphHandler handler)

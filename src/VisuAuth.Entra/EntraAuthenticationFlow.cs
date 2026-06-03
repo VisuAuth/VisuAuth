@@ -17,7 +17,7 @@ namespace VisuAuth.Entra;
 /// <remarks>
 /// <para>
 /// The shape parallels the existing Identity adapter's flow — the same
-/// <see cref="SignInResult"/> / <see cref="UserResult"/> surface — so
+/// <see cref="SignInResult"/> / <see cref="StoreResult"/> surface — so
 /// every end-user page (Login, Register, ForgotPassword, etc.) can
 /// resolve <see cref="IAuthenticationFlow"/> from DI without knowing
 /// which backend is wired. The pages already branch on capabilities to
@@ -56,28 +56,28 @@ public sealed class EntraAuthenticationFlow : IAuthenticationFlow
         });
 
     /// <inheritdoc />
-    public Task<UserResult> RegisterAsync(
+    public Task<StoreResult> RegisterAsync(
         string email,
         string password,
         string? tenantId,
         CancellationToken cancellationToken = default)
-        => Task.FromResult(UserResult.Failure(NotApplicableMessage));
+        => Task.FromResult(StoreResult.Failure(NotApplicableMessage));
 
     /// <inheritdoc />
-    public Task<UserResult> RequestPasswordResetAsync(string email, CancellationToken cancellationToken = default)
-        => Task.FromResult(UserResult.Failure(NotApplicableMessage));
+    public Task<StoreResult> RequestPasswordResetAsync(string email, CancellationToken cancellationToken = default)
+        => Task.FromResult(StoreResult.Failure(NotApplicableMessage));
 
     /// <inheritdoc />
-    public Task<UserResult> ResetPasswordAsync(
+    public Task<StoreResult> ResetPasswordAsync(
         string email,
         string token,
         string newPassword,
         CancellationToken cancellationToken = default)
-        => Task.FromResult(UserResult.Failure(NotApplicableMessage));
+        => Task.FromResult(StoreResult.Failure(NotApplicableMessage));
 
     /// <inheritdoc />
-    public Task<UserResult> ConfirmEmailAsync(string userId, string token, CancellationToken cancellationToken = default)
-        => Task.FromResult(UserResult.Failure(NotApplicableMessage));
+    public Task<StoreResult> ConfirmEmailAsync(string userId, string token, CancellationToken cancellationToken = default)
+        => Task.FromResult(StoreResult.Failure(NotApplicableMessage));
 
     /// <inheritdoc />
     public Task SignOutAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;

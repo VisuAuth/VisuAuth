@@ -47,6 +47,9 @@ public sealed record AuditEvent
 /// <summary>Whether an audited action ended in success or failure.</summary>
 public enum AuditOutcome
 {
+    /// <summary>The action completed successfully.</summary>
     Success,
+
+    /// <summary>The action failed; see <see cref="AuditEvent.FailureReason"/>.</summary>
     Failure,
 }

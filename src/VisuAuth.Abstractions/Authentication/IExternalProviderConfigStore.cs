@@ -40,13 +40,13 @@ public interface IExternalProviderConfigStore
     /// is null on an UPDATE, the existing secret is preserved (lets the UI
     /// edit ClientId / IsEnabled without re-typing the secret).
     /// </summary>
-    Task<UserResult> SaveAsync(SaveExternalProviderConfigCommand command, CancellationToken cancellationToken = default);
+    Task<StoreResult> SaveAsync(SaveExternalProviderConfigCommand command, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Flips a single config's enabled flag — used by the admin's bulk
     /// enable/disable surface and individual row toggles.
     /// </summary>
-    Task<UserResult> SetEnabledAsync(string scheme, string? tenantId, bool isEnabled, CancellationToken cancellationToken = default);
+    Task<StoreResult> SetEnabledAsync(string scheme, string? tenantId, bool isEnabled, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Idempotently creates a row for <paramref name="scheme"/> if one does
@@ -56,6 +56,9 @@ public interface IExternalProviderConfigStore
     /// when a row already exists (admin's edits never get clobbered by a
     /// restart).
     /// </summary>
+    /// <param name="scheme">Auth scheme name to ensure a row for.</param>
+    /// <param name="displayName">Human-readable display name for the seeded row.</param>
+    /// <param name="tenantId">Tenant scope; <see langword="null"/> for the global scope.</param>
     /// <param name="defaultClientId">Optional ClientId to seed from
     /// appsettings / env / user-secrets so a working appsettings-based
     /// setup keeps rendering its button immediately after the store goes
@@ -64,7 +67,8 @@ public interface IExternalProviderConfigStore
     /// the enabled state. Pass <c>true</c> when <paramref name="defaultClientId"/>
     /// is present AND a ClientSecret is also configured at the static-options
     /// layer; <c>false</c> otherwise so the admin opts-in explicitly.</param>
-    Task<UserResult> EnsureSchemeAsync(
+    /// <param name="cancellationToken">Token to cancel the operation.</param>
+    Task<StoreResult> EnsureSchemeAsync(
         string scheme,
         string displayName,
         string? tenantId = null,
@@ -79,7 +83,7 @@ public interface IExternalProviderConfigStore
     /// so stale credentials don't linger after a provider type is dropped
     /// from <c>Program.cs</c>. No-op when no matching row exists.
     /// </summary>
-    Task<UserResult> DeleteAsync(string scheme, string? tenantId, CancellationToken cancellationToken = default);
+    Task<StoreResult> DeleteAsync(string scheme, string? tenantId, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -90,12 +94,25 @@ public interface IExternalProviderConfigStore
 /// </summary>
 public sealed record ExternalProviderConfigView
 {
+    /// <summary>Auth scheme name the config belongs to (e.g. <c>"Microsoft"</c>).</summary>
     public required string Scheme { get; init; }
+
+    /// <summary>Human-readable display name shown in the admin UI and on the button.</summary>
     public required string DisplayName { get; init; }
+
+    /// <summary>Tenant the config belongs to, when multi-tenancy is enabled; <see langword="null"/> for the global scope.</summary>
     public string? TenantId { get; init; }
+
+    /// <summary>OAuth client / application id, when configured.</summary>
     public string? ClientId { get; init; }
+
+    /// <summary>True when a client secret is stored (the plaintext is never returned here).</summary>
     public bool HasClientSecret { get; init; }
+
+    /// <summary>Whether the provider is currently enabled.</summary>
     public bool IsEnabled { get; init; }
+
+    /// <summary>When the config was last saved.</summary>
     public DateTimeOffset UpdatedAt { get; init; }
 }
 
@@ -106,10 +123,21 @@ public sealed record ExternalProviderConfigView
 /// </summary>
 public sealed record SaveExternalProviderConfigCommand
 {
+    /// <summary>Auth scheme name being saved (e.g. <c>"Microsoft"</c>).</summary>
     public required string Scheme { get; init; }
+
+    /// <summary>Human-readable display name shown in the admin UI and on the button.</summary>
     public required string DisplayName { get; init; }
+
+    /// <summary>Tenant the config belongs to, when multi-tenancy is enabled; <see langword="null"/> for the global scope.</summary>
     public string? TenantId { get; init; }
+
+    /// <summary>OAuth client / application id.</summary>
     public string? ClientId { get; init; }
+
+    /// <summary>Plaintext client secret; <see langword="null"/> on an update preserves the stored secret.</summary>
     public string? PlainTextClientSecret { get; init; }
+
+    /// <summary>Whether the provider should be enabled.</summary>
     public bool IsEnabled { get; init; }
 }

@@ -12,8 +12,10 @@ namespace VisuAuth.Abstractions.Tenancy;
 /// </remarks>
 public interface ITenantStore
 {
+    /// <summary>Lists every tenant in the catalogue.</summary>
     Task<IReadOnlyList<TenantSummary>> ListAsync(CancellationToken cancellationToken = default);
 
+    /// <summary>Loads a single tenant by id, or <c>null</c> when none matches.</summary>
     Task<TenantSummary?> GetAsync(string id, CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -21,9 +23,11 @@ public interface ITenantStore
     /// display name. When <paramref name="displayName"/> is null the id is
     /// reused as the label.
     /// </summary>
-    Task<UserResult> CreateAsync(string id, string? displayName, CancellationToken cancellationToken = default);
+    Task<StoreResult> CreateAsync(string id, string? displayName, CancellationToken cancellationToken = default);
 
-    Task<UserResult> RenameAsync(string id, string newDisplayName, CancellationToken cancellationToken = default);
+    /// <summary>Changes the display name of the tenant identified by <paramref name="id"/>.</summary>
+    Task<StoreResult> RenameAsync(string id, string newDisplayName, CancellationToken cancellationToken = default);
 
-    Task<UserResult> DeleteAsync(string id, CancellationToken cancellationToken = default);
+    /// <summary>Deletes the tenant identified by <paramref name="id"/>.</summary>
+    Task<StoreResult> DeleteAsync(string id, CancellationToken cancellationToken = default);
 }

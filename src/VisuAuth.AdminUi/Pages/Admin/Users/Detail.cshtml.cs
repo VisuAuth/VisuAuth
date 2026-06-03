@@ -265,11 +265,11 @@ public sealed class DetailModel(
     }
 
     private async Task<IActionResult> ExecuteAsync(
-        Func<Task<UserResult>> action,
+        Func<Task<StoreResult>> action,
         string success,
         string auditAction,
         CancellationToken cancellationToken,
-        Action<UserResult>? onSuccess = null,
+        Action<StoreResult>? onSuccess = null,
         IReadOnlyDictionary<string, string?>? auditPayload = null)
     {
         var loaded = await LoadDetailAsync(cancellationToken);

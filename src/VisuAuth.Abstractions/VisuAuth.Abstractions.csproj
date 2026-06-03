@@ -4,6 +4,10 @@
     <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>VisuAuth.Abstractions</RootNamespace>
     <AssemblyName>VisuAuth.Abstractions</AssemblyName>
+    <!-- Ship XML docs with the package (IntelliSense for adapter / extension
+         authors). With TreatWarningsAsErrors this also enforces a documented
+         public surface (CS1591) — the contract is the product here. -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <PropertyGroup Label="NuGet">
@@ -15,7 +19,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+    <!-- Package-specific README (contracts overview + the stability guarantee)
+         instead of the generic repo README. -->
+    <None Include="README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>

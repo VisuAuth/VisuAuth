@@ -97,7 +97,7 @@ public sealed class EfCoreExternalProviderConfigStore(
     }
 
     /// <inheritdoc />
-    public async Task<UserResult> SaveAsync(
+    public async Task<StoreResult> SaveAsync(
         SaveExternalProviderConfigCommand command,
         CancellationToken cancellationToken = default)
     {
@@ -138,11 +138,11 @@ public sealed class EfCoreExternalProviderConfigStore(
         }
 
         await _db.SaveChangesAsync(cancellationToken);
-        return UserResult.Success();
+        return StoreResult.Success();
     }
 
     /// <inheritdoc />
-    public async Task<UserResult> SetEnabledAsync(
+    public async Task<StoreResult> SetEnabledAsync(
         string scheme,
         string? tenantId,
         bool isEnabled,
@@ -155,16 +155,16 @@ public sealed class EfCoreExternalProviderConfigStore(
             .FirstOrDefaultAsync(c => c.Scheme == scheme && c.TenantId == tenantId, cancellationToken);
         if (row is null)
         {
-            return UserResult.Failure($"No external provider config for scheme '{scheme}'.");
+            return StoreResult.Failure($"No external provider config for scheme '{scheme}'.");
         }
         row.IsEnabled = isEnabled;
         row.UpdatedAt = _timeProvider.GetUtcNow();
         await _db.SaveChangesAsync(cancellationToken);
-        return UserResult.Success();
+        return StoreResult.Success();
     }
 
     /// <inheritdoc />
-    public async Task<UserResult> EnsureSchemeAsync(
+    public async Task<StoreResult> EnsureSchemeAsync(
         string scheme,
         string displayName,
         string? tenantId = null,
@@ -181,7 +181,7 @@ public sealed class EfCoreExternalProviderConfigStore(
             .AnyAsync(c => c.Scheme == scheme && c.TenantId == tenantId, cancellationToken);
         if (exists)
         {
-            return UserResult.Success();
+            return StoreResult.Success();
         }
 
         _db.VisuAuthExternalProviderConfigs.Add(new VisuAuthExternalProviderConfig
@@ -196,11 +196,11 @@ public sealed class EfCoreExternalProviderConfigStore(
             UpdatedAt = _timeProvider.GetUtcNow(),
         });
         await _db.SaveChangesAsync(cancellationToken);
-        return UserResult.Success();
+        return StoreResult.Success();
     }
 
     /// <inheritdoc />
-    public async Task<UserResult> DeleteAsync(
+    public async Task<StoreResult> DeleteAsync(
         string scheme,
         string? tenantId,
         CancellationToken cancellationToken = default)
@@ -215,12 +215,12 @@ public sealed class EfCoreExternalProviderConfigStore(
             // Idempotent: no row = nothing to delete. The caller treats this
             // as success because the post-condition (no row for that scheme)
             // already holds.
-            return UserResult.Success();
+            return StoreResult.Success();
         }
 
         _db.VisuAuthExternalProviderConfigs.Remove(row);
         await _db.SaveChangesAsync(cancellationToken);
-        return UserResult.Success();
+        return StoreResult.Success();
     }
 
     /// <summary>

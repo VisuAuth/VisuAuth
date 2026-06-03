@@ -52,7 +52,7 @@ namespace VisuAuth.EntraExternal;
 /// <para>
 /// <b>Failure mapping:</b> Graph errors arrive as
 /// <see cref="ODataError"/>. They're converted to
-/// <see cref="UserResult.Failure"/> with the Graph error message so the
+/// <see cref="StoreResult.Failure"/> with the Graph error message so the
 /// admin UI sees something actionable. Unknown exceptions are logged and
 /// re-wrapped as a generic failure rather than propagated — the auditing
 /// handlers above us treat a returned failure as "user-facing", and an
@@ -65,7 +65,7 @@ public sealed class EntraExternalUserStore(
     ILogger<EntraExternalUserStore> logger) : IUserStore
 {
     /// <summary>
-    /// Key under which <see cref="UserResult.Metadata"/> carries the
+    /// Key under which <see cref="StoreResult.Metadata"/> carries the
     /// one-time temporary password from <see cref="CreateAsync"/> and
     /// <see cref="ResetPasswordAsync"/>. Same convention as the Identity
     /// and Workforce-Entra adapters so the admin UI's click-to-copy
@@ -74,7 +74,7 @@ public sealed class EntraExternalUserStore(
     public const string TemporaryPasswordMetadataKey = "temporaryPassword";
 
     /// <summary>
-    /// Single-source UserResult.Failure text for the "Graph returned 404"
+    /// Single-source StoreResult.Failure text for the "Graph returned 404"
     /// branch — hoisted so Sonar's no-magic-strings rule (S1192) is
     /// satisfied AND the message stays consistent across methods.
     /// </summary>
@@ -210,12 +210,12 @@ public sealed class EntraExternalUserStore(
     }
 
     /// <inheritdoc />
-    public async Task<UserResult> CreateAsync(CreateUserCommand command, CancellationToken cancellationToken = default)
+    public async Task<StoreResult> CreateAsync(CreateUserCommand command, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
         if (string.IsNullOrWhiteSpace(command.Email))
         {
-            return UserResult.Failure("Email is required.");
+            return StoreResult.Failure("Email is required.");
         }
 
         try
@@ -227,62 +227,62 @@ public sealed class EntraExternalUserStore(
             var created = await _graph.Users.PostAsync(graphUser, cancellationToken: cancellationToken);
             if (created?.Id is null)
             {
-                return UserResult.Failure("Graph returned no user id on create.");
+                return StoreResult.Failure("Graph returned no user id on create.");
             }
 
-            return UserResult.Success(
+            return StoreResult.Success(
                 created.Id,
-#pragma warning disable IDE0028 // UserResult.Metadata expects IReadOnlyDictionary so target-typed new() can't be used here — the explicit type is the correct shape, not a missed simplification.
+#pragma warning disable IDE0028 // StoreResult.Metadata expects IReadOnlyDictionary so target-typed new() can't be used here — the explicit type is the correct shape, not a missed simplification.
                 metadata: new Dictionary<string, string> { [TemporaryPasswordMetadataKey] = tempPassword });
 #pragma warning restore IDE0028
         }
         catch (ODataError ex)
         {
-            return UserResult.Failure(GraphMessage(ex, "Failed to create user."));
+            return StoreResult.Failure(GraphMessage(ex, "Failed to create user."));
         }
     }
 
     /// <inheritdoc />
-    public async Task<UserResult> UpdateAsync(string id, UpdateUserCommand command, CancellationToken cancellationToken = default)
+    public async Task<StoreResult> UpdateAsync(string id, UpdateUserCommand command, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
         ArgumentNullException.ThrowIfNull(command);
         try
         {
             await _graph.Users[id].PatchAsync(EntraExternalUserMapper.ToGraphUpdate(command), cancellationToken: cancellationToken);
-            return UserResult.Success(id);
+            return StoreResult.Success(id);
         }
         catch (ODataError ex) when (IsNotFound(ex))
         {
-            return UserResult.Failure(UserNotFoundMessage);
+            return StoreResult.Failure(UserNotFoundMessage);
         }
         catch (ODataError ex)
         {
-            return UserResult.Failure(GraphMessage(ex, "Failed to update user."));
+            return StoreResult.Failure(GraphMessage(ex, "Failed to update user."));
         }
     }
 
     /// <inheritdoc />
-    public async Task<UserResult> DeleteAsync(string id, CancellationToken cancellationToken = default)
+    public async Task<StoreResult> DeleteAsync(string id, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
         try
         {
             await _graph.Users[id].DeleteAsync(cancellationToken: cancellationToken);
-            return UserResult.Success(id);
+            return StoreResult.Success(id);
         }
         catch (ODataError ex) when (IsNotFound(ex))
         {
-            return UserResult.Failure(UserNotFoundMessage);
+            return StoreResult.Failure(UserNotFoundMessage);
         }
         catch (ODataError ex)
         {
-            return UserResult.Failure(GraphMessage(ex, "Failed to delete user."));
+            return StoreResult.Failure(GraphMessage(ex, "Failed to delete user."));
         }
     }
 
     /// <inheritdoc />
-    public async Task<UserResult> SetEnabledAsync(string id, bool enabled, CancellationToken cancellationToken = default)
+    public async Task<StoreResult> SetEnabledAsync(string id, bool enabled, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
         try
@@ -291,21 +291,21 @@ public sealed class EntraExternalUserStore(
             // false. Setting it back to true unlocks. No separate lockout
             // window — user stays disabled until an admin re-enables them.
             await _graph.Users[id].PatchAsync(new GraphUser { AccountEnabled = enabled }, cancellationToken: cancellationToken);
-            return UserResult.Success(id);
+            return StoreResult.Success(id);
         }
         catch (ODataError ex) when (IsNotFound(ex))
         {
-            return UserResult.Failure(UserNotFoundMessage);
+            return StoreResult.Failure(UserNotFoundMessage);
         }
         catch (ODataError ex)
         {
-            return UserResult.Failure(GraphMessage(ex,
+            return StoreResult.Failure(GraphMessage(ex,
                 enabled ? "Failed to enable user." : "Failed to disable user."));
         }
     }
 
     /// <inheritdoc />
-    public async Task<UserResult> ResetPasswordAsync(string id, CancellationToken cancellationToken = default)
+    public async Task<StoreResult> ResetPasswordAsync(string id, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
         try
@@ -328,19 +328,19 @@ public sealed class EntraExternalUserStore(
                 },
             }, cancellationToken: cancellationToken);
 
-            return UserResult.Success(
+            return StoreResult.Success(
                 id,
-#pragma warning disable IDE0028 // UserResult.Metadata expects IReadOnlyDictionary so target-typed new() can't be used here — the explicit type is the correct shape, not a missed simplification.
+#pragma warning disable IDE0028 // StoreResult.Metadata expects IReadOnlyDictionary so target-typed new() can't be used here — the explicit type is the correct shape, not a missed simplification.
                 metadata: new Dictionary<string, string> { [TemporaryPasswordMetadataKey] = tempPassword });
 #pragma warning restore IDE0028
         }
         catch (ODataError ex) when (IsNotFound(ex))
         {
-            return UserResult.Failure(UserNotFoundMessage);
+            return StoreResult.Failure(UserNotFoundMessage);
         }
         catch (ODataError ex)
         {
-            return UserResult.Failure(GraphMessage(ex, "Failed to reset password."));
+            return StoreResult.Failure(GraphMessage(ex, "Failed to reset password."));
         }
     }
 
@@ -352,26 +352,26 @@ public sealed class EntraExternalUserStore(
     /// identical across tenant families). Requires the registered app to
     /// hold <c>UserAuthenticationMethod.ReadWrite.All</c>.
     /// </remarks>
-    public async Task<UserResult> ResetTwoFactorAsync(string id, CancellationToken cancellationToken = default)
+    public async Task<StoreResult> ResetTwoFactorAsync(string id, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
         try
         {
             await EntraTwoFactorReset.RemoveAllAsync(_graph, id, cancellationToken);
-            return UserResult.Success(id);
+            return StoreResult.Success(id);
         }
         catch (ODataError ex) when (IsNotFound(ex))
         {
-            return UserResult.Failure(UserNotFoundMessage);
+            return StoreResult.Failure(UserNotFoundMessage);
         }
         catch (ODataError ex)
         {
-            return UserResult.Failure(GraphMessage(ex, "Failed to reset two-factor."));
+            return StoreResult.Failure(GraphMessage(ex, "Failed to reset two-factor."));
         }
     }
 
     /// <inheritdoc />
-    public async Task<UserResult> RevokeSessionsAsync(string id, CancellationToken cancellationToken = default)
+    public async Task<StoreResult> RevokeSessionsAsync(string id, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
         try
@@ -383,15 +383,15 @@ public sealed class EntraExternalUserStore(
             // overload returns a boolean payload we don't surface upward.
             await _graph.Users[id].RevokeSignInSessions
                 .PostAsRevokeSignInSessionsPostResponseAsync(cancellationToken: cancellationToken);
-            return UserResult.Success(id);
+            return StoreResult.Success(id);
         }
         catch (ODataError ex) when (IsNotFound(ex))
         {
-            return UserResult.Failure(UserNotFoundMessage);
+            return StoreResult.Failure(UserNotFoundMessage);
         }
         catch (ODataError ex)
         {
-            return UserResult.Failure(GraphMessage(ex, "Failed to revoke sessions."));
+            return StoreResult.Failure(GraphMessage(ex, "Failed to revoke sessions."));
         }
     }
 

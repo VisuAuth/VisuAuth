@@ -24,8 +24,10 @@ namespace VisuAuth.Abstractions.Common;
 /// <see langword="null"/>.
 /// </para>
 /// </remarks>
+/// <typeparam name="T">Element type of the page.</typeparam>
 public sealed record PagedResult<T>
 {
+    /// <summary>The items on this page.</summary>
     public required IReadOnlyList<T> Items { get; init; }
 
     /// <summary>
@@ -45,6 +47,7 @@ public sealed record PagedResult<T>
     /// <summary>True when another page follows (i.e. a cursor was returned).</summary>
     public bool HasMore => NextCursor is not null;
 
+    /// <summary>Returns an empty page (no items, no cursor, no count).</summary>
     public static PagedResult<T> Empty() => new()
     {
         Items = [],

@@ -16,7 +16,7 @@ namespace VisuAuth.Abstractions.Authentication;
 /// </summary>
 /// <remarks>
 /// Implementations are singletons. The snapshot is populated lazily on the
-/// first <see cref="Get"/> call by forcing every registered scheme's
+/// first <see cref="GetForScheme"/> call by forcing every registered scheme's
 /// <c>IOptionsMonitor&lt;TOptions&gt;</c> to materialise — that's what makes
 /// the configurator run and the snapshot grow. Empty for schemes the
 /// consumer didn't wire through

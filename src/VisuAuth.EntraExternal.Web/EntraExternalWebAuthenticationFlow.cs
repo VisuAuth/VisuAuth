@@ -66,7 +66,7 @@ public sealed class EntraExternalWebAuthenticationFlow(
         => _inner.SignInWithPasswordAsync(emailOrUserName, password, persistent, cancellationToken);
 
     /// <inheritdoc />
-    public Task<UserResult> RegisterAsync(
+    public Task<StoreResult> RegisterAsync(
         string email,
         string password,
         string? tenantId,
@@ -74,11 +74,11 @@ public sealed class EntraExternalWebAuthenticationFlow(
         => _inner.RegisterAsync(email, password, tenantId, cancellationToken);
 
     /// <inheritdoc />
-    public Task<UserResult> RequestPasswordResetAsync(string email, CancellationToken cancellationToken = default)
+    public Task<StoreResult> RequestPasswordResetAsync(string email, CancellationToken cancellationToken = default)
         => _inner.RequestPasswordResetAsync(email, cancellationToken);
 
     /// <inheritdoc />
-    public Task<UserResult> ResetPasswordAsync(
+    public Task<StoreResult> ResetPasswordAsync(
         string email,
         string token,
         string newPassword,
@@ -86,7 +86,7 @@ public sealed class EntraExternalWebAuthenticationFlow(
         => _inner.ResetPasswordAsync(email, token, newPassword, cancellationToken);
 
     /// <inheritdoc />
-    public Task<UserResult> ConfirmEmailAsync(string userId, string token, CancellationToken cancellationToken = default)
+    public Task<StoreResult> ConfirmEmailAsync(string userId, string token, CancellationToken cancellationToken = default)
         => _inner.ConfirmEmailAsync(userId, token, cancellationToken);
 
     /// <inheritdoc />

@@ -129,25 +129,22 @@
     // so htmx-swapped cards keep working.
     //
     document.addEventListener('click', function (event) {
-        var target = event.target;
-        if (!target || !target.closest) {
-            return;
-        }
+        const target = event.target;
 
-        var opener = target.closest('[data-va-modal-open]');
+        const opener = target?.closest?.('[data-va-modal-open]');
         if (opener) {
             event.preventDefault();
-            var dialog = document.getElementById(opener.getAttribute('data-va-modal-open'));
+            const dialog = document.getElementById(opener.dataset.vaModalOpen);
             if (dialog && typeof dialog.showModal === 'function') {
                 dialog.showModal();
             }
             return;
         }
 
-        var closer = target.closest('[data-va-modal-close]');
+        const closer = target?.closest?.('[data-va-modal-close]');
         if (closer) {
             event.preventDefault();
-            var owning = closer.closest('dialog');
+            const owning = closer.closest('dialog');
             if (owning) {
                 owning.close();
             }
@@ -155,7 +152,7 @@
         }
 
         // Click on the backdrop (the dialog element, not its inner content).
-        if (target.tagName === 'DIALOG' && target.classList.contains('va-modal')) {
+        if (target?.tagName === 'DIALOG' && target.classList.contains('va-modal')) {
             target.close();
         }
     });
@@ -181,7 +178,7 @@
         }
         document.querySelectorAll('details.va-lang[open]').forEach(function (d) {
             d.removeAttribute('open');
-            var summary = d.querySelector('summary');
+            const summary = d.querySelector('summary');
             if (summary) {
                 summary.focus();
             }

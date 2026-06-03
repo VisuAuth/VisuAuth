@@ -26,7 +26,7 @@
         }
         document.querySelectorAll('details.va-user-details[open]').forEach(function (d) {
             d.removeAttribute('open');
-            var summary = d.querySelector('summary');
+            const summary = d.querySelector('summary');
             if (summary) {
                 summary.focus();
             }
@@ -34,14 +34,14 @@
     });
 
     // ── 2. Sidebar collapse toggle + persistence ───────────────────────────
-    var COLLAPSE_KEY = 'va-sidebar-collapsed';
+    const COLLAPSE_KEY = 'va-sidebar-collapsed';
 
     function shell() {
         return document.querySelector('.va-shell');
     }
 
     function applyCollapsed(collapsed) {
-        var el = shell();
+        const el = shell();
         if (el) {
             el.classList.toggle('va-collapsed', collapsed);
         }
@@ -50,21 +50,21 @@
     // Restore persisted state on load.
     try {
         applyCollapsed(localStorage.getItem(COLLAPSE_KEY) === '1');
-    } catch (_) { /* storage disabled — start expanded */ }
+    } catch { /* storage disabled — start expanded */ }
 
     document.addEventListener('click', function (event) {
-        var toggle = event.target.closest && event.target.closest('[data-va-collapse]');
+        const toggle = event.target.closest?.('[data-va-collapse]');
         if (!toggle) {
             return;
         }
         event.preventDefault();
-        var el = shell();
+        const el = shell();
         if (!el) {
             return;
         }
-        var collapsed = el.classList.toggle('va-collapsed');
+        const collapsed = el.classList.toggle('va-collapsed');
         try {
             localStorage.setItem(COLLAPSE_KEY, collapsed ? '1' : '0');
-        } catch (_) { /* not persisted, fine for this session */ }
+        } catch { /* not persisted, fine for this session */ }
     });
 })();

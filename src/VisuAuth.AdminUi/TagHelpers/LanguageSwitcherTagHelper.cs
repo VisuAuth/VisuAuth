@@ -83,10 +83,11 @@ public sealed class LanguageSwitcherTagHelper(
             string.IsNullOrEmpty(Class) ? "va-lang-switcher va-lang" : $"va-lang-switcher va-lang {Class}");
 
         var sb = new StringBuilder();
+        const string closeSpan = "</span>";
 
         // Collapsed trigger — the current culture's flag only.
         sb.Append("<summary class=\"va-btn va-btn-ghost va-lang-btn\" aria-label=\"").Append(label).Append("\">")
-            .Append("<span class=\"va-flag\">").Append(CultureFlags.ForCulture(current)).Append("</span>")
+            .Append("<span class=\"va-flag\">").Append(CultureFlags.ForCulture(current)).Append(closeSpan)
             .Append("</summary>");
 
         // Popover — one submit button per culture: flag + native name (+ check).
@@ -109,11 +110,11 @@ public sealed class LanguageSwitcherTagHelper(
                 .Append("\" class=\"va-lang-item")
                 .Append(isSelected ? " va-active" : string.Empty)
                 .Append("\">")
-                .Append("<span class=\"va-flag\">").Append(CultureFlags.ForCulture(culture)).Append("</span>")
-                .Append("<span>").Append(HtmlEncode(culture.NativeName)).Append("</span>");
+                .Append("<span class=\"va-flag\">").Append(CultureFlags.ForCulture(culture)).Append(closeSpan)
+                .Append("<span>").Append(HtmlEncode(culture.NativeName)).Append(closeSpan);
             if (isSelected)
             {
-                sb.Append("<span class=\"va-lang-check\">").Append(CheckSvg).Append("</span>");
+                sb.Append("<span class=\"va-lang-check\">").Append(CheckSvg).Append(closeSpan);
             }
             sb.Append("</button>");
         }

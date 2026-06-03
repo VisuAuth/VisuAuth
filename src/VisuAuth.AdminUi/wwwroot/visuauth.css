@@ -254,6 +254,8 @@ body {
 /* Circular country flag */
 .va-flag {
   display: inline-flex;
+  width: 20px;
+  height: 20px;
   border-radius: var(--visuauth-radius-full);
   overflow: hidden;
   flex-shrink: 0;
@@ -2311,9 +2313,8 @@ body {
 .va-app summary,
 .va-shell summary { cursor: pointer; }
 
-/* 7. Flag-based language switcher: size the circular flag and strip the native
-   <details> disclosure marker from its flag-only summary button. */
-.va-flag { width: 20px; height: 20px; }
+/* 7. Flag-based language switcher: strip the native <details> disclosure
+   marker from its flag-only summary button. (Flag sizing lives on .va-flag.) */
 .va-lang > summary { list-style: none; }
 .va-lang > summary::-webkit-details-marker { display: none; }
 .va-lang > summary::marker { content: ""; }

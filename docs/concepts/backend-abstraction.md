@@ -20,7 +20,7 @@ rather than as exceptions.
 | `IUserStore` | Read and mutate users — list/search, get detail, create, update, delete, enable/disable, reset password, reset 2FA, revoke sessions. |
 | `IRoleStore` | The role catalogue and user-role membership — list/get, create/rename/delete, assign/remove. |
 | `IAuthenticationFlow` | End-user auth — password sign-in, register, request/complete password reset, confirm email, sign out. |
-| `IJwtIssuer` | Mint the HS256 token for the mobile / API channel. See [Mobile & JWT](../mobile.md). |
+| `IJwtIssuer` | Mint the access token for the mobile / API channel (the Identity adapter ships an HS256 implementation; other adapters may issue different tokens). See [Mobile & JWT](../mobile.md). |
 | `ITenantStore` | The tenant catalogue, when [multi-tenancy](multi-tenancy.md) is enabled. |
 
 Two more contracts back the optional surfaces: `IExternalLoginFlow` /
@@ -58,9 +58,12 @@ programmer errors and genuinely exceptional conditions.
 var result = await userStore.CreateAsync(command);
 if (result.IsSuccess)
 {
-    var id = result.ResourceId;                       // the new user's id
+    var id = result.ResourceId;                        // the new user's id
     // Some operations stash extra data, e.g. a generated temporary password:
-    var temp = result.Metadata?["temporaryPassword"];
+    if (result.Metadata.TryGetValue("temporaryPassword", out var temp))
+    {
+        // surface `temp` to the admin once
+    }
 }
 else
 {
@@ -70,9 +73,13 @@ else
 ```
 
 - `IsSuccess` — did the operation succeed?
-- `ResourceId` — id of the affected resource on success (user id, role id, …).
-- `Error` / `ValidationErrors` — the failure summary and the granular list.
-- `Metadata` — optional extra payload (e.g. `"temporaryPassword"`).
+- `ResourceId` — id of the affected resource on success (user id, role id, …);
+  `null` when there's no single resource.
+- `Error` / `ValidationErrors` — the failure summary and the granular list
+  (`ValidationErrors` is never null — empty when there are none).
+- `Metadata` — extra payload keyed per operation; never null, empty when there's
+  no payload (so use `TryGetValue`). The keys are documented on each method
+  (e.g. `"temporaryPassword"`).
 - `StoreResult.Success(...)` / `StoreResult.Failure(...)` — the factories
   adapters use.
 

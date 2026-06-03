@@ -21,9 +21,9 @@ public interface ITenantStore
     /// display name. When <paramref name="displayName"/> is null the id is
     /// reused as the label.
     /// </summary>
-    Task<UserResult> CreateAsync(string id, string? displayName, CancellationToken cancellationToken = default);
+    Task<StoreResult> CreateAsync(string id, string? displayName, CancellationToken cancellationToken = default);
 
-    Task<UserResult> RenameAsync(string id, string newDisplayName, CancellationToken cancellationToken = default);
+    Task<StoreResult> RenameAsync(string id, string newDisplayName, CancellationToken cancellationToken = default);
 
-    Task<UserResult> DeleteAsync(string id, CancellationToken cancellationToken = default);
+    Task<StoreResult> DeleteAsync(string id, CancellationToken cancellationToken = default);
 }

@@ -212,7 +212,7 @@ public sealed class EntraUserStoreGraphTests
         var result = await sut.CreateAsync(new CreateUserCommand { Email = "new@contoso.com" });
 
         result.IsSuccess.Should().BeTrue();
-        result.UserId.Should().Be("u-new");
+        result.ResourceId.Should().Be("u-new");
         result.Metadata.Should().ContainKey(EntraUserStore.TemporaryPasswordMetadataKey);
         result.Metadata![EntraUserStore.TemporaryPasswordMetadataKey].Should().NotBeEmpty(
             "Create must surface the generated temp password so the admin can hand it over");
@@ -241,7 +241,7 @@ public sealed class EntraUserStoreGraphTests
         var result = await sut.UpdateAsync("u-1", new UpdateUserCommand { UserName = "Updated Display" });
 
         result.IsSuccess.Should().BeTrue();
-        result.UserId.Should().Be("u-1");
+        result.ResourceId.Should().Be("u-1");
     }
 
     [Fact]
@@ -362,7 +362,7 @@ public sealed class EntraUserStoreGraphTests
         var result = await sut.ResetTwoFactorAsync("u-1");
 
         result.IsSuccess.Should().BeTrue();
-        result.UserId.Should().Be("u-1");
+        result.ResourceId.Should().Be("u-1");
     }
 
     [Fact]

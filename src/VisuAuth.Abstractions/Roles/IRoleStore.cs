@@ -13,17 +13,17 @@ public interface IRoleStore
 
     Task<RoleSummary?> GetAsync(string id, CancellationToken cancellationToken = default);
 
-    Task<UserResult> CreateAsync(string name, string? tenantId, CancellationToken cancellationToken = default);
+    Task<StoreResult> CreateAsync(string name, string? tenantId, CancellationToken cancellationToken = default);
 
-    Task<UserResult> RenameAsync(string id, string newName, CancellationToken cancellationToken = default);
+    Task<StoreResult> RenameAsync(string id, string newName, CancellationToken cancellationToken = default);
 
-    Task<UserResult> DeleteAsync(string id, CancellationToken cancellationToken = default);
+    Task<StoreResult> DeleteAsync(string id, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<string>> GetRolesForUserAsync(string userId, CancellationToken cancellationToken = default);
 
-    Task<UserResult> AssignRoleAsync(string userId, string roleName, CancellationToken cancellationToken = default);
+    Task<StoreResult> AssignRoleAsync(string userId, string roleName, CancellationToken cancellationToken = default);
 
-    Task<UserResult> RemoveRoleAsync(string userId, string roleName, CancellationToken cancellationToken = default);
+    Task<StoreResult> RemoveRoleAsync(string userId, string roleName, CancellationToken cancellationToken = default);
 }
 
 public sealed record RoleSummary

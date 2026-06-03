@@ -63,7 +63,7 @@ public sealed class IndexModel(
             return Partial("_RolesCatalogue", this);
         }
 
-        UserResult result;
+        StoreResult result;
         try
         {
             result = await _roleStore.CreateAsync(trimmed, tenantId: null, cancellationToken);
@@ -148,7 +148,7 @@ public sealed class IndexModel(
         var preRename = await _roleStore.GetAsync(id, cancellationToken);
         var oldName = preRename?.Name ?? id;
 
-        UserResult result;
+        StoreResult result;
         try
         {
             result = await _roleStore.RenameAsync(id, trimmed, cancellationToken);
@@ -211,7 +211,7 @@ public sealed class IndexModel(
         var role = await _roleStore.GetAsync(id, cancellationToken);
         var name = role?.Name ?? id;
 
-        UserResult result;
+        StoreResult result;
         try
         {
             result = await _roleStore.DeleteAsync(id, cancellationToken);

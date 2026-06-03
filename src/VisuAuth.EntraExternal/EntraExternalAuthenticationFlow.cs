@@ -24,7 +24,7 @@ namespace VisuAuth.EntraExternal;
 /// stale URLs, CLI clients, and direct API callers can still POST to
 /// the password endpoint. Returning
 /// <see cref="SignInOutcome.RedirectToExternalProvider"/> for sign-in /
-/// <see cref="UserResult.Failure"/> for the others is the safety net —
+/// <see cref="StoreResult.Failure"/> for the others is the safety net —
 /// the SignInPageResponseMapper in <c>VisuAuth.EndUserUi</c> turns the
 /// redirect outcome into a "use Microsoft sign-in" message, and a
 /// failure into a 400 with the same hint.
@@ -51,28 +51,28 @@ public sealed class EntraExternalAuthenticationFlow : IAuthenticationFlow
         });
 
     /// <inheritdoc />
-    public Task<UserResult> RegisterAsync(
+    public Task<StoreResult> RegisterAsync(
         string email,
         string password,
         string? tenantId,
         CancellationToken cancellationToken = default)
-        => Task.FromResult(UserResult.Failure(NotApplicableMessage));
+        => Task.FromResult(StoreResult.Failure(NotApplicableMessage));
 
     /// <inheritdoc />
-    public Task<UserResult> RequestPasswordResetAsync(string email, CancellationToken cancellationToken = default)
-        => Task.FromResult(UserResult.Failure(NotApplicableMessage));
+    public Task<StoreResult> RequestPasswordResetAsync(string email, CancellationToken cancellationToken = default)
+        => Task.FromResult(StoreResult.Failure(NotApplicableMessage));
 
     /// <inheritdoc />
-    public Task<UserResult> ResetPasswordAsync(
+    public Task<StoreResult> ResetPasswordAsync(
         string email,
         string token,
         string newPassword,
         CancellationToken cancellationToken = default)
-        => Task.FromResult(UserResult.Failure(NotApplicableMessage));
+        => Task.FromResult(StoreResult.Failure(NotApplicableMessage));
 
     /// <inheritdoc />
-    public Task<UserResult> ConfirmEmailAsync(string userId, string token, CancellationToken cancellationToken = default)
-        => Task.FromResult(UserResult.Failure(NotApplicableMessage));
+    public Task<StoreResult> ConfirmEmailAsync(string userId, string token, CancellationToken cancellationToken = default)
+        => Task.FromResult(StoreResult.Failure(NotApplicableMessage));
 
     /// <inheritdoc />
     public Task SignOutAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;

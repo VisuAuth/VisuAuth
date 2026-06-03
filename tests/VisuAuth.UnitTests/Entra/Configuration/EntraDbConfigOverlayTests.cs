@@ -94,7 +94,7 @@ public sealed class EntraDbConfigOverlayTests
         public Task<IReadOnlyList<AdapterConfigEntryView>> ListAsync(string adapter, CancellationToken cancellationToken = default)
             => Task.FromResult<IReadOnlyList<AdapterConfigEntryView>>([]);
 
-        public Task<UserResult> SaveAsync(SaveAdapterConfigCommand command, CancellationToken cancellationToken = default)
-            => Task.FromResult(UserResult.Success());
+        public Task<StoreResult> SaveAsync(SaveAdapterConfigCommand command, CancellationToken cancellationToken = default)
+            => Task.FromResult(StoreResult.Success());
     }
 }

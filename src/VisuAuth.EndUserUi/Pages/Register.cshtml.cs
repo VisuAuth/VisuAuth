@@ -107,13 +107,13 @@ public sealed class RegisterModel(
             return Page();
         }
 
-        CreatedUserId = result.UserId;
+        CreatedUserId = result.ResourceId;
 
         await _audit.WriteAsync(new AuditEvent
         {
             Action = AuditActions.UserRegistered,
             TargetType = AuditTargetTypes.User,
-            TargetId = result.UserId,
+            TargetId = result.ResourceId,
             TargetLabel = attemptedEmail,
             Outcome = AuditOutcome.Success,
         }, cancellationToken);

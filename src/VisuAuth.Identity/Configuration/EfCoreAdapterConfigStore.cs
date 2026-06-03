@@ -83,7 +83,7 @@ public sealed class EfCoreAdapterConfigStore(
     }
 
     /// <inheritdoc />
-    public async Task<UserResult> SaveAsync(
+    public async Task<StoreResult> SaveAsync(
         SaveAdapterConfigCommand command,
         CancellationToken cancellationToken = default)
     {
@@ -93,7 +93,7 @@ public sealed class EfCoreAdapterConfigStore(
 
         if (command.Values.Count == 0)
         {
-            return UserResult.Success();
+            return StoreResult.Success();
         }
 
         // Tracked load (not AsNoTracking) so updates / removes flush on save.
@@ -118,7 +118,7 @@ public sealed class EfCoreAdapterConfigStore(
         }
 
         await _db.SaveChangesAsync(cancellationToken);
-        return UserResult.Success();
+        return StoreResult.Success();
     }
 
     // Applies one entry's tri-state Value: null = preserve, "" = clear (remove

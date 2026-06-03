@@ -27,7 +27,7 @@ public sealed class EntraConfigModelTests
         SaveAdapterConfigCommand? captured = null;
         store.Setup(s => s.SaveAsync(It.IsAny<SaveAdapterConfigCommand>(), It.IsAny<CancellationToken>()))
             .Callback<SaveAdapterConfigCommand, CancellationToken>((c, _) => captured = c)
-            .ReturnsAsync(UserResult.Success());
+            .ReturnsAsync(StoreResult.Success());
 
         page.FieldValues["TenantId"] = "tenant-x";
         page.FieldValues["ClientSecret"] = string.Empty; // blank secret
@@ -47,7 +47,7 @@ public sealed class EntraConfigModelTests
         SaveAdapterConfigCommand? captured = null;
         store.Setup(s => s.SaveAsync(It.IsAny<SaveAdapterConfigCommand>(), It.IsAny<CancellationToken>()))
             .Callback<SaveAdapterConfigCommand, CancellationToken>((c, _) => captured = c)
-            .ReturnsAsync(UserResult.Success());
+            .ReturnsAsync(StoreResult.Success());
 
         page.FieldValues["ClientSecret"] = string.Empty;
         page.ClearSecrets.Add("ClientSecret");
@@ -63,7 +63,7 @@ public sealed class EntraConfigModelTests
     {
         var (page, store, audit, notifier) = BuildPage();
         store.Setup(s => s.SaveAsync(It.IsAny<SaveAdapterConfigCommand>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(UserResult.Success());
+            .ReturnsAsync(StoreResult.Success());
         AuditEvent? recorded = null;
         audit.Setup(a => a.WriteAsync(It.IsAny<AuditEvent>(), It.IsAny<CancellationToken>()))
             .Callback<AuditEvent, CancellationToken>((e, _) => recorded = e)
@@ -125,7 +125,7 @@ public sealed class EntraConfigModelTests
     {
         var (page, store, audit, notifier) = BuildPage();
         store.Setup(s => s.SaveAsync(It.IsAny<SaveAdapterConfigCommand>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(UserResult.Failure("write blocked"));
+            .ReturnsAsync(StoreResult.Failure("write blocked"));
         AuditEvent? recorded = null;
         audit.Setup(a => a.WriteAsync(It.IsAny<AuditEvent>(), It.IsAny<CancellationToken>()))
             .Callback<AuditEvent, CancellationToken>((e, _) => recorded = e)

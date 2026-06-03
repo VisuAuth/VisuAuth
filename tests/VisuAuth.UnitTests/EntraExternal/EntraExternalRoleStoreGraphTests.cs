@@ -135,14 +135,14 @@ public sealed class EntraExternalRoleStoreGraphTests
             "00000000-0000-0000-0000-000000000099", "Admin");
 
         result.IsSuccess.Should().BeTrue();
-        result.UserId.Should().Be("00000000-0000-0000-0000-000000000099");
+        result.ResourceId.Should().Be("00000000-0000-0000-0000-000000000099");
     }
 
     [Fact]
     public async Task AssignRoleAsync_NonGuidUserId_ReturnsFailureWithFormatHint()
     {
         // Guid.Parse on a non-GUID userId throws FormatException, which
-        // the store catches and surfaces as an actionable UserResult.
+        // the store catches and surfaces as an actionable StoreResult.
         var handler = new FakeGraphHandler()
             .SetupGet("/servicePrincipals", ServicePrincipalJson)
             .SetupPostJson("/users/not-a-guid/appRoleAssignments", "{}");

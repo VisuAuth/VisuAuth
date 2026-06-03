@@ -125,7 +125,7 @@ public sealed class NewModel(
             return Page();
         }
 
-        CreatedUserId = result.UserId;
+        CreatedUserId = result.ResourceId;
         if (result.Metadata.TryGetValue("temporaryPassword", out var temp))
         {
             GeneratedPassword = temp;
@@ -135,7 +135,7 @@ public sealed class NewModel(
         {
             Action = AuditActions.UserCreated,
             TargetType = AuditTargetTypes.User,
-            TargetId = result.UserId,
+            TargetId = result.ResourceId,
             TargetLabel = command.Email,
             Outcome = AuditOutcome.Success,
             Payload = new Dictionary<string, string?>

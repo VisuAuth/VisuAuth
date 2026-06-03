@@ -92,7 +92,7 @@ public sealed class AspNetIdentitySignInFlow<TUser>(
     }
 
     /// <inheritdoc />
-    public async Task<UserResult> RegisterAsync(
+    public async Task<StoreResult> RegisterAsync(
         string email,
         string password,
         string? tenantId,
@@ -138,11 +138,11 @@ public sealed class AspNetIdentitySignInFlow<TUser>(
                 metadata["emailConfirmationToken"] = confirmationToken;
             }
         }
-        return UserResult.Success(user.Id, metadata);
+        return StoreResult.Success(user.Id, metadata);
     }
 
     /// <inheritdoc />
-    public async Task<UserResult> RequestPasswordResetAsync(
+    public async Task<StoreResult> RequestPasswordResetAsync(
         string email,
         CancellationToken cancellationToken = default)
     {
@@ -155,18 +155,18 @@ public sealed class AspNetIdentitySignInFlow<TUser>(
             // Return success even when the user is unknown so attackers cannot
             // probe for valid emails. The end-user UI surfaces a generic
             // "if the email exists, a reset link was sent" message.
-            return UserResult.Success();
+            return StoreResult.Success();
         }
 
         var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-        return UserResult.Success(user.Id, new Dictionary<string, string>
+        return StoreResult.Success(user.Id, new Dictionary<string, string>
         {
             ["resetToken"] = token,
         });
     }
 
     /// <inheritdoc />
-    public async Task<UserResult> ResetPasswordAsync(
+    public async Task<StoreResult> ResetPasswordAsync(
         string email,
         string token,
         string newPassword,
@@ -180,17 +180,17 @@ public sealed class AspNetIdentitySignInFlow<TUser>(
         var user = await _userManager.FindByEmailAsync(email);
         if (user is null)
         {
-            return UserResult.Failure("Invalid reset link.");
+            return StoreResult.Failure("Invalid reset link.");
         }
 
         var result = await _userManager.ResetPasswordAsync(user, token, newPassword);
         return result.Succeeded
-            ? UserResult.Success(user.Id)
+            ? StoreResult.Success(user.Id)
             : ToFailure(result, "Failed to reset password.");
     }
 
     /// <inheritdoc />
-    public async Task<UserResult> ConfirmEmailAsync(
+    public async Task<StoreResult> ConfirmEmailAsync(
         string userId,
         string token,
         CancellationToken cancellationToken = default)
@@ -202,12 +202,12 @@ public sealed class AspNetIdentitySignInFlow<TUser>(
         var user = await _userManager.FindByIdAsync(userId);
         if (user is null)
         {
-            return UserResult.Failure("Invalid confirmation link.");
+            return StoreResult.Failure("Invalid confirmation link.");
         }
 
         var result = await _userManager.ConfirmEmailAsync(user, token);
         return result.Succeeded
-            ? UserResult.Success(user.Id)
+            ? StoreResult.Success(user.Id)
             : ToFailure(result, "Failed to confirm email.");
     }
 
@@ -218,10 +218,10 @@ public sealed class AspNetIdentitySignInFlow<TUser>(
         return _signInManager.SignOutAsync();
     }
 
-    private static UserResult ToFailure(IdentityResult result, string fallback)
+    private static StoreResult ToFailure(IdentityResult result, string fallback)
     {
         var messages = result.Errors.Select(e => e.Description).ToList();
-        return UserResult.Failure(
+        return StoreResult.Failure(
             messages.Count == 0 ? fallback : messages[0],
             messages);
     }

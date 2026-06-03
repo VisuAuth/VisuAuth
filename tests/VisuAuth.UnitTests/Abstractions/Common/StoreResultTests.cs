@@ -4,22 +4,22 @@ using Xunit;
 
 namespace VisuAuth.UnitTests.Abstractions.Common;
 
-public sealed class UserResultTests
+public sealed class StoreResultTests
 {
     [Fact]
-    public void Success_DefaultArguments_ReturnsSuccessfulResultWithNullUserIdAndEmptyMetadata()
+    public void Success_DefaultArguments_ReturnsSuccessfulResultWithNullResourceIdAndEmptyMetadata()
     {
-        var result = UserResult.Success();
+        var result = StoreResult.Success();
 
         result.IsSuccess.Should().BeTrue();
-        result.UserId.Should().BeNull();
+        result.ResourceId.Should().BeNull();
         result.Error.Should().BeNull();
         result.ValidationErrors.Should().BeEmpty();
         result.Metadata.Should().BeEmpty();
     }
 
     [Fact]
-    public void Success_WithUserIdAndMetadata_RoundTripsBothValues()
+    public void Success_WithResourceIdAndMetadata_RoundTripsBothValues()
     {
         var metadata = new Dictionary<string, string>
         {
@@ -27,22 +27,22 @@ public sealed class UserResultTests
             ["resetToken"] = "abc",
         };
 
-        var result = UserResult.Success("user-42", metadata);
+        var result = StoreResult.Success("user-42", metadata);
 
         result.IsSuccess.Should().BeTrue();
-        result.UserId.Should().Be("user-42");
+        result.ResourceId.Should().Be("user-42");
         result.Metadata.Should().BeEquivalentTo(metadata);
     }
 
     [Fact]
     public void Failure_WithErrorOnly_HasIsSuccessFalseAndEmptyValidationErrors()
     {
-        var result = UserResult.Failure("Something broke.");
+        var result = StoreResult.Failure("Something broke.");
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("Something broke.");
         result.ValidationErrors.Should().BeEmpty();
-        result.UserId.Should().BeNull();
+        result.ResourceId.Should().BeNull();
     }
 
     [Fact]
@@ -50,7 +50,7 @@ public sealed class UserResultTests
     {
         var errors = new[] { "Email is required.", "Password too short." };
 
-        var result = UserResult.Failure("Validation failed.", errors);
+        var result = StoreResult.Failure("Validation failed.", errors);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("Validation failed.");

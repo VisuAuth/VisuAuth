@@ -28,7 +28,7 @@ namespace VisuAuth.Entra.Configuration;
 /// </list>
 /// Capabilities are independently enforced by Entra; if a permission is
 /// missing the corresponding store method bubbles up the Graph
-/// <c>403 Forbidden</c> as a <see cref="VisuAuth.Abstractions.Common.UserResult"/>
+/// <c>403 Forbidden</c> as a <see cref="VisuAuth.Abstractions.Common.StoreResult"/>
 /// failure rather than crashing.
 /// </para>
 /// </remarks>

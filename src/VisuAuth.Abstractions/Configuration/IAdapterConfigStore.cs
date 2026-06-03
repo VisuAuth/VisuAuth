@@ -49,7 +49,7 @@ public interface IAdapterConfigStore
     /// override (fall back to code/appsettings), and any other string sets it
     /// (encrypted when <see cref="AdapterConfigValue.IsSecret"/>).
     /// </summary>
-    Task<UserResult> SaveAsync(SaveAdapterConfigCommand command, CancellationToken cancellationToken = default);
+    Task<StoreResult> SaveAsync(SaveAdapterConfigCommand command, CancellationToken cancellationToken = default);
 }
 
 /// <summary>

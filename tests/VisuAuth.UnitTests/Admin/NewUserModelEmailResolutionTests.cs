@@ -109,7 +109,7 @@ public sealed class NewUserModelEmailResolutionTests
         userStore.SetupGet(s => s.Capabilities).Returns(capabilities);
         userStore.Setup(s => s.CreateAsync(It.IsAny<CreateUserCommand>(), It.IsAny<CancellationToken>()))
             .Callback<CreateUserCommand, CancellationToken>((cmd, _) => onCreate(cmd))
-            .ReturnsAsync(UserResult.Success("new-user-id"));
+            .ReturnsAsync(StoreResult.Success("new-user-id"));
 
         var roleStore = new Mock<IRoleStore>();
         roleStore.Setup(s => s.ListAsync(It.IsAny<string?>(), It.IsAny<CancellationToken>()))

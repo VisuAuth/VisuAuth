@@ -117,10 +117,10 @@ public sealed partial class EntraConfigPageTests(VisuAuthTestFactory factory) : 
                 new() { Key = "ClientSecret", IsSecret = true, HasValue = true, Value = null },
             ]);
 
-        public Task<UserResult> SaveAsync(SaveAdapterConfigCommand command, CancellationToken cancellationToken = default)
+        public Task<StoreResult> SaveAsync(SaveAdapterConfigCommand command, CancellationToken cancellationToken = default)
         {
             LastCommand = command;
-            return Task.FromResult(UserResult.Success());
+            return Task.FromResult(StoreResult.Success());
         }
     }
 }

@@ -16,13 +16,13 @@ public interface IAuthenticationFlow
 
     Task<SignInResult> SignInWithPasswordAsync(string emailOrUserName, string password, bool persistent, CancellationToken cancellationToken = default);
 
-    Task<UserResult> RegisterAsync(string email, string password, string? tenantId, CancellationToken cancellationToken = default);
+    Task<StoreResult> RegisterAsync(string email, string password, string? tenantId, CancellationToken cancellationToken = default);
 
-    Task<UserResult> RequestPasswordResetAsync(string email, CancellationToken cancellationToken = default);
+    Task<StoreResult> RequestPasswordResetAsync(string email, CancellationToken cancellationToken = default);
 
-    Task<UserResult> ResetPasswordAsync(string email, string token, string newPassword, CancellationToken cancellationToken = default);
+    Task<StoreResult> ResetPasswordAsync(string email, string token, string newPassword, CancellationToken cancellationToken = default);
 
-    Task<UserResult> ConfirmEmailAsync(string userId, string token, CancellationToken cancellationToken = default);
+    Task<StoreResult> ConfirmEmailAsync(string userId, string token, CancellationToken cancellationToken = default);
 
     Task SignOutAsync(CancellationToken cancellationToken = default);
 }

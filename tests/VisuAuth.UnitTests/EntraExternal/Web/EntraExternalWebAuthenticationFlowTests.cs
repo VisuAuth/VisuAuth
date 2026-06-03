@@ -111,13 +111,13 @@ public sealed class EntraExternalWebAuthenticationFlowTests
     {
         var inner = new Mock<IAuthenticationFlow>();
         inner.Setup(f => f.RegisterAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(VisuAuth.Abstractions.Common.UserResult.Failure("x"));
+            .ReturnsAsync(VisuAuth.Abstractions.Common.StoreResult.Failure("x"));
         inner.Setup(f => f.RequestPasswordResetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(VisuAuth.Abstractions.Common.UserResult.Failure("x"));
+            .ReturnsAsync(VisuAuth.Abstractions.Common.StoreResult.Failure("x"));
         inner.Setup(f => f.ResetPasswordAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(VisuAuth.Abstractions.Common.UserResult.Failure("x"));
+            .ReturnsAsync(VisuAuth.Abstractions.Common.StoreResult.Failure("x"));
         inner.Setup(f => f.ConfirmEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(VisuAuth.Abstractions.Common.UserResult.Failure("x"));
+            .ReturnsAsync(VisuAuth.Abstractions.Common.StoreResult.Failure("x"));
 
         var sut = new EntraExternalWebAuthenticationFlow(inner.Object, Mock.Of<IHttpContextAccessor>());
 

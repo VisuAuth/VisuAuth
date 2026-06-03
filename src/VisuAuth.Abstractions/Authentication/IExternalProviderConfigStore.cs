@@ -40,13 +40,13 @@ public interface IExternalProviderConfigStore
     /// is null on an UPDATE, the existing secret is preserved (lets the UI
     /// edit ClientId / IsEnabled without re-typing the secret).
     /// </summary>
-    Task<UserResult> SaveAsync(SaveExternalProviderConfigCommand command, CancellationToken cancellationToken = default);
+    Task<StoreResult> SaveAsync(SaveExternalProviderConfigCommand command, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Flips a single config's enabled flag — used by the admin's bulk
     /// enable/disable surface and individual row toggles.
     /// </summary>
-    Task<UserResult> SetEnabledAsync(string scheme, string? tenantId, bool isEnabled, CancellationToken cancellationToken = default);
+    Task<StoreResult> SetEnabledAsync(string scheme, string? tenantId, bool isEnabled, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Idempotently creates a row for <paramref name="scheme"/> if one does
@@ -64,7 +64,7 @@ public interface IExternalProviderConfigStore
     /// the enabled state. Pass <c>true</c> when <paramref name="defaultClientId"/>
     /// is present AND a ClientSecret is also configured at the static-options
     /// layer; <c>false</c> otherwise so the admin opts-in explicitly.</param>
-    Task<UserResult> EnsureSchemeAsync(
+    Task<StoreResult> EnsureSchemeAsync(
         string scheme,
         string displayName,
         string? tenantId = null,
@@ -79,7 +79,7 @@ public interface IExternalProviderConfigStore
     /// so stale credentials don't linger after a provider type is dropped
     /// from <c>Program.cs</c>. No-op when no matching row exists.
     /// </summary>
-    Task<UserResult> DeleteAsync(string scheme, string? tenantId, CancellationToken cancellationToken = default);
+    Task<StoreResult> DeleteAsync(string scheme, string? tenantId, CancellationToken cancellationToken = default);
 }
 
 /// <summary>

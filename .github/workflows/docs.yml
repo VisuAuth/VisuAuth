@@ -37,8 +37,10 @@ jobs:
 
       - name: Install MkDocs Material
         # Pinned + binary-only: locks the resolved version and never runs a
-        # package's setup script during install.
-        run: pip install --only-binary :all: mkdocs-material==9.6.21
+        # package's setup script during install. Block scalar so the
+        # `:all:` colon-space doesn't break YAML plain-scalar parsing.
+        run: |
+          pip install --only-binary :all: mkdocs-material==9.6.21
 
       - name: Build site (strict)
         # --strict turns broken links / missing nav files into build errors,

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-label="Placeholder: end-user sign-in page showing a Sign in with Microsoft button instead of a local form">
+  <rect width="1280" height="720" fill="#f4f4f7"/>
+  <rect x="2" y="2" width="1276" height="716" fill="none" stroke="#b9b9c8" stroke-width="3" stroke-dasharray="14 10"/>
+  <text x="640" y="320" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="44" font-weight="700" fill="#5b5b6b" text-anchor="middle">PLACEHOLDER</text>
+  <text x="640" y="380" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="26" fill="#8a8a99" text-anchor="middle">Capability-driven sign-in &#8212; "Sign in with Microsoft"</text>
+  <text x="640" y="416" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="20" fill="#a6a6b3" text-anchor="middle">SupportsLocalLogin = false &#8594; no email/password form</text>
+  <text x="640" y="452" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="18" fill="#a6a6b3" text-anchor="middle">Replace per docs/CAPTURE_CHECKLIST.md</text>
+</svg>

@@ -16,6 +16,7 @@ public interface IUserStore
     /// <summary>Features this backend supports. Inspected at runtime by the UI.</summary>
     UserBackendCapabilities Capabilities { get; }
 
+    /// <summary>Loads the list projection of a user, or <c>null</c> when no user matches <paramref name="id"/>.</summary>
     Task<UserSummary?> GetAsync(string id, CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -24,6 +25,7 @@ public interface IUserStore
     /// </summary>
     Task<UserDetail?> GetDetailAsync(string id, CancellationToken cancellationToken = default);
 
+    /// <summary>Returns a filtered, cursor-paginated page of users.</summary>
     Task<PagedResult<UserSummary>> ListAsync(UserFilter filter, CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -33,6 +35,7 @@ public interface IUserStore
     /// </summary>
     Task<StoreResult> CreateAsync(CreateUserCommand command, CancellationToken cancellationToken = default);
 
+    /// <summary>Updates the user's profile (email / user name / phone); <see langword="null"/> command fields are left unchanged.</summary>
     Task<StoreResult> UpdateAsync(string id, UpdateUserCommand command, CancellationToken cancellationToken = default);
 
     /// <summary>

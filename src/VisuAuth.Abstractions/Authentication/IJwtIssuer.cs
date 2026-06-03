@@ -19,8 +19,10 @@ public interface IJwtIssuer
 /// <summary>Issued-token payload returned to API callers.</summary>
 public sealed record JwtTokenResult
 {
+    /// <summary>The signed JWT access token.</summary>
     public required string AccessToken { get; init; }
 
+    /// <summary>When the token expires (its <c>exp</c> claim).</summary>
     public required DateTimeOffset ExpiresAt { get; init; }
 
     /// <summary>User id baked into the <c>sub</c> claim — handy for the client.</summary>

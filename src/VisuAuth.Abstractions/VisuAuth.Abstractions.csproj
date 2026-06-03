@@ -4,6 +4,10 @@
     <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>VisuAuth.Abstractions</RootNamespace>
     <AssemblyName>VisuAuth.Abstractions</AssemblyName>
+    <!-- Ship XML docs with the package (IntelliSense for adapter / extension
+         authors). With TreatWarningsAsErrors this also enforces a documented
+         public surface (CS1591) — the contract is the product here. -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <PropertyGroup Label="NuGet">

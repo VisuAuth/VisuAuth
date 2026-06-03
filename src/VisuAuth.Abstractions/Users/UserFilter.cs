@@ -33,17 +33,28 @@ public sealed record UserFilter
     /// </summary>
     public string? Cursor { get; init; }
 
+    /// <summary>Maximum number of users to return per page. Defaults to 25.</summary>
     public int PageSize { get; init; } = 25;
 
+    /// <summary>Field the results are ordered by. Defaults to <see cref="UserSortBy.CreatedAt"/>.</summary>
     public UserSortBy SortBy { get; init; } = UserSortBy.CreatedAt;
 
+    /// <summary>Order direction; <c>true</c> (default) sorts descending.</summary>
     public bool Descending { get; init; } = true;
 }
 
+/// <summary>Sort key for a <see cref="UserFilter"/> query.</summary>
 public enum UserSortBy
 {
+    /// <summary>Order by account creation time.</summary>
     CreatedAt,
+
+    /// <summary>Order by email address.</summary>
     Email,
+
+    /// <summary>Order by login user name.</summary>
     UserName,
+
+    /// <summary>Order by most recent successful sign-in.</summary>
     LastSignInAt,
 }

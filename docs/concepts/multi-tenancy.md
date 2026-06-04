@@ -10,7 +10,7 @@ Multi-tenancy is **opt-in**. Without it, `ITenantContext.IsMultiTenancyEnabled`
 is `false`, the query filters are no-ops, and the tenant catalogue page doesn't
 render — single-tenant apps pay nothing.
 
-![The tenant catalogue admin page](../assets/screenshots/tenants-catalogue.svg)
+![The tenant catalogue admin page](../assets/screenshots/tenants-catalogue.png)
 
 ## Enabling it
 
@@ -120,6 +120,8 @@ The generic `EnableMultiTenant<TDbContext, TUser>` overload registers
 at **`/visuauth/admin/tenants`** — create, rename, and delete tenants inline.
 The admin sidebar's **tenant switcher** writes the `va-tenant` cookie so an
 operator can scope the dashboard to one tenant at a time.
+
+![Switching tenants from the sidebar — the dashboard re-scopes and the per-tenant brand changes](../assets/screenshots/tenant-switcher.gif)
 
 ## Per-tenant configuration & branding
 

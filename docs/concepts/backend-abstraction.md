@@ -101,7 +101,7 @@ This is what lets the Entra adapter swap the email/password form for a
 **"Sign in with Microsoft"** button automatically — it declares
 `SupportsLocalLogin = false`, and the end-user UI reacts.
 
-![Capability-driven sign-in: the end-user page shows a "Sign in with Microsoft" button instead of a local form](../assets/screenshots/entra-signin-button.svg)
+![Capability-driven sign-in: the end-user page shows a "Sign in with Microsoft" button instead of a local form](../assets/screenshots/entra-signin-button.png)
 
 ### The flags
 

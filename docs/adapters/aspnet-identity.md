@@ -6,6 +6,19 @@ every VisuAuth contract against `UserManager`, `SignInManager`, and
 owns no tables of its own for the core surfaces — your users stay in
 `AspNetUsers`, roles in `AspNetRoles`, claims in `AspNetUserClaims`.
 
+## The admin UI
+
+List and search users (with pagination), create and edit them, and manage
+roles — all through the standard VisuAuth admin pages.
+
+![Live search filtering the user list (htmx, no page reload)](../assets/screenshots/admin-user-list-search.gif)
+
+![Create-user form, with optional auto-generated temporary password and role pick](../assets/screenshots/admin-user-create.png)
+
+![Roles catalogue with member counts](../assets/screenshots/admin-roles.png)
+
+![Assigning a role to a user inline (htmx, no page reload)](../assets/screenshots/admin-role-assign.gif)
+
 ## Setup
 
 It's wired automatically by `AddVisuAuth<TUser>()`; the end-user pages and the

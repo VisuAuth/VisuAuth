@@ -9,7 +9,7 @@ A built-in **light / dark** theme works out of the box: dark mode applies
 automatically via `@media (prefers-color-scheme: dark)`, and the header toggle
 switches it manually by setting `data-theme="dark"` on the root.
 
-![Light / dark theme toggle](assets/screenshots/theming-light-dark.svg)
+![Toggling between light and dark theme](assets/screenshots/theming-light-dark.gif)
 
 ## Layer 1 — CSS custom properties
 
@@ -102,7 +102,7 @@ templates per tenant at request time. Implement either or both resolver
 contracts; the default registrations are no-ops that return `null`, so consumers
 who never opt in keep the fast path.
 
-![Two tenants rendering with different brand colors](assets/screenshots/theming-per-tenant.svg)
+![Two tenants rendering with different brand colors](assets/screenshots/theming-per-tenant.png)
 
 **Per-tenant theme** — `ITenantThemeResolver` returns a `VisuAuthTheme?` keyed
 off the current tenant. VisuAuth overlays it on the global layer-2 theme via

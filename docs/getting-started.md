@@ -141,7 +141,16 @@ Run the app and open:
 - `/visuauth/register`, `/visuauth/forgot-password`,
   `/visuauth/reset-password`, `/visuauth/confirm-email`.
 
-![VisuAuth end-user sign-in page](assets/screenshots/enduser-login.svg)
+![VisuAuth end-user sign-in page](assets/screenshots/enduser-login.png)
+
+![VisuAuth self-service registration page](assets/screenshots/enduser-register.png)
+
+The end-user pages ship with the niceties you'd otherwise build by hand — a
+show/hide password toggle and a built-in language switcher (pt-BR / en):
+
+![Show / hide password toggle](assets/screenshots/enduser-password-toggle.gif)
+
+![Switching the UI language](assets/screenshots/enduser-lang-switcher.gif)
 
 > **Secure the admin before production.** VisuAuth does not impose an
 > authorization policy on `/visuauth/admin` — that is the consumer's call.

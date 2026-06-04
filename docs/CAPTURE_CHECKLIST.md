@@ -28,42 +28,40 @@ real captures as they are produced.
 
 ## Getting started + Home
 
-- [ ] `screenshots/admin-dashboard.png` — `/visuauth/admin`, light theme, a few
+- [x] `screenshots/admin-dashboard.png` — `/visuauth/admin`, light theme, a few
   seeded users visible. *(Used on `index.md` and as the hero.)*
-- [ ] `screenshots/enduser-login.png` — `/visuauth/login`, default theme.
+- [x] `screenshots/enduser-login.png` — `/visuauth/login`, default theme.
   *(Used on `getting-started.md`.)*
 
 ## Admin UI
 
-- [ ] `screenshots/admin-user-list.png` — user list with search box and
-  pagination, 3+ users.
-- [ ] `screenshots/admin-user-list-search.gif` — typing in search → live
-  (htmx) filtering of the list.
+- [x] `screenshots/admin-user-list-search.gif` — the user list + typing in
+  search → live (htmx) filtering. Used in place of a static list still.
 - [ ] `screenshots/admin-user-detail.png` — a single user's detail page
   (claims, roles, lockout / 2FA state).
-- [ ] `screenshots/admin-user-create.png` — the create-user form.
+- [x] `screenshots/admin-user-create.png` — the create-user form.
 - [ ] `screenshots/admin-user-actions.png` — the lock / reset-password /
   force-logout / reset-2FA actions on a user.
-- [ ] `screenshots/admin-roles.png` — the roles catalogue.
-- [ ] `screenshots/admin-role-assign.gif` — assigning a role to a user.
+- [x] `screenshots/admin-roles.png` — the roles catalogue.
+- [x] `screenshots/admin-role-assign.gif` — assigning a role to a user.
 - [ ] `screenshots/admin-dashboard-dark.png` — `/visuauth/admin` in dark theme
   (pairs with `admin-dashboard.png`).
 
 ## End-user UI
 
 - [ ] `screenshots/enduser-login-dark.png` — `/visuauth/login`, dark theme.
-- [ ] `screenshots/enduser-register.png` — `/visuauth/register`.
+- [x] `screenshots/enduser-register.png` — `/visuauth/register`.
 - [ ] `screenshots/enduser-forgot-password.png` — `/visuauth/forgot-password`.
 - [ ] `screenshots/enduser-reset-password.png` — `/visuauth/reset-password`.
-- [ ] `screenshots/enduser-password-toggle.gif` — the show/hide password eye
+- [x] `screenshots/enduser-password-toggle.gif` — the show/hide password eye
   toggling.
-- [ ] `screenshots/enduser-lang-switcher.gif` — toggling pt-BR ⇄ en via the
+- [x] `screenshots/enduser-lang-switcher.gif` — toggling pt-BR ⇄ en via the
   flag switcher.
 
 ## Multi-tenancy
 
-- [ ] `screenshots/tenants-catalogue.png` — the tenant catalogue admin page.
-- [ ] `screenshots/tenant-switcher.gif` — the admin sidebar tenant switcher
+- [x] `screenshots/tenants-catalogue.png` — the tenant catalogue admin page.
+- [x] `screenshots/tenant-switcher.gif` — the admin sidebar tenant switcher
   changing scope.
 - [ ] `screenshots/tenant-create.png` — creating a tenant.
 
@@ -73,8 +71,8 @@ real captures as they are produced.
   before/after pairs).
 - [ ] `screenshots/theming-css-tokens.png` — layer 1: re-branded via CSS
   variables (custom primary color + logo).
-- [ ] `screenshots/theming-light-dark.gif` — the built-in light/dark toggle.
-- [ ] `screenshots/theming-per-tenant.png` — layer 4: two tenants rendering
+- [x] `screenshots/theming-light-dark.gif` — the built-in light/dark toggle.
+- [x] `screenshots/theming-per-tenant.png` — layer 4: two tenants rendering
   with different brand colors.
 
 ## Mobile & JWT
@@ -84,7 +82,7 @@ real captures as they are produced.
 
 ## Adapters (Entra)
 
-- [ ] `screenshots/entra-signin-button.png` — the end-user UI showing the
+- [x] `screenshots/entra-signin-button.png` — the end-user UI showing the
   "Sign in with Microsoft" button (capability-driven, no local form).
 - [ ] `screenshots/entra-config.png` — the DB-backed adapter-config admin page.
 - [ ] `screenshots/entra-audit.png` — the admin audit-log view.

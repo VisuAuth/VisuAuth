@@ -38,8 +38,10 @@ authenticates callers against any `[Authorize]`-protected endpoint you mount.
 
 - **HS256** with a symmetric signing key (must be at least 32 UTF-8 bytes — the
   issuer throws at startup on a shorter key).
-- Claims: `sub` (user id), `email`, `tenant_id` (when multi-tenant), `roles`,
-  `exp`.
+- Claims: `sub` (user id), `email`, `jti` (token id), `visuauth_stamp` (the
+  user's security stamp), `tenant_id` (when multi-tenant), and the user's roles
+  as standard role claims (`ClaimTypes.Role`), plus `iss` / `aud` / `nbf` /
+  `exp` from the token envelope.
 - Default lifetime 60 minutes, configurable via `JwtOptions.LifetimeMinutes`.
 
 > `AddVisuAuthJwt` is **required** for the end-user sign-in pages too, not just
@@ -71,8 +73,10 @@ Content-Type: application/json
 ```
 
 Failures return an `AuthErrorResponse` (`{ "error": "...", "details": [...] }`)
-and never reveal whether the account exists — `400` for missing fields, `401`
-for bad credentials / lockout / not-allowed.
+and never reveal whether the account exists. Status codes: `400` for missing
+fields, `401` for invalid credentials (and when two-factor is required),
+`423 Locked` when the account is locked out, and `403 Forbidden` when sign-in is
+not allowed (e.g. email not confirmed).
 
 ### `POST /visuauth/api/auth/register`
 
@@ -90,11 +94,18 @@ POST /visuauth/api/auth/refresh
 Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
 ```
 
-Refresh re-reads the user from the backend, re-checks lockout, and bakes in the
-current security stamp — so a token minted after an admin clicks **Revoke
-sessions** carries the new stamp while any leaked older token is rejected on the
-next protected request. Returns `401` if the header is missing/malformed or the
-user is no longer eligible.
+Refresh re-reads the user from the backend, re-checks lockout, and bakes the
+current security stamp into the new token (the `visuauth_stamp` claim). Returns
+`401` if the header is missing/malformed or the user is no longer eligible
+(deleted or locked out).
+
+> **Revocation & the security stamp.** Every token carries the user's security
+> stamp as the `visuauth_stamp` claim, but the bearer scheme does **not**
+> validate it automatically — a token minted *before* an admin clicks *Revoke
+> sessions* stays valid on `[Authorize]` endpoints until it expires. Keep
+> `LifetimeMinutes` short, and if you need immediate revocation, validate
+> `visuauth_stamp` against the current user in a JWT-bearer `OnTokenValidated`
+> event.
 
 ### Calling protected endpoints
 

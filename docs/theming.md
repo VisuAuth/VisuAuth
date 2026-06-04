@@ -28,7 +28,8 @@ no rebuild.
 }
 ```
 
-The tokens (defaults in parentheses):
+The main tokens (a default shown in parentheses where it's a single value; see
+`visuauth.css` for the full set, including the light/dark values):
 
 | Token | Role |
 |---|---|
@@ -37,11 +38,11 @@ The tokens (defaults in parentheses):
 | `--visuauth-primary-fg` (`#ffffff`) | Text on the brand fill |
 | `--visuauth-primary-soft` / `-soft-fg` | Tinted surface + its text |
 | `--visuauth-bg` (`#ffffff`) | Page / card background |
-| `--visuauth-fg` | Base text colour |
+| `--visuauth-fg` | Base text color |
 | `--visuauth-muted` | Secondary text |
 | `--visuauth-border` | Borders |
 | `--visuauth-surface` | Table headers, sidebar, hover rows |
-| `--visuauth-danger` / `--visuauth-success` | Status colours |
+| `--visuauth-danger` / `--visuauth-success` | Status colors |
 | `--visuauth-radius` | Corner radius |
 | `--visuauth-font` | Font stack |
 
@@ -73,7 +74,7 @@ default in `visuauth.css`.
 
 ## Layer 3 — Razor view overrides
 
-For structural changes beyond colours, replace VisuAuth's views with your own.
+For structural changes beyond colors, replace VisuAuth's views with your own.
 Drop a same-named `.cshtml` into the override folder (default `/Views/VisuAuth`,
 configurable) and VisuAuth falls back to its built-in copy when yours is absent.
 
@@ -101,7 +102,7 @@ templates per tenant at request time. Implement either or both resolver
 contracts; the default registrations are no-ops that return `null`, so consumers
 who never opt in keep the fast path.
 
-![Two tenants rendering with different brand colours](assets/screenshots/theming-per-tenant.svg)
+![Two tenants rendering with different brand colors](assets/screenshots/theming-per-tenant.svg)
 
 **Per-tenant theme** — `ITenantThemeResolver` returns a `VisuAuthTheme?` keyed
 off the current tenant. VisuAuth overlays it on the global layer-2 theme via

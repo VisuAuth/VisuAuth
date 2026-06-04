@@ -20,7 +20,7 @@ sign-in page.
 > (`AddVisuAuthJwt<TUser>(…)`) — the **[Getting started](getting-started.md)**
 > guide shows the complete, runnable setup.
 
-![VisuAuth admin dashboard](assets/screenshots/admin-dashboard.svg)
+![VisuAuth admin dashboard](assets/screenshots/admin-dashboard.png)
 
 > **New here?** Jump straight to the **[Getting started](getting-started.md)**
 > guide — it takes you from an empty project to a working `/visuauth/admin`.

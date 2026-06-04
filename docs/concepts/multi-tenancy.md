@@ -10,7 +10,7 @@ Multi-tenancy is **opt-in**. Without it, `ITenantContext.IsMultiTenancyEnabled`
 is `false`, the query filters are no-ops, and the tenant catalogue page doesn't
 render — single-tenant apps pay nothing.
 
-![The tenant catalogue admin page](../assets/screenshots/tenants-catalogue.svg)
+![The tenant catalogue admin page](../assets/screenshots/tenants-catalogue.png)
 
 ## Enabling it
 

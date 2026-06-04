@@ -14,7 +14,7 @@ and shows a "Sign in with Microsoft" hint (see
 isn't an OIDC server, so an actual working sign-in button requires wiring
 `Microsoft.Identity.Web` — see [The end-user login](#the-end-user-login) below.
 
-![Capability-driven sign-in with Entra](../assets/screenshots/entra-signin-button.svg)
+![Capability-driven sign-in with Entra](../assets/screenshots/entra-signin-button.png)
 
 > **Full walkthrough.** This page is an overview. The package README has the
 > end-to-end setup — tenant + app registration, Graph permissions, secrets,

@@ -141,7 +141,9 @@ Run the app and open:
 - `/visuauth/register`, `/visuauth/forgot-password`,
   `/visuauth/reset-password`, `/visuauth/confirm-email`.
 
-![VisuAuth end-user sign-in page](assets/screenshots/enduser-login.svg)
+![VisuAuth end-user sign-in page](assets/screenshots/enduser-login.png)
+
+![VisuAuth self-service registration page](assets/screenshots/enduser-register.png)
 
 > **Secure the admin before production.** VisuAuth does not impose an
 > authorization policy on `/visuauth/admin` — that is the consumer's call.

@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-label="Placeholder: the VisuAuth UI toggling between light and dark theme">
-  <rect width="640" height="720" fill="#ffffff"/>
-  <rect x="640" width="640" height="720" fill="#15161b"/>
-  <rect x="2" y="2" width="1276" height="716" fill="none" stroke="#8a8a99" stroke-width="3" stroke-dasharray="14 10"/>
-  <text x="640" y="330" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="44" font-weight="700" fill="#7c7c8a" text-anchor="middle">PLACEHOLDER</text>
-  <text x="640" y="390" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="26" fill="#9a9aa8" text-anchor="middle">Built-in light / dark toggle (data-theme)</text>
-  <text x="640" y="430" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="18" fill="#9a9aa8" text-anchor="middle">Replace per docs/CAPTURE_CHECKLIST.md (GIF)</text>
-</svg>

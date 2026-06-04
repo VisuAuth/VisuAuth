@@ -8,9 +8,11 @@ your registered app and reads/mutates the directory through Graph; it never
 holds a user's bearer token.
 
 Because Entra owns the login experience, the adapter declares
-`SupportsLocalLogin = false`; the end-user UI swaps the email/password form for a
-"Sign in with Microsoft" button automatically (see
-[Backend abstraction](../concepts/backend-abstraction.md)).
+`SupportsLocalLogin = false`, so the end-user UI hides the email/password form
+and shows a "Sign in with Microsoft" hint (see
+[Backend abstraction](../concepts/backend-abstraction.md)). `VisuAuth.Entra`
+isn't an OIDC server, so an actual working sign-in button requires wiring
+`Microsoft.Identity.Web` — see [The end-user login](#the-end-user-login) below.
 
 ![Capability-driven sign-in with Entra](../assets/screenshots/entra-signin-button.svg)
 

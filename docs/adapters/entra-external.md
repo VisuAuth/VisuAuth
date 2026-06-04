@@ -47,18 +47,22 @@ Graph backend. A ~30-line reference lives in `samples/Sample.EntraExternalWebApp
 | `GraphBaseUrl` | ❌ | `…/v1.0` | Sovereign-cloud override. |
 | `DefaultEmailDomain` | ❌ | `null` | Suggested Create-User domain (External is permissive — any domain works). |
 
-Same four admin-consented Graph application permissions as the Workforce adapter:
+The same admin-consented Graph application permissions as the Workforce adapter:
 `User.Read.All`, `User.ReadWrite.All`, `AppRoleAssignment.ReadWrite.All`,
-`Application.Read.All`.
+`Application.Read.All`, plus `UserAuthenticationMethod.ReadWrite.All` for the
+reset-2FA operation.
 
 ## Capabilities
 
 Mirrors the Workforce adapter's profile — `SupportsLocalLogin = false` (Microsoft
 hosts the customer login at `{tenant}.ciamlogin.com`), registration / password
 reset / two-factor reset / session revocation / role management (assignment only;
-mutation throws), audit log opt-in. `SupportsExternalProviders = false` because
-federated providers (Google, Facebook, Apple) are configured at the tenant level
-and rendered by Microsoft's hosted page, not by VisuAuth.
+mutation throws), audit log opt-in. The base adapter sets
+`SupportsExternalProviders = false` — it doesn't manage federated IdPs itself
+(Google, Facebook, Apple are configured at the tenant level and rendered by
+Microsoft's hosted page). Once you wire the companion `VisuAuth.EntraExternal.Web`
+package (below), it overlays `SupportsExternalProviders = true` so
+`/visuauth/login` renders the Microsoft sign-in button.
 
 ## Operations
 

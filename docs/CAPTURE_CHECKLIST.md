@@ -35,17 +35,15 @@ real captures as they are produced.
 
 ## Admin UI
 
-- [x] `screenshots/admin-user-list.png` — user list with search box and
-  pagination, 3+ users.
-- [ ] `screenshots/admin-user-list-search.gif` — typing in search → live
-  (htmx) filtering of the list.
+- [x] `screenshots/admin-user-list-search.gif` — the user list + typing in
+  search → live (htmx) filtering. Used in place of a static list still.
 - [ ] `screenshots/admin-user-detail.png` — a single user's detail page
   (claims, roles, lockout / 2FA state).
 - [x] `screenshots/admin-user-create.png` — the create-user form.
 - [ ] `screenshots/admin-user-actions.png` — the lock / reset-password /
   force-logout / reset-2FA actions on a user.
 - [x] `screenshots/admin-roles.png` — the roles catalogue.
-- [ ] `screenshots/admin-role-assign.gif` — assigning a role to a user.
+- [x] `screenshots/admin-role-assign.gif` — assigning a role to a user.
 - [ ] `screenshots/admin-dashboard-dark.png` — `/visuauth/admin` in dark theme
   (pairs with `admin-dashboard.png`).
 
@@ -55,15 +53,15 @@ real captures as they are produced.
 - [x] `screenshots/enduser-register.png` — `/visuauth/register`.
 - [ ] `screenshots/enduser-forgot-password.png` — `/visuauth/forgot-password`.
 - [ ] `screenshots/enduser-reset-password.png` — `/visuauth/reset-password`.
-- [ ] `screenshots/enduser-password-toggle.gif` — the show/hide password eye
+- [x] `screenshots/enduser-password-toggle.gif` — the show/hide password eye
   toggling.
-- [ ] `screenshots/enduser-lang-switcher.gif` — toggling pt-BR ⇄ en via the
+- [x] `screenshots/enduser-lang-switcher.gif` — toggling pt-BR ⇄ en via the
   flag switcher.
 
 ## Multi-tenancy
 
 - [x] `screenshots/tenants-catalogue.png` — the tenant catalogue admin page.
-- [ ] `screenshots/tenant-switcher.gif` — the admin sidebar tenant switcher
+- [x] `screenshots/tenant-switcher.gif` — the admin sidebar tenant switcher
   changing scope.
 - [ ] `screenshots/tenant-create.png` — creating a tenant.
 
@@ -73,8 +71,7 @@ real captures as they are produced.
   before/after pairs).
 - [ ] `screenshots/theming-css-tokens.png` — layer 1: re-branded via CSS
   variables (custom primary color + logo).
-- [x] `screenshots/theming-light-dark.png` — the dark theme (static still in
-  place; a light/dark toggle **GIF** is still a nice-to-have).
+- [x] `screenshots/theming-light-dark.gif` — the built-in light/dark toggle.
 - [x] `screenshots/theming-per-tenant.png` — layer 4: two tenants rendering
   with different brand colors.
 

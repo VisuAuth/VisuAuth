@@ -121,6 +121,8 @@ at **`/visuauth/admin/tenants`** — create, rename, and delete tenants inline.
 The admin sidebar's **tenant switcher** writes the `va-tenant` cookie so an
 operator can scope the dashboard to one tenant at a time.
 
+![Switching tenants from the sidebar — the dashboard re-scopes and the per-tenant brand changes](../assets/screenshots/tenant-switcher.gif)
+
 ## Per-tenant configuration & branding
 
 Once tenancy is on, VisuAuth can vary configuration and appearance per tenant:

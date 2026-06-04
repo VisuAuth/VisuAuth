@@ -145,6 +145,13 @@ Run the app and open:
 
 ![VisuAuth self-service registration page](assets/screenshots/enduser-register.png)
 
+The end-user pages ship with the niceties you'd otherwise build by hand — a
+show/hide password toggle and a built-in language switcher (pt-BR / en):
+
+![Show / hide password toggle](assets/screenshots/enduser-password-toggle.gif)
+
+![Switching the UI language](assets/screenshots/enduser-lang-switcher.gif)
+
 > **Secure the admin before production.** VisuAuth does not impose an
 > authorization policy on `/visuauth/admin` — that is the consumer's call.
 > Restrict it with your own policy (for example `[Authorize(Roles = "Admin")]`

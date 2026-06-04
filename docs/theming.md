@@ -9,7 +9,7 @@ A built-in **light / dark** theme works out of the box: dark mode applies
 automatically via `@media (prefers-color-scheme: dark)`, and the header toggle
 switches it manually by setting `data-theme="dark"` on the root.
 
-![Light / dark theme toggle](assets/screenshots/theming-light-dark.png)
+![Toggling between light and dark theme](assets/screenshots/theming-light-dark.gif)
 
 ## Layer 1 — CSS custom properties
 

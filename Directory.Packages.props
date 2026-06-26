@@ -11,6 +11,14 @@
     <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.0" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.0" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.0" />
+    <!-- Pin the native SQLite lib above CVE-2025-6965 / GHSA-2m69-gcr7-jv3q.
+         EF Core's SQLite provider transitively pulls SQLitePCLRaw.lib.e_sqlite3
+         2.1.11, which bundles a SQLite < 3.50.2 (memory corruption in aggregate
+         handling). SQLitePCLRaw versions the native-lib package to the bundled
+         SQLite, so 3.50.3 carries the fix; central transitive pinning overrides
+         the 2.1.11 the bundle resolves while core/provider stay on 2.1.x (the C
+         ABI is stable). Drop this when EF Core's transitive constraint catches up. -->
+    <PackageVersion Include="SQLitePCLRaw.lib.e_sqlite3" Version="3.50.3" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.0" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.0" />
   </ItemGroup>

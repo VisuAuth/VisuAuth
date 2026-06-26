@@ -10,6 +10,10 @@ Drop-in admin dashboard, multi-tenancy, and themeable end-user auth pages — wi
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4)](https://dotnet.microsoft.com/)
 
+<br />
+
+<img src="https://raw.githubusercontent.com/VisuAuth/visuauth/main/docs/assets/screenshots/theming-light-dark.gif" alt="VisuAuth admin dashboard switching between light and dark themes" width="820" />
+
 </div>
 
 > 🚀 **v0.1.0 is live on NuGet.** First feature release — admin UI, end-user pages, multi-tenancy, the four theming layers, and the mobile JWT / WebView channel. Install via `dotnet add package VisuAuth`. Pre-1.0, breaking changes can land on any `0.x` bump and will always be flagged in the [CHANGELOG](CHANGELOG.md).
@@ -43,6 +47,15 @@ Either way, navigate to `/visuauth/admin` for the dashboard and
 `/visuauth/login` for the login page. A complete sample, including the
 EF Core / Identity wiring this snippet leaves out, lives in
 [`samples/Sample.WebApp`](samples/Sample.WebApp).
+
+## See it in action
+
+<div align="center">
+<img src="https://raw.githubusercontent.com/VisuAuth/visuauth/main/docs/assets/screenshots/admin-user-list-search.gif" alt="Live user search filtering the admin table without a page reload" width="820" />
+<br /><em>Live search on the admin user list — reactive UX with htmx, no JS framework.</em>
+</div>
+
+More walkthroughs and screenshots in the [documentation](docs/index.md).
 
 ## What it gives you
 

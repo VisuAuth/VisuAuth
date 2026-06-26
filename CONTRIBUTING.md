@@ -14,7 +14,7 @@ dotnet test src/VisuAuth.slnx
 
 > The solution file lives in `src/VisuAuth.slnx`. Open that one in Visual Studio or Rider.
 
-Requires the **.NET 10 SDK** (10.0.203 or later).
+Requires the **.NET 10 SDK** (10.0.300 or later, matching `global.json`).
 
 ## Project layout
 

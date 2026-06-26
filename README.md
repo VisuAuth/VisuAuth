@@ -9,6 +9,7 @@ Drop-in admin dashboard, multi-tenancy, and themeable end-user auth pages — wi
 [![NuGet](https://img.shields.io/nuget/v/VisuAuth.svg)](https://www.nuget.org/packages/VisuAuth/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4)](https://dotnet.microsoft.com/)
+[![Docs](https://img.shields.io/badge/docs-visuauth.github.io-3b82f6)](https://visuauth.github.io/VisuAuth/)
 
 <br />
 
@@ -55,7 +56,7 @@ EF Core / Identity wiring this snippet leaves out, lives in
 <br /><em>Live search on the admin user list — reactive UX with htmx, no JS framework.</em>
 </div>
 
-More walkthroughs and screenshots in the [documentation](docs/index.md).
+More walkthroughs and screenshots in the [documentation site](https://visuauth.github.io/VisuAuth/).
 
 ## What it gives you
 

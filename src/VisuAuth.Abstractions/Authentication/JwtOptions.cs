@@ -31,4 +31,16 @@ public sealed class JwtOptions
     /// the API server and a mobile client.
     /// </summary>
     public int ClockSkewMinutes { get; set; } = 5;
+
+    /// <summary>
+    /// When <c>true</c> (default), the bearer scheme validates the token's
+    /// <c>visuauth_stamp</c> claim against the user's current security stamp
+    /// on every authenticated request. Admin actions that rotate the stamp —
+    /// lockout, "revoke sessions", a password change — then invalidate
+    /// already-issued tokens immediately instead of leaving them valid until
+    /// <c>exp</c>. Costs one user lookup per authenticated request; set to
+    /// <c>false</c> to trade immediate revocation for that saved lookup
+    /// (tokens then stay valid until they expire).
+    /// </summary>
+    public bool ValidateSecurityStamp { get; set; } = true;
 }

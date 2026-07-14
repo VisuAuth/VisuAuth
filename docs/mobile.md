@@ -104,12 +104,14 @@ if the header is missing/malformed, the token fails validation, or the user is
 no longer eligible (deleted or locked out).
 
 > **Revocation & the security stamp.** Every token carries the user's security
-> stamp as the `visuauth_stamp` claim, but the bearer scheme does **not**
-> validate it automatically — a token minted *before* an admin clicks *Revoke
-> sessions* stays valid on `[Authorize]` endpoints until it expires. Keep
-> `LifetimeMinutes` short, and if you need immediate revocation, validate
-> `visuauth_stamp` against the current user in a JWT-bearer `OnTokenValidated`
-> event.
+> stamp as the `visuauth_stamp` claim, and the bearer scheme **validates it on
+> every authenticated request** (default). A token minted *before* an admin
+> clicks *Revoke sessions* — or before a lockout or password change — is
+> rejected with `401` on its next use, because rotating the stamp no longer
+> matches the value baked into the token. This costs one user lookup per
+> authenticated request; set `JwtOptions.ValidateSecurityStamp = false` to skip
+> it and fall back to expiry-bounded revocation (tokens then stay valid until
+> `exp`, so keep `LifetimeMinutes` short).
 
 ### Calling protected endpoints
 

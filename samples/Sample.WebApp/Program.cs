@@ -242,6 +242,21 @@ app.UseAuthorization();
 // Manual-test launcher at "/" — see Sample.WebApp.Home.SampleHomePage.
 app.MapSampleHomePage();
 
+// Demonstrates protecting a consumer API with the VisuAuth JWT: attach the
+// token from /visuauth/api/auth/login as `Authorization: Bearer <token>` and
+// this returns the caller's claims. Requires the bearer scheme explicitly
+// because AddIdentity makes the cookie scheme the default. Also gives the
+// integration tests a target for the security-stamp revocation check.
+app.MapGet("/api/me", (System.Security.Claims.ClaimsPrincipal user) => Results.Ok(new
+    {
+        sub = user.FindFirst("sub")?.Value,
+        email = user.FindFirst("email")?.Value,
+    }))
+    .RequireAuthorization(new Microsoft.AspNetCore.Authorization.AuthorizeAttribute
+    {
+        AuthenticationSchemes = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme,
+    });
+
 app.MapVisuAuth();
 
 app.Run();

@@ -2,6 +2,9 @@ using System.Net;
 using System.Text.RegularExpressions;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.DependencyInjection;
+using VisuAuth.AdminUi.DependencyInjection;
 using Xunit;
 
 namespace VisuAuth.IntegrationTests.Admin;
@@ -58,6 +61,25 @@ public sealed class VisuAuthAdminAuthorizationTests
         login.StatusCode.Should().Be(HttpStatusCode.Redirect);
 
         // The auth cookie now rides on the client; the admin page must load.
+        var response = await client.GetAsync(AdminUsersUri);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task GetAdminUsers_Anonymous_WithOptOut_Returns200()
+    {
+        // AllowAnonymousVisuAuthAdmin() drops the gate for consumers who fence
+        // the dashboard off some other way. Layered on top of the real policy,
+        // an anonymous request must now reach the page.
+        using var factory = _factory.WithWebHostBuilder(builder =>
+            builder.ConfigureTestServices(services => services.AllowAnonymousVisuAuthAdmin()));
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            HandleCookies = true,
+            AllowAutoRedirect = false,
+        });
+
         var response = await client.GetAsync(AdminUsersUri);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);

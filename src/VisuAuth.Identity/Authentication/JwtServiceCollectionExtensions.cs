@@ -36,7 +36,10 @@ public static class JwtServiceCollectionExtensions
         var snapshot = new JwtOptions();
         configure(snapshot);
 
-        var keyBytes = Encoding.UTF8.GetBytes(snapshot.SigningKey);
+        // Validation accepts the primary signing key plus any rotated-out keys,
+        // so a rotation can retire a secret without invalidating tokens still in
+        // flight. The issuer only ever signs with the primary SigningKey.
+        var validationKeys = BuildValidationKeys(snapshot);
 
         var validationParameters = new TokenValidationParameters
         {
@@ -45,7 +48,7 @@ public static class JwtServiceCollectionExtensions
             ValidateAudience = true,
             ValidAudience = snapshot.Audience,
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(keyBytes),
+            IssuerSigningKeys = validationKeys,
             ValidateLifetime = true,
             ClockSkew = TimeSpan.FromMinutes(snapshot.ClockSkewMinutes),
             NameClaimType = "sub",
@@ -81,6 +84,38 @@ public static class JwtServiceCollectionExtensions
             });
 
         return services;
+    }
+
+    /// <summary>
+    /// Builds the list of keys the bearer scheme and the refresh validator will
+    /// accept: the primary <see cref="JwtOptions.SigningKey"/> first, then any
+    /// <see cref="JwtOptions.AdditionalValidationKeys"/>. Every key must clear
+    /// the HS256 minimum (256 bits / 32 UTF-8 bytes); surfacing that at startup
+    /// beats an opaque IdentityModel failure deep in the middleware.
+    /// </summary>
+    private static List<SecurityKey> BuildValidationKeys(JwtOptions options)
+    {
+        var keys = new List<SecurityKey> { CreateHs256Key(options.SigningKey, nameof(JwtOptions.SigningKey)) };
+
+        foreach (var additional in options.AdditionalValidationKeys)
+        {
+            keys.Add(CreateHs256Key(additional, nameof(JwtOptions.AdditionalValidationKeys)));
+        }
+
+        return keys;
+    }
+
+    private static SymmetricSecurityKey CreateHs256Key(string key, string source)
+    {
+        var bytes = Encoding.UTF8.GetBytes(key ?? string.Empty);
+        if (bytes.Length < 32)
+        {
+            throw new InvalidOperationException(
+                $"VisuAuth JwtOptions.{source} must be at least 32 UTF-8 bytes for HS256. " +
+                "Configure a long random secret in your secret store.");
+        }
+
+        return new SymmetricSecurityKey(bytes);
     }
 
     /// <summary>

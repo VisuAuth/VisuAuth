@@ -163,6 +163,11 @@ if (!isEntra)
         options.Issuer = "VisuAuth.Sample";
         options.Audience = "VisuAuth.Sample";
         options.LifetimeMinutes = 60;
+        // Key-rotation demo: a previous signing key kept as validation-only.
+        // Tokens minted before a rotation keep validating for one token
+        // lifetime; drop the entry once those have expired. In production this
+        // list, like SigningKey, comes from your secret store — never source.
+        options.AdditionalValidationKeys.Add("sample-rotated-out-key-kept-for-validation-only-32b+");
     });
 }
 

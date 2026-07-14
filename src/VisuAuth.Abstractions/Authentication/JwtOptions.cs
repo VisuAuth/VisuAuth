@@ -12,9 +12,21 @@ public sealed class JwtOptions
     /// Symmetric signing key. Must be at least 32 UTF-8 bytes long for
     /// HS256. Load from configuration / secret store — never check into
     /// source. The issuer throws at startup if it sees a key shorter than
-    /// the HS256 minimum.
+    /// the HS256 minimum. This is the <em>only</em> key used to <em>sign</em>
+    /// newly-issued tokens.
     /// </summary>
     public string SigningKey { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Extra keys accepted when <em>validating</em> a token, but never used to
+    /// sign one. This is the seam for rotating <see cref="SigningKey"/> without
+    /// a big-bang: when you rotate, set the new secret as <see cref="SigningKey"/>
+    /// and move the old one here for at least one token <see cref="LifetimeMinutes"/>
+    /// so tokens already in flight keep validating, then drop it. Each key must
+    /// also be at least 32 UTF-8 bytes for HS256. Empty by default (no rotation
+    /// in progress).
+    /// </summary>
+    public IList<string> AdditionalValidationKeys { get; set; } = new List<string>();
 
     /// <summary>Token issuer claim (<c>iss</c>). Defaults to <c>VisuAuth</c>.</summary>
     public string Issuer { get; set; } = "VisuAuth";

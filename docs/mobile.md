@@ -47,6 +47,22 @@ authenticates callers against any `[Authorize]`-protected endpoint you mount.
 > `AddVisuAuthJwt` is **required** for the end-user sign-in pages too, not just
 > the mobile API — see [Getting started](getting-started.md).
 
+### Rotating the signing key
+
+`SigningKey` is the only key used to *sign* new tokens, but validation accepts
+`SigningKey` plus any `AdditionalValidationKeys`. That lets you rotate without
+invalidating tokens already in flight:
+
+```csharp
+options.SigningKey = newSecret;                       // sign everything new with the new key
+options.AdditionalValidationKeys.Add(previousSecret);  // still accept the old key…
+```
+
+Keep the old key in `AdditionalValidationKeys` for at least one
+`LifetimeMinutes` window (so outstanding tokens keep validating), then drop it
+on the next deploy. Each key must also be 32+ UTF-8 bytes. Load these from your
+secret store — never from source.
+
 ## Flow 1 — the REST API
 
 Three minimal-API endpoints are mounted under `/visuauth/api/auth` (by

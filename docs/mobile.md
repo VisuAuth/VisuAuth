@@ -94,10 +94,14 @@ POST /visuauth/api/auth/refresh
 Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
 ```
 
-Refresh re-reads the user from the backend, re-checks lockout, and bakes the
-current security stamp into the new token (the `visuauth_stamp` claim). Returns
-`401` if the header is missing/malformed or the user is no longer eligible
-(deleted or locked out).
+The presented token may be **expired**, but it must still be **authentic**:
+refresh validates its signature, issuer, and audience (only the lifetime check
+is skipped). A forged or tampered token is rejected with `401` — it can never
+be used to mint a fresh token for an arbitrary `sub`. On a valid token, refresh
+re-reads the user from the backend, re-checks lockout, and bakes the current
+security stamp into the new token (the `visuauth_stamp` claim). Returns `401`
+if the header is missing/malformed, the token fails validation, or the user is
+no longer eligible (deleted or locked out).
 
 > **Revocation & the security stamp.** Every token carries the user's security
 > stamp as the `visuauth_stamp` claim, but the bearer scheme does **not**

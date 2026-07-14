@@ -37,23 +37,33 @@ public static class JwtServiceCollectionExtensions
 
         var keyBytes = Encoding.UTF8.GetBytes(snapshot.SigningKey);
 
+        var validationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = snapshot.Issuer,
+            ValidateAudience = true,
+            ValidAudience = snapshot.Audience,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(keyBytes),
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.FromMinutes(snapshot.ClockSkewMinutes),
+            NameClaimType = "sub",
+        };
+
+        // The refresh endpoint re-authenticates a (possibly expired) token
+        // before minting a fresh one. Give it a validator built from the very
+        // same parameters as the bearer scheme so signature / issuer /
+        // audience checks can never drift apart; the validator clones these
+        // and turns the lifetime check off (expired tokens are the whole
+        // point of refresh).
+        services.AddSingleton<IJwtValidator>(new AspNetIdentityJwtValidator(validationParameters));
+
         services
             .AddAuthentication()
             .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
             {
                 options.MapInboundClaims = false;
-                options.TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuer = true,
-                    ValidIssuer = snapshot.Issuer,
-                    ValidateAudience = true,
-                    ValidAudience = snapshot.Audience,
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(keyBytes),
-                    ValidateLifetime = true,
-                    ClockSkew = TimeSpan.FromMinutes(snapshot.ClockSkewMinutes),
-                    NameClaimType = "sub",
-                };
+                options.TokenValidationParameters = validationParameters;
             });
 
         return services;

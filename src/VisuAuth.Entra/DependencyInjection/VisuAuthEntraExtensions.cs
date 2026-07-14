@@ -193,6 +193,11 @@ public static class VisuAuthEntraExtensions
         // surfaces a clean 401 via the existing IssueOrUnauthorized branch.
         services.TryAddSingleton<IJwtIssuer, EntraNoOpJwtIssuer>();
 
+        // Same story for IJwtValidator — the /api/auth/refresh endpoint lists
+        // it as a required parameter. Entra mode never mints VisuAuth HS256
+        // tokens, so the no-op returns null and refresh answers 401.
+        services.TryAddSingleton<IJwtValidator, EntraNoOpJwtValidator>();
+
         // And ITenantContext — VisuAuth.Identity registers
         // HttpContextTenantContext only when EnableMultiTenant fires; an
         // Entra-only deployment skips that step entirely, but the minimal

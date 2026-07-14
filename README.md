@@ -233,10 +233,12 @@ app.Run();
 
 ### 4. Try it
 
-- `/visuauth/admin` — the dashboard. Restrict it with your own
-  authorization policy (`[Authorize(Roles = "Admin")]` on a custom
-  layout filter, an endpoint convention, etc.) before going to
-  production — VisuAuth does not impose one in v0.1.
+- `/visuauth/admin` — the dashboard. **Protected by default**: every admin
+  page requires an authenticated user (the `VisuAuth.Admin` policy). To
+  restrict it to a role, register a policy named
+  `VisuAuthAdminUiServiceCollectionExtensions.AdminAuthorizationPolicy` with
+  `RequireRole("Admin")`. To remove the gate (when you front it yourself),
+  call `services.AllowAnonymousVisuAuthAdmin()`.
 - `/visuauth/login` — the public sign-in page.
 - `/visuauth/register`, `/visuauth/forgot-password`,
   `/visuauth/reset-password`, `/visuauth/confirm-email`.

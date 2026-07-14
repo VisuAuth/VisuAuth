@@ -291,6 +291,19 @@ builder.Services
     .AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders();
 
+// The admin dashboard is protected by default (VisuAuth.Admin policy, "require
+// an authenticated user"). Point the Identity cookie at VisuAuth's own login
+// page so an anonymous hit on /visuauth/admin/* redirects there and returns
+// after sign-in, instead of Identity's default /Account/Login. To restrict the
+// dashboard to a role instead, register a policy named
+// VisuAuthAdminUiServiceCollectionExtensions.AdminAuthorizationPolicy with
+// RequireRole("Admin"); the seeded admin@visuauth.dev already has that role.
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.LoginPath = "/visuauth/login";
+    options.AccessDeniedPath = "/visuauth/login";
+});
+
 // External-login providers — wired conditionally so the sample runs out of
 // the box even without OAuth credentials.
 //

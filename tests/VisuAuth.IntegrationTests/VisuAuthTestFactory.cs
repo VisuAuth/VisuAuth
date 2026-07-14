@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -6,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Sample.WebApp.Data;
+using VisuAuth.AdminUi.DependencyInjection;
 using VisuAuth.Identity.MultiTenancy;
 
 namespace VisuAuth.IntegrationTests;
@@ -17,11 +19,19 @@ namespace VisuAuth.IntegrationTests;
 /// database, seeded from scratch by <see cref="UserSeeder"/>; nothing
 /// survives between test runs.
 /// </summary>
-public sealed class VisuAuthTestFactory : WebApplicationFactory<Program>
+public class VisuAuthTestFactory : WebApplicationFactory<Program>
 {
     private readonly string _dbPath = Path.Combine(
         Path.GetTempPath(),
         $"visuauth-tests-{Guid.NewGuid():N}.db");
+
+    /// <summary>
+    /// When <c>true</c> (default) the admin authorization gate is relaxed to
+    /// allow-all so page-behaviour tests can hit <c>/visuauth/admin/*</c>
+    /// without wiring a sign-in. The dedicated authorization tests derive a
+    /// factory that overrides this to <c>false</c> to exercise the real gate.
+    /// </summary>
+    protected virtual bool RelaxAdminAuthorization => true;
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -35,6 +45,18 @@ public sealed class VisuAuthTestFactory : WebApplicationFactory<Program>
                 options.UseSqlite($"Data Source={_dbPath}");
                 options.AddVisuAuthTenancy(sp);
             });
+
+            if (RelaxAdminAuthorization)
+            {
+                // The admin dashboard is secured by default; the bulk of the
+                // admin tests target page behaviour, not the gate, so open it
+                // up here. VisuAuthAdminAuthorizationTests uses a factory that
+                // keeps the real policy.
+                services.PostConfigure<AuthorizationOptions>(options =>
+                    options.AddPolicy(
+                        VisuAuthAdminUiServiceCollectionExtensions.AdminAuthorizationPolicy,
+                        policy => policy.RequireAssertion(_ => true)));
+            }
         });
     }
 

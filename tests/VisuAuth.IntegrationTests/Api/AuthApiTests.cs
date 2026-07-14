@@ -1,11 +1,14 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using System.Net.Http.Json;
+using System.Security.Claims;
+using System.Text;
 using System.Text.Json;
 using FluentAssertions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.IdentityModel.Tokens;
 using Sample.WebApp.Data;
 using Xunit;
 
@@ -200,6 +203,101 @@ public sealed class AuthApiTests : IClassFixture<VisuAuthTestFactory>
         var response = await client.SendAsync(refresh);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task PostRefresh_WithForgedSignature_Returns401()
+    {
+        using var client = _factory.CreateClient();
+
+        // A structurally valid token for an arbitrary subject, with the correct
+        // issuer / audience but signed with a key the server does not know.
+        // Before the signature fix this minted a real token for any `sub` — a
+        // pre-auth account-takeover primitive.
+        var forged = BuildToken(
+            subject: Guid.NewGuid().ToString(),
+            signingKey: "attacker-controlled-key-that-is-at-least-32-bytes!!",
+            expires: DateTime.UtcNow.AddHours(1));
+
+        using var refresh = new HttpRequestMessage(HttpMethod.Post, RefreshUri);
+        refresh.Headers.Add("Authorization", $"Bearer {forged}");
+        var response = await client.SendAsync(refresh);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task PostRefresh_WithExpiredButAuthenticToken_ReturnsFreshJwt()
+    {
+        using var client = _factory.CreateClient();
+
+        // Grab a genuine user id so IssueAsync can reload the user.
+        var loginBody = await ReadJsonAsync(await client.PostAsJsonAsync(LoginUri, new
+        {
+            email = "laura.matos@example.com",
+            password = "Pa$$w0rd!",
+        }));
+        var userId = loginBody.GetProperty("userId").GetString()!;
+
+        // Authentic signature, but expired ten minutes ago. Refresh must still
+        // accept it — accepting expired tokens is the whole point of refresh.
+        var expired = BuildToken(userId, SampleSigningKey, DateTime.UtcNow.AddMinutes(-10));
+
+        using var refresh = new HttpRequestMessage(HttpMethod.Post, RefreshUri);
+        refresh.Headers.Add("Authorization", $"Bearer {expired}");
+        var response = await client.SendAsync(refresh);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await ReadJsonAsync(response);
+        body.GetProperty("accessToken").GetString().Should().NotBeNullOrEmpty();
+    }
+
+    [Fact]
+    public async Task PostRefresh_WithWrongIssuer_Returns401()
+    {
+        using var client = _factory.CreateClient();
+
+        // Correct signing key, but a foreign issuer — must be rejected.
+        var wrongIssuer = BuildToken(
+            subject: Guid.NewGuid().ToString(),
+            signingKey: SampleSigningKey,
+            expires: DateTime.UtcNow.AddHours(1),
+            issuer: "https://evil.example");
+
+        using var refresh = new HttpRequestMessage(HttpMethod.Post, RefreshUri);
+        refresh.Headers.Add("Authorization", $"Bearer {wrongIssuer}");
+        var response = await client.SendAsync(refresh);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    // Signing key / issuer / audience the sample app configures in Program.cs.
+    private const string SampleSigningKey = "sample-dev-signing-key-do-not-use-in-production-or-anywhere-else";
+    private const string SampleIssuer = "VisuAuth.Sample";
+
+    private static string BuildToken(
+        string subject,
+        string signingKey,
+        DateTime expires,
+        string issuer = SampleIssuer)
+    {
+        var credentials = new SigningCredentials(
+            new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey)),
+            SecurityAlgorithms.HmacSha256);
+
+        var token = new JwtSecurityToken(
+            issuer: issuer,
+            audience: SampleIssuer,
+            claims:
+            [
+                new Claim(JwtRegisteredClaimNames.Sub, subject),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N")),
+            ],
+            notBefore: DateTime.UtcNow.AddHours(-2),
+            expires: expires,
+            signingCredentials: credentials);
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
     private static async Task<JsonElement> ReadJsonAsync(HttpResponseMessage response)

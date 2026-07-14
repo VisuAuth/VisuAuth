@@ -1,4 +1,3 @@
-using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http.Headers;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -141,12 +140,14 @@ public static class AuthApi
     private static async Task<IResult> RefreshAsync(
         HttpContext httpContext,
         IJwtIssuer issuer,
+        IJwtValidator validator,
         CancellationToken cancellationToken)
     {
-        // Refresh accepts the bearer header even if the token expired —
-        // we re-validate just enough to identify the user (signature, jti,
-        // sub) and trust the security stamp on the new JWT to invalidate
-        // any leaked older token.
+        // Refresh accepts the bearer header even if the token expired, but the
+        // token must still be authentic: the validator verifies signature,
+        // issuer, and audience (lifetime is deliberately skipped). Without
+        // this a caller could forge any `sub` and have a fresh, fully valid
+        // token minted for an arbitrary user — a pre-auth account takeover.
         if (!AuthenticationHeaderValue.TryParse(httpContext.Request.Headers.Authorization, out var auth) ||
             !string.Equals(auth.Scheme, "Bearer", StringComparison.OrdinalIgnoreCase) ||
             string.IsNullOrWhiteSpace(auth.Parameter))
@@ -156,32 +157,16 @@ public static class AuthApi
                 statusCode: StatusCodes.Status401Unauthorized);
         }
 
-        // Use the resolved JWT bearer authentication scheme handler so
-        // signature + issuer + audience get validated with the same options
-        // the rest of the app uses. We allow expired tokens by re-running
-        // validation with lifetime check off.
-        var handler = new JwtSecurityTokenHandler();
-        if (!handler.CanReadToken(auth.Parameter))
-        {
-            return Results.Json(
-                new AuthErrorResponse("Bearer token is not a JWT."),
-                statusCode: StatusCodes.Status401Unauthorized);
-        }
-
-        var jwt = handler.ReadJwtToken(auth.Parameter);
-        var sub = jwt.Subject;
+        var sub = validator.ValidateSignatureAndReadSubject(auth.Parameter);
         if (string.IsNullOrEmpty(sub))
         {
             return Results.Json(
-                new AuthErrorResponse("Token is missing the subject claim."),
+                new AuthErrorResponse("Bearer token failed validation."),
                 statusCode: StatusCodes.Status401Unauthorized);
         }
 
         // IssueAsync reloads the user from Identity, checks lockout, and
-        // bakes in the current security stamp. If the security stamp has
-        // changed (admin clicked Revoke sessions), the *new* token still
-        // works but any caller hanging onto the *old* token sees its stamp
-        // mismatch on the next protected endpoint hit.
+        // bakes in the current security stamp before minting the new token.
         return await IssueOrUnauthorized(issuer, sub, cancellationToken);
     }
 

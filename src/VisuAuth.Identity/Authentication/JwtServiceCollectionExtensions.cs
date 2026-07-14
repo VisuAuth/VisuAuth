@@ -1,3 +1,4 @@
+using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -64,8 +65,54 @@ public static class JwtServiceCollectionExtensions
             {
                 options.MapInboundClaims = false;
                 options.TokenValidationParameters = validationParameters;
+
+                if (snapshot.ValidateSecurityStamp)
+                {
+                    // Revocation gate: compare the token's baked-in security
+                    // stamp against the user's current one. Rotating the stamp
+                    // (lockout, "revoke sessions", password change) then
+                    // invalidates every outstanding token on its next use,
+                    // rather than leaving it valid until exp.
+                    options.Events = new JwtBearerEvents
+                    {
+                        OnTokenValidated = context => ValidateSecurityStampAsync<TUser>(context),
+                    };
+                }
             });
 
         return services;
+    }
+
+    /// <summary>
+    /// Fails token validation when the presented <c>visuauth_stamp</c> claim
+    /// no longer matches the user's current security stamp, or when the user
+    /// can no longer be found. Wired as the bearer <c>OnTokenValidated</c>
+    /// event when <see cref="JwtOptions.ValidateSecurityStamp"/> is on.
+    /// </summary>
+    private static async Task ValidateSecurityStampAsync<TUser>(TokenValidatedContext context)
+        where TUser : IdentityUser
+    {
+        var principal = context.Principal;
+        var userId = principal?.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+        if (string.IsNullOrEmpty(userId))
+        {
+            context.Fail("Token is missing the subject claim.");
+            return;
+        }
+
+        var userManager = context.HttpContext.RequestServices.GetRequiredService<UserManager<TUser>>();
+        var user = await userManager.FindByIdAsync(userId);
+        if (user is null)
+        {
+            context.Fail("User no longer exists.");
+            return;
+        }
+
+        var tokenStamp = principal!.FindFirst(AspNetIdentityJwtIssuer<TUser>.SecurityStampClaimType)?.Value;
+        var currentStamp = await userManager.GetSecurityStampAsync(user);
+        if (!string.Equals(tokenStamp, currentStamp, StringComparison.Ordinal))
+        {
+            context.Fail("Security stamp has changed; the token has been revoked.");
+        }
     }
 }

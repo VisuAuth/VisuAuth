@@ -84,6 +84,7 @@ nav:
       - Multi-tenancy: concepts/multi-tenancy.md
   - Theming: theming.md
   - Mobile & JWT: mobile.md
+  - Security posture: security.md
   - Adapters:
       - ASP.NET Core Identity: adapters/aspnet-identity.md
       - Microsoft Entra ID: adapters/entra-id.md

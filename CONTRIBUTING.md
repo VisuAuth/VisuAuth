@@ -158,6 +158,13 @@ public async Task GetEditRole_OnExistingRole_RendersRowInEditMode() { ... }
 
 - **Every bug fix ships with a regression test.** New behaviour without a
   test is rejected.
+- **Security claims need a proving test.** A comment or doc that asserts a
+  security property ("validates the signature", "prevents open-redirect",
+  "invalidates outstanding tokens") must be backed by a test that fails if the
+  property is removed. See the [security posture](docs/security.md) for the
+  per-flow threats and where each is enforced and tested. A comment claiming a
+  guarantee the code does not enforce is worse than none — it makes reviewers
+  trust something that is not there.
 - **Tests must be order-independent.** Never depend on the side effect of
   another test. When a test mutates seeded data (rename, lockout, role
   assignment), provision a throwaway user / role with a `Guid.NewGuid()`-

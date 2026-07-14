@@ -1,4 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Mvc.ApplicationModels;
 using Microsoft.AspNetCore.Mvc.Razor;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Routing;
@@ -18,6 +20,16 @@ public static class VisuAuthAdminUiServiceCollectionExtensions
     /// Marker type for assembly-level lookups (ApplicationParts, embedded resources).
     /// </summary>
     public static readonly Type AssemblyMarker = typeof(VisuAuthAdminUiServiceCollectionExtensions);
+
+    /// <summary>
+    /// Name of the authorization policy guarding every admin page under
+    /// <c>/visuauth/admin</c>. Registered as "require an authenticated user"
+    /// by default; register your own policy with this name (for example
+    /// <c>RequireRole("Admin")</c>) to tighten it, or call
+    /// <see cref="AllowAnonymousVisuAuthAdmin"/> to remove the gate when you
+    /// front the dashboard with your own middleware.
+    /// </summary>
+    public const string AdminAuthorizationPolicy = "VisuAuth.Admin";
 
     /// <summary>
     /// Registers the admin UI Razor Pages and their services. Pages discovered
@@ -70,12 +82,53 @@ public static class VisuAuthAdminUiServiceCollectionExtensions
                     .Any(c => c.OwnsAssembly(AssemblyMarker.Assembly)))
             {
                 options.Conventions.Add(new DemoteVisuAuthPagesConvention(AssemblyMarker.Assembly));
+                // Secure the admin dashboard by default (CLAUDE.md §12): every
+                // page under /visuauth/admin requires the AdminAuthorizationPolicy.
+                // Guarded by the same first-registration check so a transitive
+                // duplicate AddVisuAuthAdminUi() does not stack authorize filters.
+                options.Conventions.AuthorizeFolder("/Admin", AdminAuthorizationPolicy);
+            }
+        });
+
+        // Provide a safe default for the admin policy: an authenticated user.
+        // PostConfigure runs after every Configure, so a consumer that defined
+        // their own "VisuAuth.Admin" policy (e.g. RequireRole("Admin")) wins and
+        // we leave it untouched. AllowAnonymousVisuAuthAdmin() overrides it back
+        // to a permissive policy for consumers fronting the UI themselves.
+        services.AddAuthorization();
+        services.PostConfigure<AuthorizationOptions>(options =>
+        {
+            if (options.GetPolicy(AdminAuthorizationPolicy) is null)
+            {
+                options.AddPolicy(
+                    AdminAuthorizationPolicy,
+                    policy => policy.RequireAuthenticatedUser());
             }
         });
 
         // <va-language-switcher /> needs the current request + an
         // antiforgery token; both come through IHttpContextAccessor.
         services.AddHttpContextAccessor();
+
+        return services;
+    }
+
+    /// <summary>
+    /// Removes the default authorization gate on <c>/visuauth/admin</c> by
+    /// registering the <see cref="AdminAuthorizationPolicy"/> as an
+    /// always-allow policy. Use this only when the admin dashboard is already
+    /// protected by other means (an upstream gateway, network isolation, or
+    /// host-level middleware). Without this call — and without a consumer
+    /// policy of the same name — the admin pages require an authenticated user.
+    /// </summary>
+    public static IServiceCollection AllowAnonymousVisuAuthAdmin(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.PostConfigure<AuthorizationOptions>(options =>
+            options.AddPolicy(
+                AdminAuthorizationPolicy,
+                policy => policy.RequireAssertion(_ => true)));
 
         return services;
     }

@@ -77,6 +77,12 @@ internal static class SampleHomePage
         sb.Append("""
 
               <h2>Admin UI</h2>
+              <p style="background:#fef9c3;border:1px solid #fde047;padding:0.6rem 0.8rem;border-radius:0.5rem;">
+                The admin dashboard is <strong>protected by default</strong> — an
+                anonymous hit on any <code>/visuauth/admin/*</code> link below
+                redirects to the sign-in page. Log in as
+                <code>admin@visuauth.dev</code> / <code>Pa$$w0rd!</code> first.
+              </p>
               <ul>
                 <li><a href="/visuauth/admin"><code>/visuauth/admin</code></a> &mdash; dashboard landing (KPI tiles, 7-day login chart, recent audit activity, system health). Set <code>VISUAUTH_BACKEND=entra</code> + populate <code>VisuAuth:Entra:*</code> via user-secrets to drive this entire admin against a Microsoft Entra ID tenant instead of the local SQLite Identity store.</li>
                 <li><a href="/visuauth/admin/users"><code>/visuauth/admin/users</code></a> &mdash; users list (search, role / status / verified / 2FA filters, pagination)</li>

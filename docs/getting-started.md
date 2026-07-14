@@ -152,10 +152,22 @@ show/hide password toggle and a built-in language switcher (pt-BR / en):
 
 ![Switching the UI language](assets/screenshots/enduser-lang-switcher.gif)
 
-> **Secure the admin before production.** VisuAuth does not impose an
-> authorization policy on `/visuauth/admin` — that is the consumer's call.
-> Restrict it with your own policy (for example `[Authorize(Roles = "Admin")]`
-> via an endpoint convention or a layout filter) before you ship.
+> **The admin dashboard is protected by default.** Every page under
+> `/visuauth/admin` requires an authenticated user (the `VisuAuth.Admin`
+> policy). To restrict it further — the usual choice — register a policy of
+> that name requiring a role:
+>
+> ```csharp
+> using VisuAuth.AdminUi.DependencyInjection;
+>
+> builder.Services.AddAuthorizationBuilder()
+>     .AddPolicy(VisuAuthAdminUiServiceCollectionExtensions.AdminAuthorizationPolicy,
+>         policy => policy.RequireRole("Admin"));
+> ```
+>
+> If the dashboard is already fenced off some other way (an upstream gateway,
+> network isolation), call `builder.Services.AllowAnonymousVisuAuthAdmin()` to
+> drop the built-in gate.
 
 ## Where to next
 

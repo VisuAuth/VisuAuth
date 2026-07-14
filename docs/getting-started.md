@@ -178,3 +178,4 @@ show/hide password toggle and a built-in language switcher (pt-BR / en):
 | Re-brand the UI (colors, logo, full view overrides) | [Theming](theming.md) |
 | Issue JWTs for a mobile app, or use the WebView flow | [Mobile & JWT](mobile.md) |
 | Put the admin UI in front of Microsoft Entra ID | [Microsoft Entra ID adapter](adapters/entra-id.md) |
+| Understand the security model and threat coverage | [Security posture](security.md) |

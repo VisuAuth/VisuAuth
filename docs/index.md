@@ -62,7 +62,9 @@ The meta-package pulls in `VisuAuth.Abstractions`, `VisuAuth.Identity`,
 `VisuAuth.AdminUi`, and `VisuAuth.EndUserUi`. Prefer a subset? Install the
 individual `VisuAuth.*` packages instead.
 
-Then follow the **[Getting started](getting-started.md)** guide.
+Then follow the **[Getting started](getting-started.md)** guide. For the
+security model — per-flow threats, mitigations, and where each is enforced and
+tested — see the **[Security posture](security.md)**.
 
 ---
 

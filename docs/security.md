@@ -7,8 +7,10 @@ is enforced and tested. It is meant to be read before changing any auth code —
 and kept honest, so if a mitigation here is not actually enforced, that is a
 bug.
 
-> Reporting a vulnerability: see [SECURITY.md](../SECURITY.md) for the private
-> disclosure process. Do not open a public issue for a suspected vulnerability.
+> Reporting a vulnerability: see
+> [SECURITY.md](https://github.com/VisuAuth/VisuAuth/blob/main/SECURITY.md) for
+> the private disclosure process. Do not open a public issue for a suspected
+> vulnerability.
 
 ## Trust boundary
 

@@ -37,7 +37,7 @@ public sealed class AspNetIdentityJwtValidator : IJwtValidator
     }
 
     /// <inheritdoc />
-    public string? ValidateSignatureAndReadSubject(string token)
+    public ValidatedJwt? ValidateSignatureAndRead(string token)
     {
         if (string.IsNullOrWhiteSpace(token) || !_handler.CanReadToken(token))
         {
@@ -48,13 +48,22 @@ public sealed class AspNetIdentityJwtValidator : IJwtValidator
         {
             var principal = _handler.ValidateToken(token, _parameters, out _);
             var sub = principal.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
-            return string.IsNullOrEmpty(sub) ? null : sub;
+            if (string.IsNullOrEmpty(sub))
+            {
+                return null;
+            }
+
+            return new ValidatedJwt
+            {
+                Subject = sub,
+                SecurityStamp = principal.FindFirst(VisuAuthClaimTypes.SecurityStamp)?.Value,
+            };
         }
         catch (SecurityTokenException)
         {
             // Signature / issuer / audience mismatch, or a structurally
             // invalid token. Any of these means "not authentic" — surface it
-            // as a null subject so the caller returns 401.
+            // as null so the caller returns 401.
             return null;
         }
     }

@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Sample.WebApp.Data;
+using VisuAuth.Abstractions.Authentication;
 using Xunit;
 
 namespace VisuAuth.IntegrationTests.Api;
@@ -239,9 +240,14 @@ public sealed class AuthApiTests : IClassFixture<VisuAuthTestFactory>
         }));
         var userId = loginBody.GetProperty("userId").GetString()!;
 
-        // Authentic signature, but expired ten minutes ago. Refresh must still
-        // accept it — accepting expired tokens is the whole point of refresh.
-        var expired = BuildToken(userId, SampleSigningKey, DateTime.UtcNow.AddMinutes(-10));
+        // Authentic signature and the user's current security stamp, but
+        // expired ten minutes ago. Refresh must still accept it — accepting
+        // expired (yet un-revoked) tokens is the whole point of refresh.
+        var expired = BuildToken(
+            userId,
+            SampleSigningKey,
+            DateTime.UtcNow.AddMinutes(-10),
+            stamp: await GetSecurityStampAsync(userId));
 
         using var refresh = new HttpRequestMessage(HttpMethod.Post, RefreshUri);
         refresh.Headers.Add("Authorization", $"Bearer {expired}");
@@ -275,24 +281,39 @@ public sealed class AuthApiTests : IClassFixture<VisuAuthTestFactory>
     private const string SampleSigningKey = "sample-dev-signing-key-do-not-use-in-production-or-anywhere-else";
     private const string SampleIssuer = "VisuAuth.Sample";
 
+    private async Task<string> GetSecurityStampAsync(string userId)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var user = await userManager.FindByIdAsync(userId);
+        return await userManager.GetSecurityStampAsync(user!);
+    }
+
     private static string BuildToken(
         string subject,
         string signingKey,
         DateTime expires,
-        string issuer = SampleIssuer)
+        string issuer = SampleIssuer,
+        string? stamp = null)
     {
         var credentials = new SigningCredentials(
             new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey)),
             SecurityAlgorithms.HmacSha256);
 
+        var claims = new List<Claim>
+        {
+            new(JwtRegisteredClaimNames.Sub, subject),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N")),
+        };
+        if (stamp is not null)
+        {
+            claims.Add(new Claim(VisuAuthClaimTypes.SecurityStamp, stamp));
+        }
+
         var token = new JwtSecurityToken(
             issuer: issuer,
             audience: SampleIssuer,
-            claims:
-            [
-                new Claim(JwtRegisteredClaimNames.Sub, subject),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N")),
-            ],
+            claims: claims,
             notBefore: DateTime.UtcNow.AddHours(-2),
             expires: expires,
             signingCredentials: credentials);

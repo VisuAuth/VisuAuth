@@ -17,5 +17,5 @@ namespace VisuAuth.EntraCore.Stubs;
 /// </remarks>
 public sealed class EntraNoOpJwtValidator : IJwtValidator
 {
-    public string? ValidateSignatureAndReadSubject(string token) => null;
+    public ValidatedJwt? ValidateSignatureAndRead(string token) => null;
 }

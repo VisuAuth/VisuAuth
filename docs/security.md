@@ -51,14 +51,18 @@ tokens are trusted only *after* signature validation.
 ### Session / token revocation
 
 - **Threats:** a leaked or stolen token staying valid after the user is locked
-  out, password-reset, or "revoke sessions" is clicked.
-- **Mitigations:** every JWT carries the user's security stamp (`visuauth_stamp`),
-  and the bearer scheme validates it on each request (default on), so rotating
-  the stamp invalidates outstanding tokens on next use. Lockout is re-checked at
-  issue and refresh time.
+  out, password-reset, or "revoke sessions" is clicked — including a revoked
+  token being *exchanged at `/refresh`* for a fresh one ("laundering").
+- **Mitigations:** every JWT carries the user's security stamp (`visuauth_stamp`).
+  Rotating the stamp revokes outstanding tokens on **both** paths: the bearer
+  scheme compares it on every authenticated request (default on), and
+  `/refresh` compares the presented token's stamp before reissuing. The refresh
+  comparison **fails closed** — a token with no stamp claim is rejected rather
+  than treated as a match. Lockout is re-checked at issue and refresh time.
 - **Enforced in:** `JwtServiceCollectionExtensions` (`OnTokenValidated`),
-  `AspNetIdentityJwtIssuer`.
-- **Tested in:** `JwtSecurityStampTests`.
+  `AspNetIdentityJwtIssuer.ReissueAsync`.
+- **Tested in:** `JwtSecurityStampTests` — both the protected-endpoint path and
+  the refresh path, plus the stampless-token case.
 - **Residual:** revocation is next-request, not instant; keep `LifetimeMinutes`
   short. Opt out with `JwtOptions.ValidateSecurityStamp = false` only if you
   accept expiry-bounded revocation.

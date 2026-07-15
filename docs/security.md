@@ -95,7 +95,13 @@ tokens are trusted only *after* signature validation.
   role, with an explicit `AllowAnonymousVisuAuthAdmin()` opt-out. Mutations are
   POST + anti-forgery.
 - **Enforced in:** `VisuAuthAdminUiServiceCollectionExtensions` (`AuthorizeFolder`).
-- **Tested in:** `VisuAuthAdminAuthorizationTests`.
+- **Tested in:** `VisuAuthAdminAuthorizationTests`, `EntraSampleSmokeTests`.
+- **Entra deployments need a sign-in package.** `AddVisuAuthEntra` wires Graph
+  with *app-only* credentials and registers no authentication scheme, so the
+  gate has nothing to challenge with; add `VisuAuth.Entra.Web`
+  (`AddVisuAuthEntraSignIn`). This matters more than in Identity deployments:
+  the Entra adapter holds directory-wide Graph permissions, so an anonymous
+  admin would let a visitor administer the real tenant with the *app's* rights.
 
 ### WebView deep-link callback
 

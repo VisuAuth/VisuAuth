@@ -90,6 +90,31 @@ public sealed class AspNetIdentityJwtValidatorTests
         validator.ValidateSignatureAndRead(token)!.SecurityStamp.Should().BeNull();
     }
 
+    [Fact]
+    public void ValidateSignatureAndRead_WhenValidationThrowsANonSecurityTokenException_ReturnsNull()
+    {
+        // The validator must fail closed on anything the IdentityModel pipeline
+        // throws, not just SecurityTokenException. IdentityModel's behaviour
+        // depends on process-wide state (loading Microsoft.Identity.Web changes
+        // it), and an escaping exception would turn a correctly-rejected token
+        // into a 500 instead of a 401.
+        var parameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = Issuer,
+            ValidateAudience = true,
+            ValidAudience = Audience,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKeys = [new SymmetricSecurityKey(Encoding.UTF8.GetBytes(PrimaryKey))],
+            NameClaimType = "sub",
+            SignatureValidator = (_, _) => throw new InvalidOperationException("pipeline blew up"),
+        };
+        var validator = new AspNetIdentityJwtValidator(parameters);
+        var token = BuildToken("user-8", PrimaryKey, DateTime.UtcNow.AddMinutes(30));
+
+        validator.ValidateSignatureAndRead(token).Should().BeNull();
+    }
+
     private static AspNetIdentityJwtValidator CreateValidator(params string[] keys)
     {
         var parameters = new TokenValidationParameters

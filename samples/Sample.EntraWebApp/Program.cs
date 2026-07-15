@@ -1,6 +1,7 @@
 using Sample.EntraWebApp.Home;
 using VisuAuth;
 using VisuAuth.Entra.DependencyInjection;
+using VisuAuth.Entra.Web.DependencyInjection;
 using VisuAuth.EntraCore.DependencyInjection;
 
 // Minimalist reference for VisuAuth + Microsoft Entra ID.
@@ -45,6 +46,23 @@ builder.Services
 // registers EntraUserStore + EntraRoleStore + EntraAuthenticationFlow against
 // a singleton GraphServiceClient backed by app-only (client credentials) auth.
 builder.Services.AddVisuAuthEntra(builder.Configuration);
+
+// Operator sign-in. AddVisuAuthEntra above authenticates the *app* to Graph;
+// it does not sign a *human* in and registers no authentication scheme. The
+// admin dashboard requires an authenticated user, so without this call it has
+// nothing to challenge with and nobody can get in.
+//
+// Needs a SECOND app registration (the sign-in one, with a redirect URI) —
+// separate from the Graph app above. See VisuAuth.Entra.Web/README.md:
+//   dotnet user-secrets set "VisuAuth:Entra:Web:TenantId"     "<guid>"
+//   dotnet user-secrets set "VisuAuth:Entra:Web:ClientId"     "<guid>"
+//   dotnet user-secrets set "VisuAuth:Entra:Web:ClientSecret" "<value>"
+//
+// To restrict the dashboard to an app role rather than "any user in the
+// tenant", register a policy under
+// VisuAuthAdminUiServiceCollectionExtensions.AdminAuthorizationPolicy with
+// RequireRole(...).
+builder.Services.AddVisuAuthEntraSignIn(builder.Configuration);
 
 // Opt-in: surface the tenant's Entra audit events — sign-ins AND directory
 // changes (user CRUD, role assignments) — on /visuauth/admin/audit-log, and

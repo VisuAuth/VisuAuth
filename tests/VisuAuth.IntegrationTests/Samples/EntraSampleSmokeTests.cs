@@ -24,14 +24,10 @@ namespace VisuAuth.IntegrationTests.Samples;
 /// and (the actual regression guard) has a default challenge scheme so the
 /// admin gate can redirect instead of throwing.
 /// </remarks>
-public sealed class EntraSampleSmokeTests : IClassFixture<EntraSampleSmokeTests.EntraSampleFactory>
+public sealed class EntraSampleSmokeTests(EntraSampleSmokeTests.EntraSampleFactory factory)
+    : IClassFixture<EntraSampleSmokeTests.EntraSampleFactory>
 {
-    private readonly EntraSampleFactory _factory;
-
-    public EntraSampleSmokeTests(EntraSampleFactory factory)
-    {
-        _factory = factory;
-    }
+    private readonly EntraSampleFactory _factory = factory;
 
     [Fact]
     public async Task GetHome_OnTheEntraSample_Returns200()

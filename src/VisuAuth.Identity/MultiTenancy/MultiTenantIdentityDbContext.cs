@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using VisuAuth.Abstractions.Tenancy;
 using VisuAuth.Identity.Auditing;
+using VisuAuth.Identity.Authentication;
 
 namespace VisuAuth.Identity.MultiTenancy;
 
@@ -43,6 +44,10 @@ public abstract class MultiTenantIdentityDbContext<TUser> : IdentityDbContext<TU
         => Set<VisuAuthAdapterConfig>();
 
     /// <inheritdoc />
+    public DbSet<VisuAuthRefreshToken> VisuAuthRefreshTokens
+        => Set<VisuAuthRefreshToken>();
+
+    /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -62,6 +67,7 @@ public abstract class MultiTenantIdentityDbContext<TUser> : IdentityDbContext<TU
         ConfigureVisuAuthExternalProviderConfig(builder);
         ConfigureVisuAuthAuditLog(builder);
         ConfigureVisuAuthAdapterConfig(builder);
+        ConfigureVisuAuthRefreshToken(builder);
     }
 
     internal static void ConfigureVisuAuthTenant(ModelBuilder builder)
@@ -155,6 +161,32 @@ public abstract class MultiTenantIdentityDbContext<TUser> : IdentityDbContext<TU
             // settings can grow large depending on the protector chain.
         });
     }
+
+    internal static void ConfigureVisuAuthRefreshToken(ModelBuilder builder)
+    {
+        builder.Entity<VisuAuthRefreshToken>(entity =>
+        {
+            entity.ToTable("VisuAuthRefreshTokens");
+            entity.HasKey(t => t.Id);
+            entity.Property(t => t.Id).ValueGeneratedNever();
+
+            // Redemption looks a token up by its hash, so this index carries
+            // the hot path. Unique because a hash collision would mean two
+            // users sharing a token.
+            entity.Property(t => t.TokenHash).HasMaxLength(64).IsRequired();
+            entity.HasIndex(t => t.TokenHash).IsUnique();
+
+            entity.Property(t => t.FamilyId).HasMaxLength(32).IsRequired();
+            // Replay detection revokes a whole family at once.
+            entity.HasIndex(t => t.FamilyId);
+
+            entity.Property(t => t.UserId).HasMaxLength(450).IsRequired();
+            // "Revoke everything for this user" and retention sweeps.
+            entity.HasIndex(t => t.UserId);
+
+            entity.Property(t => t.ReplacedByHash).HasMaxLength(64);
+        });
+    }
 }
 
 /// <summary>
@@ -193,6 +225,10 @@ public abstract class MultiTenantIdentityDbContext<TUser, TRole>
         => Set<VisuAuthAdapterConfig>();
 
     /// <inheritdoc />
+    public DbSet<VisuAuthRefreshToken> VisuAuthRefreshTokens
+        => Set<VisuAuthRefreshToken>();
+
+    /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -209,5 +245,6 @@ public abstract class MultiTenantIdentityDbContext<TUser, TRole>
         MultiTenantIdentityDbContext<TUser>.ConfigureVisuAuthExternalProviderConfig(builder);
         MultiTenantIdentityDbContext<TUser>.ConfigureVisuAuthAuditLog(builder);
         MultiTenantIdentityDbContext<TUser>.ConfigureVisuAuthAdapterConfig(builder);
+        MultiTenantIdentityDbContext<TUser>.ConfigureVisuAuthRefreshToken(builder);
     }
 }

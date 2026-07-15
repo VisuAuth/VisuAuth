@@ -67,6 +67,25 @@ tokens are trusted only *after* signature validation.
   short. Opt out with `JwtOptions.ValidateSecurityStamp = false` only if you
   accept expiry-bounded revocation.
 
+### Refresh tokens (opt-in plugin)
+
+- **Threats:** a leaked access token being renewed indefinitely; a stolen
+  refresh token being used alongside the legitimate client; a database leak
+  yielding usable tokens.
+- **Mitigations:** `AddVisuAuthRefreshTokens()` replaces the access-token
+  refresh path with opaque, single-use, rotating tokens. Only a SHA-256 hash is
+  stored. Replaying an already-redeemed token revokes the entire token family
+  (theft detection). Every failure returns the same `401`, so tokens cannot be
+  probed. Access-token issuance on redemption still runs the normal eligibility
+  checks (user exists, not locked out).
+- **Enforced in:** `EfCoreRefreshTokenStore`, `AuthApi.RedeemRefreshTokenAsync`.
+- **Tested in:** `RefreshTokenFlowTests` (rotation, replay rejection, family
+  revocation, unknown token, legacy path closed).
+- **Residual:** without the plugin, refresh reissues from the access token —
+  bounded by the security-stamp check above, but a leaked access token stays
+  renewable until revoked. Enabling the plugin is recommended for production
+  mobile clients.
+
 ### Admin dashboard
 
 - **Threats:** anonymous access to user administration (list, reset, delete,
@@ -126,11 +145,8 @@ tokens are trusted only *after* signature validation.
 
 ## Open design decisions
 
-Tracked in [#79](https://github.com/VisuAuth/VisuAuth/issues/79):
-
-- Opaque, revocable, single-use refresh tokens (today refresh reissues from the
-  access token — bounded by the security-stamp check, but a leaked access token
-  is still renewable until it is revoked).
+None outstanding. The items previously tracked here (tenant binding, key
+rotation, opaque refresh tokens) have all shipped.
 
 ## A rule for contributors
 

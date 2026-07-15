@@ -259,7 +259,7 @@ internal static class SampleHomePage
               <ul>
                 <li><code>POST /visuauth/api/auth/login</code> &mdash; <code>{ email, password }</code> &rArr; JWT</li>
                 <li><code>POST /visuauth/api/auth/register</code> &mdash; same body, also auto-logs in</li>
-                <li><code>POST /visuauth/api/auth/refresh</code> &mdash; <code>Authorization: Bearer &lt;old token&gt;</code> &rArr; new JWT</li>
+                <li><code>POST /visuauth/api/auth/refresh</code> &mdash; <code>{ refreshToken }</code> &rArr; new JWT + a <strong>new</strong> refresh token. This sample opts into the refresh-token plugin, so login/register also return a <code>refreshToken</code> and the old <code>Authorization: Bearer</code> refresh path is closed. Tokens are single-use; replaying a spent one revokes the whole family.</li>
                 <li><code>GET /api/me</code> &mdash; sample bearer-protected endpoint; <code>Authorization: Bearer &lt;token&gt;</code> &rArr; the caller's claims. Returns 401 once the token is revoked (admin &rarr; <em>Revoke sessions</em>).</li>
               </ul>
               <pre style="background:#f1f5f9;padding:0.75rem;border-radius:0.5rem;overflow:auto;">curl -X POST http://localhost:5239/visuauth/api/auth/login \

@@ -394,6 +394,18 @@ builder.Services.AddVisuAuthDynamicExternalProviderOptions<Microsoft.AspNetCore.
 builder.Services.AddVisuAuthDynamicExternalProviderOptions<AspNet.Security.OAuth.GitHub.GitHubAuthenticationOptions>("GitHub");
 builder.Services.AddVisuAuthDynamicExternalProviderOptions<AspNet.Security.OAuth.Apple.AppleAuthenticationOptions>("Apple");
 
+// Refresh-token plugin (opt-in). Turns /visuauth/api/auth/refresh into the
+// opaque-token flow: sign-in returns a `refreshToken` alongside the access
+// token, and refresh expects `{ "refreshToken": "..." }` in the body instead of
+// reissuing from the access token. Tokens are single-use — each refresh returns
+// a replacement, and replaying a spent one revokes the whole family (theft
+// detection). Comment this out to keep the legacy access-token refresh.
+builder.Services.AddVisuAuthRefreshTokens(options =>
+{
+    // 30 days is the default; set explicitly here for discoverability.
+    options.Lifetime = TimeSpan.FromDays(30);
+});
+
 // Audit log plugin (opt-in). Without this call, the default NoOpAuditWriter
 // handles every IAuditWriter.WriteAsync at zero cost; with it,
 // EfCoreAuditStore kicks in and rows land in the VisuAuthAuditLog table.

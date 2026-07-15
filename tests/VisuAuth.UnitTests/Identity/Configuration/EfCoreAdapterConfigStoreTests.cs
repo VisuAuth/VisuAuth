@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Time.Testing;
+using VisuAuth.Identity.Authentication;
 using VisuAuth.Abstractions.Configuration;
 using VisuAuth.Identity.Auditing;
 using VisuAuth.Identity.Configuration;
@@ -194,5 +195,7 @@ public sealed class EfCoreAdapterConfigStoreTests : IDisposable
             => Set<VisuAuthExternalProviderConfig>();
         public DbSet<VisuAuthAuditLogEntry> VisuAuthAuditLog => Set<VisuAuthAuditLogEntry>();
         public DbSet<VisuAuthAdapterConfig> VisuAuthAdapterConfigs => Set<VisuAuthAdapterConfig>();
+
+        public DbSet<VisuAuthRefreshToken> VisuAuthRefreshTokens => Set<VisuAuthRefreshToken>();
     }
 }

@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Time.Testing;
+using VisuAuth.Identity.Authentication;
 using VisuAuth.Abstractions.Auditing;
 using VisuAuth.Abstractions.Tenancy;
 using VisuAuth.Identity.Auditing;
@@ -120,6 +121,8 @@ public sealed class AuditRetentionHostedServiceTests
             => Set<VisuAuthExternalProviderConfig>();
         public DbSet<VisuAuthAuditLogEntry> VisuAuthAuditLog => Set<VisuAuthAuditLogEntry>();
         public DbSet<VisuAuthAdapterConfig> VisuAuthAdapterConfigs => Set<VisuAuthAdapterConfig>();
+
+        public DbSet<VisuAuthRefreshToken> VisuAuthRefreshTokens => Set<VisuAuthRefreshToken>();
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

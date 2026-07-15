@@ -56,6 +56,10 @@ public static class VisuAuthIdentityServiceCollectionExtensions
         // code that injects IAuditWriter and calls WriteAsync still compiles
         // and runs without any "if the plugin is enabled" guards.
         services.AddVisuAuthAuditWriterDefault();
+        // Same story for refresh tokens: a no-op until the consumer opts in with
+        // AddVisuAuthRefreshTokens(), so the auth API can inject the service
+        // unconditionally.
+        services.AddVisuAuthRefreshTokenDefault();
 
         return services;
     }

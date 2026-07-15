@@ -20,7 +20,7 @@ namespace VisuAuth.IntegrationTests.Api;
 /// leaving them valid until <c>exp</c>. Exercised through the sample app's
 /// <c>/api/me</c> bearer-protected endpoint.
 /// </summary>
-public sealed class JwtSecurityStampTests : IClassFixture<VisuAuthTestFactory>
+public sealed class JwtSecurityStampTests : IClassFixture<LegacyRefreshTokenFactory>
 {
     private static readonly Uri LoginUri = new("/visuauth/api/auth/login", UriKind.Relative);
     private static readonly Uri MeUri = new("/api/me", UriKind.Relative);
@@ -29,9 +29,9 @@ public sealed class JwtSecurityStampTests : IClassFixture<VisuAuthTestFactory>
     private const string Email = "laura.matos@example.com";
     private const string Password = "Pa$$w0rd!";
 
-    private readonly VisuAuthTestFactory _factory;
+    private readonly LegacyRefreshTokenFactory _factory;
 
-    public JwtSecurityStampTests(VisuAuthTestFactory factory)
+    public JwtSecurityStampTests(LegacyRefreshTokenFactory factory)
     {
         _factory = factory;
     }

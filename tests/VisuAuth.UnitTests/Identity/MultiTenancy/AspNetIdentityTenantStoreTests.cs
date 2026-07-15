@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Time.Testing;
 using Moq;
+using VisuAuth.Identity.Authentication;
 using VisuAuth.Identity.Auditing;
 using VisuAuth.Identity.MultiTenancy;
 using Xunit;
@@ -136,5 +137,7 @@ public sealed class AspNetIdentityTenantStoreTests : IDisposable
             => Set<VisuAuthExternalProviderConfig>();
         public DbSet<VisuAuthAuditLogEntry> VisuAuthAuditLog => Set<VisuAuthAuditLogEntry>();
         public DbSet<VisuAuthAdapterConfig> VisuAuthAdapterConfigs => Set<VisuAuthAdapterConfig>();
+
+        public DbSet<VisuAuthRefreshToken> VisuAuthRefreshTokens => Set<VisuAuthRefreshToken>();
     }
 }

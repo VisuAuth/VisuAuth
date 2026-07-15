@@ -7,10 +7,23 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Sample.WebApp.Data;
+using VisuAuth.Abstractions.Authentication;
 using VisuAuth.AdminUi.DependencyInjection;
+using VisuAuth.Identity.Authentication;
 using VisuAuth.Identity.MultiTenancy;
 
 namespace VisuAuth.IntegrationTests;
+
+/// <summary>
+/// Factory with the refresh-token plugin turned back off, so the legacy
+/// "reissue from the (possibly expired) access token" path — still the default
+/// for consumers who never call <c>AddVisuAuthRefreshTokens()</c> — keeps its
+/// coverage even though the sample app opts in.
+/// </summary>
+public sealed class LegacyRefreshTokenFactory : VisuAuthTestFactory
+{
+    protected override bool UseRefreshTokenPlugin => false;
+}
 
 /// <summary>
 /// WebApplicationFactory that redirects <see cref="AppDbContext"/> to a
@@ -33,6 +46,15 @@ public class VisuAuthTestFactory : WebApplicationFactory<Program>
     /// </summary>
     protected virtual bool RelaxAdminAuthorization => true;
 
+    /// <summary>
+    /// The sample app opts into the refresh-token plugin, which closes the
+    /// legacy "reissue from the access token" path. That path is still
+    /// supported for consumers who do not opt in, so
+    /// <see cref="LegacyRefreshTokenFactory"/> turns the plugin back off to
+    /// cover it.
+    /// </summary>
+    protected virtual bool UseRefreshTokenPlugin => true;
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.ConfigureTestServices(services =>
@@ -45,6 +67,12 @@ public class VisuAuthTestFactory : WebApplicationFactory<Program>
                 options.UseSqlite($"Data Source={_dbPath}");
                 options.AddVisuAuthTenancy(sp);
             });
+
+            if (!UseRefreshTokenPlugin)
+            {
+                services.RemoveAll<IRefreshTokenService>();
+                services.AddScoped<IRefreshTokenService, NoOpRefreshTokenService>();
+            }
 
             if (RelaxAdminAuthorization)
             {

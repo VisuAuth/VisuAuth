@@ -168,6 +168,12 @@ show/hide password toggle and a built-in language switcher (pt-BR / en):
 > If the dashboard is already fenced off some other way (an upstream gateway,
 > network isolation), call `builder.Services.AllowAnonymousVisuAuthAdmin()` to
 > drop the built-in gate.
+>
+> **VisuAuth refuses to start** if the admin requires an authenticated user but
+> your app registers no authentication scheme — otherwise the mistake would only
+> surface as a 500 on the first admin request in production. ASP.NET Core
+> Identity registers one for you; for Microsoft Entra ID add
+> [`VisuAuth.Entra.Web`](adapters/entra-id.md#operator-sign-in).
 
 ## Where to next
 

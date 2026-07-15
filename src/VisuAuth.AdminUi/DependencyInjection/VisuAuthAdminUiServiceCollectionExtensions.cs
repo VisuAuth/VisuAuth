@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.ApplicationModels;
 using Microsoft.AspNetCore.Mvc.Razor;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -105,6 +106,12 @@ public static class VisuAuthAdminUiServiceCollectionExtensions
                     policy => policy.RequireAuthenticatedUser());
             }
         });
+
+        // Catch "secured admin with nothing to sign in with" at startup rather
+        // than as a 500 on the first admin request in production.
+        // TryAddEnumerable so a duplicate AddVisuAuthAdminUi() doesn't stack it.
+        services.TryAddEnumerable(
+            ServiceDescriptor.Singleton<IStartupFilter, VisuAuthAdminAuthenticationStartupCheck>());
 
         // <va-language-switcher /> needs the current request + an
         // antiforgery token; both come through IHttpContextAccessor.

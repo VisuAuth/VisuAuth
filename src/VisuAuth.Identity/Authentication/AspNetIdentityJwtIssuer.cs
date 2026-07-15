@@ -24,14 +24,28 @@ public sealed class AspNetIdentityJwtIssuer<TUser>(
     where TUser : IdentityUser
 {
     /// <summary>Claim type the issuer stores the user's security stamp under.</summary>
-    public const string SecurityStampClaimType = "visuauth_stamp";
+    public const string SecurityStampClaimType = VisuAuthClaimTypes.SecurityStamp;
 
     private readonly UserManager<TUser> _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
     private readonly JwtOptions _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
     private readonly TimeProvider _timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
 
     /// <inheritdoc />
-    public async Task<JwtTokenResult?> IssueAsync(string userId, CancellationToken cancellationToken = default)
+    public Task<JwtTokenResult?> IssueAsync(string userId, CancellationToken cancellationToken = default)
+        => IssueCoreAsync(userId, presentedSecurityStamp: null, enforceStamp: false, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<JwtTokenResult?> ReissueAsync(
+        string userId,
+        string? presentedSecurityStamp,
+        CancellationToken cancellationToken = default)
+        => IssueCoreAsync(userId, presentedSecurityStamp, enforceStamp: true, cancellationToken);
+
+    private async Task<JwtTokenResult?> IssueCoreAsync(
+        string userId,
+        string? presentedSecurityStamp,
+        bool enforceStamp,
+        CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(userId);
         cancellationToken.ThrowIfCancellationRequested();
@@ -45,6 +59,16 @@ public sealed class AspNetIdentityJwtIssuer<TUser>(
         // Mirror the cookie-auth posture: a locked-out user cannot mint a fresh
         // token even with valid credentials.
         if (await _userManager.IsLockedOutAsync(user))
+        {
+            return null;
+        }
+
+        // Refresh path: the presented token's stamp must still match the user's
+        // current one, or revocation would not stick — a revoked token could be
+        // exchanged here for a fresh, valid one. Fails closed: a token with no
+        // stamp claim never matches.
+        if (enforceStamp &&
+            !string.Equals(presentedSecurityStamp, user.SecurityStamp, StringComparison.Ordinal))
         {
             return null;
         }
@@ -66,7 +90,7 @@ public sealed class AspNetIdentityJwtIssuer<TUser>(
         var tenantId = (user as IMultiTenantEntity)?.TenantId;
         if (!string.IsNullOrEmpty(tenantId))
         {
-            claims.Add(new Claim("tenant_id", tenantId));
+            claims.Add(new Claim(VisuAuthClaimTypes.TenantId, tenantId));
         }
 
         foreach (var role in roles)

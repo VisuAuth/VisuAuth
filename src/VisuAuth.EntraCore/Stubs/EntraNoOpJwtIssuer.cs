@@ -20,4 +20,10 @@ public sealed class EntraNoOpJwtIssuer : IJwtIssuer
 {
     public Task<JwtTokenResult?> IssueAsync(string userId, CancellationToken cancellationToken = default)
         => Task.FromResult<JwtTokenResult?>(null);
+
+    public Task<JwtTokenResult?> ReissueAsync(
+        string userId,
+        string? presentedSecurityStamp,
+        CancellationToken cancellationToken = default)
+        => Task.FromResult<JwtTokenResult?>(null);
 }

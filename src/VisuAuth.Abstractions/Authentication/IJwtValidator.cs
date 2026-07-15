@@ -17,10 +17,27 @@ public interface IJwtValidator
 {
     /// <summary>
     /// Validates the token's signature, issuer, and audience (but not its
-    /// lifetime) and returns the <c>sub</c> claim when the token is
-    /// authentic. Returns <c>null</c> for any token that fails validation,
-    /// cannot be read, or carries no subject.
+    /// lifetime) and returns the claims the refresh flow needs. Returns
+    /// <c>null</c> for any token that fails validation, cannot be read, or
+    /// carries no subject.
     /// </summary>
     /// <param name="token">The raw JWT, without the <c>Bearer</c> prefix.</param>
-    string? ValidateSignatureAndReadSubject(string token);
+    ValidatedJwt? ValidateSignatureAndRead(string token);
+}
+
+/// <summary>
+/// The authenticated contents of a presented token that the refresh flow acts
+/// on. Only what refresh needs — deliberately not a general claims bag.
+/// </summary>
+public sealed record ValidatedJwt
+{
+    /// <summary>The <c>sub</c> claim: the user the token was minted for.</summary>
+    public required string Subject { get; init; }
+
+    /// <summary>
+    /// The <c>visuauth_stamp</c> claim: the user's security stamp as it stood
+    /// when the token was issued. <c>null</c> when the token carries no stamp,
+    /// which the refresh flow must treat as a mismatch rather than a pass.
+    /// </summary>
+    public string? SecurityStamp { get; init; }
 }

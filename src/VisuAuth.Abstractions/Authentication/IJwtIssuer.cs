@@ -13,7 +13,30 @@ public interface IJwtIssuer
     /// Returns <c>null</c> when the user no longer exists or is otherwise
     /// not eligible (locked out, disabled).
     /// </summary>
+    /// <remarks>
+    /// For a fresh sign-in, where the caller has just proven possession of the
+    /// credentials. To mint a token from a previously-issued one, use
+    /// <see cref="ReissueAsync"/> — it additionally enforces revocation.
+    /// </remarks>
     Task<JwtTokenResult?> IssueAsync(string userId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Re-issues a JWT from a previously-issued one (the refresh flow). Behaves
+    /// like <see cref="IssueAsync"/> but additionally requires
+    /// <paramref name="presentedSecurityStamp"/> to match the user's current
+    /// security stamp, returning <c>null</c> when it does not.
+    /// <para>
+    /// This is what makes revocation stick: rotating the stamp ("revoke
+    /// sessions", lockout, a password change) must not merely block the old
+    /// token at protected endpoints — it must also stop that token being
+    /// exchanged here for a fresh one. The comparison <b>fails closed</b>: a
+    /// token carrying no stamp at all is rejected too.
+    /// </para>
+    /// </summary>
+    Task<JwtTokenResult?> ReissueAsync(
+        string userId,
+        string? presentedSecurityStamp,
+        CancellationToken cancellationToken = default);
 }
 
 /// <summary>Issued-token payload returned to API callers.</summary>

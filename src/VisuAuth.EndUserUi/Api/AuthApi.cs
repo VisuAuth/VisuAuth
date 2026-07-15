@@ -17,7 +17,7 @@ namespace VisuAuth.EndUserUi.Api;
 /// </summary>
 public static class AuthApi
 {
-    public const string SecurityStampClaimType = "visuauth_stamp";
+    public const string SecurityStampClaimType = VisuAuthClaimTypes.SecurityStamp;
 
     /// <summary>
     /// Maps the three auth endpoints. Call from the consumer's
@@ -157,25 +157,41 @@ public static class AuthApi
                 statusCode: StatusCodes.Status401Unauthorized);
         }
 
-        var sub = validator.ValidateSignatureAndReadSubject(auth.Parameter);
-        if (string.IsNullOrEmpty(sub))
+        var validated = validator.ValidateSignatureAndRead(auth.Parameter);
+        if (validated is null)
         {
             return Results.Json(
                 new AuthErrorResponse("Bearer token failed validation."),
                 statusCode: StatusCodes.Status401Unauthorized);
         }
 
-        // IssueAsync reloads the user from Identity, checks lockout, and
-        // bakes in the current security stamp before minting the new token.
-        return await IssueOrUnauthorized(issuer, sub, cancellationToken);
+        // ReissueAsync reloads the user, re-checks lockout, and — crucially —
+        // requires the presented token's security stamp to still match the
+        // user's current one. Without that check a token revoked via "revoke
+        // sessions" could be exchanged here for a fresh, valid one: blocked at
+        // protected endpoints, but laundered back to life through refresh.
+        var token = await issuer.ReissueAsync(
+            validated.Subject,
+            validated.SecurityStamp,
+            cancellationToken);
+
+        return TokenOrUnauthorized(token);
     }
 
     private static async Task<IResult> IssueOrUnauthorized(
         IJwtIssuer issuer,
         string userId,
         CancellationToken cancellationToken)
+        => TokenOrUnauthorized(await issuer.IssueAsync(userId, cancellationToken));
+
+    /// <summary>
+    /// Maps an issued token to 200, or a null (user gone, locked out, or — on
+    /// the refresh path — a revoked security stamp) to a generic 401. The
+    /// message is deliberately uniform so it does not disclose which of those
+    /// applies.
+    /// </summary>
+    private static IResult TokenOrUnauthorized(JwtTokenResult? token)
     {
-        var token = await issuer.IssueAsync(userId, cancellationToken);
         if (token is null)
         {
             return Results.Json(

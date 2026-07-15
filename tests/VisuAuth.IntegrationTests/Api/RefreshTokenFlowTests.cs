@@ -11,7 +11,8 @@ namespace VisuAuth.IntegrationTests.Api;
 /// opts into via <c>AddVisuAuthRefreshTokens()</c>: sign-in returns a refresh
 /// token, redeeming it rotates it, and replaying a spent one revokes the family.
 /// </summary>
-public sealed class RefreshTokenFlowTests : IClassFixture<VisuAuthTestFactory>
+public sealed class RefreshTokenFlowTests(VisuAuthTestFactory factory)
+    : IClassFixture<VisuAuthTestFactory>
 {
     private static readonly Uri LoginUri = new("/visuauth/api/auth/login", UriKind.Relative);
     private static readonly Uri RefreshUri = new("/visuauth/api/auth/refresh", UriKind.Relative);
@@ -19,12 +20,7 @@ public sealed class RefreshTokenFlowTests : IClassFixture<VisuAuthTestFactory>
     private const string Email = "joao.kruger@example.com";
     private const string Password = "Pa$$w0rd!";
 
-    private readonly VisuAuthTestFactory _factory;
-
-    public RefreshTokenFlowTests(VisuAuthTestFactory factory)
-    {
-        _factory = factory;
-    }
+    private readonly VisuAuthTestFactory _factory = factory;
 
     [Fact]
     public async Task PostLogin_WithPluginEnabled_ReturnsARefreshToken()
@@ -119,14 +115,14 @@ public sealed class RefreshTokenFlowTests : IClassFixture<VisuAuthTestFactory>
             "with the plugin on, refresh wants a refreshToken body, not a bearer access token");
     }
 
-    private async Task<JsonElement> SignInAsync(HttpClient client)
+    private static async Task<JsonElement> SignInAsync(HttpClient client)
     {
         var response = await client.PostAsJsonAsync(LoginUri, new { email = Email, password = Password });
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         return await ReadJsonAsync(response);
     }
 
-    private async Task<JsonElement> RedeemAsync(HttpClient client, string refreshToken, HttpStatusCode expected)
+    private static async Task<JsonElement> RedeemAsync(HttpClient client, string refreshToken, HttpStatusCode expected)
     {
         var response = await client.PostAsJsonAsync(RefreshUri, new { refreshToken });
         response.StatusCode.Should().Be(expected);

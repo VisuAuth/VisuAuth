@@ -252,10 +252,16 @@ app.MapSampleHomePage();
 // this returns the caller's claims. Requires the bearer scheme explicitly
 // because AddIdentity makes the cookie scheme the default. Also gives the
 // integration tests a target for the security-stamp revocation check.
-app.MapGet("/api/me", (System.Security.Claims.ClaimsPrincipal user) => Results.Ok(new
+app.MapGet("/api/me", (
+        System.Security.Claims.ClaimsPrincipal user,
+        VisuAuth.Abstractions.Tenancy.ITenantContext tenantContext) => Results.Ok(new
     {
         sub = user.FindFirst("sub")?.Value,
         email = user.FindFirst("email")?.Value,
+        // The tenant VisuAuth resolved for this request. For a bearer-
+        // authenticated caller this always comes from the token's signed
+        // tenant_id claim — an X-Tenant-Id header cannot override it.
+        tenant = tenantContext.CurrentTenantId,
     }))
     .RequireAuthorization(new Microsoft.AspNetCore.Authorization.AuthorizeAttribute
     {

@@ -42,6 +42,7 @@ public static class AuthApi
         LoginRequest request,
         IAuthenticationFlow authentication,
         IJwtIssuer issuer,
+        IRefreshTokenService refreshTokens,
         SignInAuditEmitter auditEmitter,
         CancellationToken cancellationToken)
     {
@@ -69,7 +70,7 @@ public static class AuthApi
         // operators can spot "API logins minted JWTs" patterns.
         if (result.Outcome == SignInOutcome.Success && result.UserId is { Length: > 0 } userId)
         {
-            return await IssueOrUnauthorized(issuer, userId, cancellationToken);
+            return await IssueOrUnauthorized(issuer, refreshTokens, userId, cancellationToken);
         }
 
         return SignInApiResponseMapper.MapFailure(result);
@@ -80,6 +81,7 @@ public static class AuthApi
         IAuthenticationFlow authentication,
         ITenantContext tenantContext,
         IJwtIssuer issuer,
+        IRefreshTokenService refreshTokens,
         IAuditWriter audit,
         CancellationToken cancellationToken)
     {
@@ -134,10 +136,70 @@ public static class AuthApi
             Payload = new Dictionary<string, string?> { [SignInAuditEmitter.ChannelPayloadKey] = "api" },
         }, cancellationToken);
 
-        return await IssueOrUnauthorized(issuer, registerResult.ResourceId!, cancellationToken);
+        return await IssueOrUnauthorized(issuer, refreshTokens, registerResult.ResourceId!, cancellationToken);
     }
 
     private static async Task<IResult> RefreshAsync(
+        RefreshRequest? request,
+        HttpContext httpContext,
+        IJwtIssuer issuer,
+        IJwtValidator validator,
+        IRefreshTokenService refreshTokens,
+        CancellationToken cancellationToken)
+    {
+        // With the refresh-token plugin on, an opaque single-use token is the
+        // only accepted credential here. The access-token path is deliberately
+        // closed rather than kept as a fallback: leaving it open would let an
+        // attacker holding a leaked access token keep renewing it, which is the
+        // very thing refresh tokens exist to stop.
+        if (refreshTokens.IsEnabled)
+        {
+            return await RedeemRefreshTokenAsync(request, issuer, refreshTokens, cancellationToken);
+        }
+
+        return await ReissueFromAccessTokenAsync(httpContext, issuer, validator, cancellationToken);
+    }
+
+    /// <summary>
+    /// Plugin path: redeem an opaque refresh token, rotating it. The rotated
+    /// token comes back alongside a fresh access token; the presented one is
+    /// now dead.
+    /// </summary>
+    private static async Task<IResult> RedeemRefreshTokenAsync(
+        RefreshRequest? request,
+        IJwtIssuer issuer,
+        IRefreshTokenService refreshTokens,
+        CancellationToken cancellationToken)
+    {
+        if (request is null || string.IsNullOrWhiteSpace(request.RefreshToken))
+        {
+            return Results.Json(
+                new AuthErrorResponse("A refreshToken is required."),
+                statusCode: StatusCodes.Status400BadRequest);
+        }
+
+        var redemption = await refreshTokens.RedeemAsync(request.RefreshToken, cancellationToken);
+        if (!redemption.Succeeded)
+        {
+            // Unknown, expired, revoked, or replayed — all reported the same so
+            // a caller cannot probe for valid tokens.
+            return Results.Json(
+                new AuthErrorResponse("Refresh token is not valid."),
+                statusCode: StatusCodes.Status401Unauthorized);
+        }
+
+        // The user may have been locked out or deleted since the refresh token
+        // was minted, so the access token is still issued through the normal
+        // eligibility checks.
+        var token = await issuer.IssueAsync(redemption.UserId!, cancellationToken);
+        return TokenOrUnauthorized(token, redemption.RotatedToken);
+    }
+
+    /// <summary>
+    /// Legacy path, used when the refresh-token plugin is off: reissue from the
+    /// presented (possibly expired) access token.
+    /// </summary>
+    private static async Task<IResult> ReissueFromAccessTokenAsync(
         HttpContext httpContext,
         IJwtIssuer issuer,
         IJwtValidator validator,
@@ -175,14 +237,30 @@ public static class AuthApi
             validated.SecurityStamp,
             cancellationToken);
 
-        return TokenOrUnauthorized(token);
+        return TokenOrUnauthorized(token, refreshToken: null);
     }
 
+    /// <summary>
+    /// Issues an access token for a freshly-authenticated user, plus a refresh
+    /// token when the plugin is on. The refresh token is minted against the
+    /// tenant baked into the access token, so it stays bound to the tenant the
+    /// user actually belongs to.
+    /// </summary>
     private static async Task<IResult> IssueOrUnauthorized(
         IJwtIssuer issuer,
+        IRefreshTokenService refreshTokens,
         string userId,
         CancellationToken cancellationToken)
-        => TokenOrUnauthorized(await issuer.IssueAsync(userId, cancellationToken));
+    {
+        var token = await issuer.IssueAsync(userId, cancellationToken);
+        if (token is null)
+        {
+            return TokenOrUnauthorized(token, refreshToken: null);
+        }
+
+        var refreshToken = await refreshTokens.IssueAsync(token.UserId, token.TenantId, cancellationToken);
+        return TokenOrUnauthorized(token, refreshToken);
+    }
 
     /// <summary>
     /// Maps an issued token to 200, or a null (user gone, locked out, or — on
@@ -190,7 +268,7 @@ public static class AuthApi
     /// message is deliberately uniform so it does not disclose which of those
     /// applies.
     /// </summary>
-    private static IResult TokenOrUnauthorized(JwtTokenResult? token)
+    private static IResult TokenOrUnauthorized(JwtTokenResult? token, string? refreshToken)
     {
         if (token is null)
         {
@@ -204,6 +282,7 @@ public static class AuthApi
             token.ExpiresAt,
             token.UserId,
             token.Email,
-            token.TenantId));
+            token.TenantId,
+            refreshToken));
     }
 }

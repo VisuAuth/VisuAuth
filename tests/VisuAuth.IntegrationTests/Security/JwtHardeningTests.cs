@@ -13,16 +13,16 @@ namespace VisuAuth.IntegrationTests.Security;
 /// that must be rejected. Complements the happy-path and forged-signature
 /// cases in <c>AuthApiTests</c>.
 /// </summary>
-public sealed class JwtHardeningTests : IClassFixture<VisuAuthTestFactory>
+public sealed class JwtHardeningTests : IClassFixture<LegacyRefreshTokenFactory>
 {
     private static readonly Uri RefreshUri = new("/visuauth/api/auth/refresh", UriKind.Relative);
 
     private const string Issuer = "VisuAuth.Sample";
     private const string PrimaryKey = "sample-dev-signing-key-do-not-use-in-production-or-anywhere-else";
 
-    private readonly VisuAuthTestFactory _factory;
+    private readonly LegacyRefreshTokenFactory _factory;
 
-    public JwtHardeningTests(VisuAuthTestFactory factory)
+    public JwtHardeningTests(LegacyRefreshTokenFactory factory)
     {
         _factory = factory;
     }

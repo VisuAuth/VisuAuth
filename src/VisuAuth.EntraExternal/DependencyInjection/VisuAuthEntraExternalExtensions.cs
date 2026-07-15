@@ -160,6 +160,11 @@ public static class VisuAuthEntraExternalExtensions
         // returns null and the refresh endpoint answers 401.
         services.TryAddSingleton<IJwtValidator, EntraNoOpJwtValidator>();
 
+        // IRefreshTokenService — required by the auth API. Entra issues its own
+        // tokens, so the no-op reports disabled and the endpoints keep their
+        // Entra-appropriate behaviour.
+        services.TryAddSingleton<IRefreshTokenService, EntraNoOpRefreshTokenService>();
+
         // ITenantContext — VisuAuth.Identity registers HttpContextTenantContext
         // only when EnableMultiTenant fires; an Entra-only deployment skips
         // that step entirely. The minimal API's RegisterAsync handler still

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using VisuAuth.Identity.Auditing;
+using VisuAuth.Identity.Authentication;
 
 namespace VisuAuth.Identity.MultiTenancy;
 
@@ -45,6 +46,15 @@ public interface IVisuAuthMetadataDbContext
     /// DataProtection ciphertext — never read directly, go through the store.
     /// </summary>
     DbSet<VisuAuthAdapterConfig> VisuAuthAdapterConfigs { get; }
+
+    /// <summary>
+    /// Refresh tokens persisted by the opt-in refresh-token plugin. Like the
+    /// audit log, the table is always present in the schema so consumer
+    /// migrations stay consistent across deployments; rows are only written
+    /// when the consumer calls <c>AddVisuAuthRefreshTokens</c>. Stores hashes
+    /// only — never a usable token.
+    /// </summary>
+    DbSet<VisuAuthRefreshToken> VisuAuthRefreshTokens { get; }
 
     /// <summary>Save pending changes for the metadata tables.</summary>
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

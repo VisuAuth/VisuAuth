@@ -135,6 +135,61 @@ the stamp no longer matches, or the user is no longer eligible.
 > it and fall back to expiry-bounded revocation (tokens then stay valid until
 > `exp`, so keep `LifetimeMinutes` short).
 
+### Opaque refresh tokens (recommended)
+
+By default, refresh reissues from the access token itself — which means a leaked
+access token stays renewable until it is revoked. Opt into real refresh tokens:
+
+```csharp
+using VisuAuth.Identity.DependencyInjection;
+
+builder.Services.AddVisuAuthRefreshTokens(options =>
+{
+    options.Lifetime = TimeSpan.FromDays(30); // default
+});
+```
+
+Then add a migration — the plugin persists tokens in the
+`VisuAuthRefreshTokens` table on your own DbContext:
+
+```bash
+dotnet ef migrations add AddRefreshTokens
+```
+
+**What changes.** Sign-in and registration responses gain a `refreshToken`, and
+`/refresh` expects it in the body instead of a bearer header:
+
+```http
+POST /visuauth/api/auth/refresh
+Content-Type: application/json
+
+{ "refreshToken": "0KtC…" }
+```
+
+The response carries a **new** access token *and* a **new** refresh token —
+store it, because the one you just sent is now dead.
+
+> **The old path closes on purpose.** Once the plugin is on, `/refresh` no
+> longer accepts an access token in the `Authorization` header. Leaving that
+> fallback open would let an attacker with a leaked access token keep renewing
+> it — exactly what refresh tokens exist to prevent. This is a contract change
+> for existing mobile clients, which is why it is opt-in.
+
+**How it protects you.**
+
+- **Opaque** — the token is random and means nothing on its own; only its
+  SHA-256 hash is stored, so a database leak hands out nothing usable.
+- **Single-use + rotating** — every redemption returns a replacement and retires
+  the old value.
+- **Replay detection** — presenting an already-redeemed token means it leaked
+  (the real client and an attacker both hold it, and we cannot tell which is
+  which), so the **whole token family is revoked** and the user signs in again.
+- **Sliding window** — an active client keeps rotating and stays signed in; an
+  idle one is cut off after `Lifetime`.
+
+Failures — unknown, expired, revoked, or replayed — all return the same `401`,
+so a caller cannot probe for valid tokens.
+
 ### Calling protected endpoints
 
 Attach the token to your own `[Authorize]` endpoints:

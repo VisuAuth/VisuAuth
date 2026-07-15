@@ -21,6 +21,7 @@
          "admin UI against a real Microsoft Entra ID tenant". -->
     <ProjectReference Include="..\..\src\VisuAuth\VisuAuth.csproj" />
     <ProjectReference Include="..\..\src\VisuAuth.Entra\VisuAuth.Entra.csproj" />
+    <ProjectReference Include="..\..\src\VisuAuth.Entra.Web\VisuAuth.Entra.Web.csproj" />
   </ItemGroup>
 
 </Project>

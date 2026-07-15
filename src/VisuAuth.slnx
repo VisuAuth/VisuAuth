@@ -9,6 +9,7 @@
     <Project Path="VisuAuth.AdminUi/VisuAuth.AdminUi.csproj" />
     <Project Path="VisuAuth.EndUserUi/VisuAuth.EndUserUi.csproj" />
     <Project Path="VisuAuth.Entra/VisuAuth.Entra.csproj" />
+    <Project Path="VisuAuth.Entra.Web/VisuAuth.Entra.Web.csproj" />
     <Project Path="VisuAuth.EntraCore/VisuAuth.EntraCore.csproj" />
     <Project Path="VisuAuth.EntraExternal/VisuAuth.EntraExternal.csproj" />
     <Project Path="VisuAuth.EntraExternal.Web/VisuAuth.EntraExternal.Web.csproj" />

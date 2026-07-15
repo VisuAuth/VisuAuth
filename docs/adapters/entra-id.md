@@ -11,8 +11,13 @@ Because Entra owns the login experience, the adapter declares
 `SupportsLocalLogin = false`, so the end-user UI hides the email/password form
 and shows a "Sign in with Microsoft" hint (see
 [Backend abstraction](../concepts/backend-abstraction.md)). `VisuAuth.Entra`
-isn't an OIDC server, so an actual working sign-in button requires wiring
-`Microsoft.Identity.Web` — see [The end-user login](#the-end-user-login) below.
+isn't an OIDC server; add the companion
+[`VisuAuth.Entra.Web`](#operator-sign-in) package for a working sign-in.
+
+> **You need `VisuAuth.Entra.Web` to reach the admin.** `AddVisuAuthEntra`
+> authenticates the *app* to Graph with app-only credentials — it registers no
+> authentication scheme, so the (secured-by-default) admin dashboard has nothing
+> to challenge with. See [Operator sign-in](#operator-sign-in).
 
 ![Capability-driven sign-in with Entra](../assets/screenshots/entra-signin-button.png)
 
@@ -93,8 +98,39 @@ Stored values overlay the code/appsettings ones (DB wins per key), the secret is
 encrypted at rest, and a save takes effect on the next Graph call without a
 restart.
 
-## The end-user login
+## Operator sign-in
 
-`VisuAuth.Entra` is **not** an OIDC server — the `/visuauth/login` page only
-shows the "use Microsoft" hint. Wire `Microsoft.Identity.Web` in your app to host
-the actual sign-in.
+`AddVisuAuthEntra` wires Microsoft Graph with **app-only** credentials. That
+authenticates the *app*, not a human — and it registers no authentication
+scheme at all. Since the admin dashboard requires an authenticated user by
+default, without a sign-in scheme every admin page fails with *"No
+authenticationScheme was specified, and there was no DefaultChallengeScheme
+found"*.
+
+Add the companion package:
+
+```bash
+dotnet add package VisuAuth.Entra.Web
+```
+
+```csharp
+using VisuAuth.Entra.Web.DependencyInjection;
+
+builder.Services.AddVisuAuthEntra(builder.Configuration);
+builder.Services.AddVisuAuthEntraSignIn(builder.Configuration);
+```
+
+It wraps `Microsoft.Identity.Web`, so an operator reaching `/visuauth/admin` is
+redirected to your tenant's hosted Microsoft sign-in and comes back with a
+session cookie. Configure it from `VisuAuth:Entra:Web` using a **second app
+registration** (the sign-in one, with a redirect URI) — separate from the Graph
+app. Full setup, including why the two registrations are separate and how to
+restrict the dashboard to an app role, is in the
+[package README](https://github.com/VisuAuth/VisuAuth/blob/main/src/VisuAuth.Entra.Web/README.md).
+
+> **Never leave the Entra admin anonymous on a reachable network.** The adapter
+> holds directory-wide Graph permissions, so an unauthenticated visitor would be
+> administering your real tenant with the app's rights, not their own. If you
+> front the dashboard with your own authentication instead, that is fine — but
+> then call `AllowAnonymousVisuAuthAdmin()` deliberately rather than leaving it
+> unconfigured.

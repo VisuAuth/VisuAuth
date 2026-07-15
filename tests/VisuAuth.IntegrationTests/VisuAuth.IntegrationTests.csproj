@@ -25,6 +25,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\samples\Sample.WebApp\Sample.WebApp.csproj" />
+    <!-- Aliased: both samples use top-level statements, so each generates a
+         `Program` in the global namespace. Without an alias the two collide and
+         WebApplicationFactory<Program> becomes ambiguous. -->
+    <ProjectReference Include="..\..\samples\Sample.EntraWebApp\Sample.EntraWebApp.csproj" Aliases="EntraSample" />
   </ItemGroup>
 
 </Project>

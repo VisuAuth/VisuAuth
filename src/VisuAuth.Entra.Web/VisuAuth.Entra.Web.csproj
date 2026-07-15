@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>VisuAuth.Entra.Web</RootNamespace>
+    <AssemblyName>VisuAuth.Entra.Web</AssemblyName>
+  </PropertyGroup>
+
+  <PropertyGroup Label="NuGet">
+    <PackageId>VisuAuth.Entra.Web</PackageId>
+    <Title>VisuAuth Microsoft Entra ID Web Sign-In</Title>
+    <Description>Operator sign-in for the VisuAuth.Entra (Workforce) adapter. Wraps Microsoft.Identity.Web so the admin dashboard at /visuauth/admin can challenge through your Entra tenant's hosted sign-in page and an operator reaches it with their Microsoft account. Without this package the Entra adapter registers no authentication scheme, so a protected admin has no way to challenge. Consumers who front the dashboard with their own authentication skip this package and pay nothing.</Description>
+    <PackageTags>visuauth;entra;azuread;workforce;oidc;openidconnect;signin;admin</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\VisuAuth.Abstractions\VisuAuth.Abstractions.csproj" />
+    <!-- Mirrors the EntraExternal.Web split: the Workforce adapter brings the
+         Graph stores, this package only adds the sign-in surface. Keeping
+         Microsoft.Identity.Web out of VisuAuth.Entra means consumers who front
+         the dashboard with their own authentication don't carry the weight. -->
+    <ProjectReference Include="..\VisuAuth.Entra\VisuAuth.Entra.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Same rationale as VisuAuth.EntraExternal.Web: the bare framework
+         package (OpenIdConnect + Cookies), not Microsoft.Identity.Web.UI —
+         the UI is VisuAuth's. -->
+    <PackageReference Include="Microsoft.Identity.Web" />
+  </ItemGroup>
+
+  <ItemGroup Label="Test access">
+    <InternalsVisibleTo Include="VisuAuth.UnitTests" />
+  </ItemGroup>
+
+</Project>

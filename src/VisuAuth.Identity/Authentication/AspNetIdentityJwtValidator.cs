@@ -59,12 +59,26 @@ public sealed class AspNetIdentityJwtValidator : IJwtValidator
                 SecurityStamp = principal.FindFirst(VisuAuthClaimTypes.SecurityStamp)?.Value,
             };
         }
-        catch (SecurityTokenException)
+#pragma warning disable CA1031 // Deliberately broad — see below.
+        catch (Exception)
         {
-            // Signature / issuer / audience mismatch, or a structurally
-            // invalid token. Any of these means "not authentic" — surface it
-            // as null so the caller returns 401.
+            // Fail closed on ANYTHING the validation pipeline throws.
+            //
+            // The obvious catch here is SecurityTokenException (signature /
+            // issuer / audience mismatch). That is too narrow: IdentityModel's
+            // behaviour depends on process-wide state, and once
+            // Microsoft.Identity.Web is loaded in the same process — as it is
+            // whenever the Entra sign-in package is wired — a rejected token
+            // can surface as a different exception type. Anything that escaped
+            // this catch would leave the endpoint answering 500 instead of 401
+            // on a token it correctly refused to trust: an invalid token
+            // reported as a server fault.
+            //
+            // There is no exception from this method that should mean
+            // "authentic". Rejecting is always the safe answer, so the catch is
+            // deliberately total.
             return null;
         }
+#pragma warning restore CA1031
     }
 }

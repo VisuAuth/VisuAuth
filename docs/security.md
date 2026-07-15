@@ -107,24 +107,30 @@ tokens are trusted only *after* signature validation.
 
 ### Multi-tenancy
 
-- **Mitigations today:** a global EF query filter scopes queries to the resolved
-  tenant; a `SaveChanges` interceptor stamps `TenantId` on insert.
-- **Known limitation:** the tenant is resolved from a client-controlled header /
-  cookie and is **not** bound to the authenticated principal. This is a
-  deliberate open design decision — see
-  [#79](https://github.com/VisuAuth/VisuAuth/issues/79). Until it is resolved, do
-  not rely on the header/cookie resolver alone as a security boundary between
-  tenants for authenticated end-user API calls.
+- **Threats:** a user of tenant A operating in tenant B's scope by sending
+  `X-Tenant-Id: B`.
+- **Mitigations:** for a **bearer-authenticated** caller the tenant comes from
+  the token's **signed `tenant_id` claim**, and the header / cookie are ignored
+  entirely — a token cannot escape its tenant. A valid token carrying no tenant
+  resolves to "no tenant" rather than falling back to the header. A global EF
+  query filter scopes queries to the resolved tenant, and a `SaveChanges`
+  interceptor stamps `TenantId` on insert.
+- **Enforced in:** `TenantResolverMiddleware`.
+- **Tested in:** `TenantBindingTests` (an `acme` token plus an `X-Tenant-Id:
+  globex` header still resolves `acme`).
+- **By design:** operators on the admin dashboard authenticate with the Identity
+  cookie, whose principal carries no `tenant_id` claim, so they fall through to
+  the cookie switcher and **may switch to any tenant**. The dashboard is itself
+  gated by the `VisuAuth.Admin` policy — tighten that policy if your operators
+  should not see every tenant.
 
 ## Open design decisions
 
 Tracked in [#79](https://github.com/VisuAuth/VisuAuth/issues/79):
 
-- Binding the resolved tenant to the authenticated principal (the admin tenant
-  switcher intentionally switches, and middleware ordering affects multi-tenant
-  login, so the trust model needs a deliberate decision).
 - Opaque, revocable, single-use refresh tokens (today refresh reissues from the
-  access token).
+  access token — bounded by the security-stamp check, but a leaked access token
+  is still renewable until it is revoked).
 
 ## A rule for contributors
 

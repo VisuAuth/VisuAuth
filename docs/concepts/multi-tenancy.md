@@ -64,14 +64,29 @@ app.MapVisuAuth();
 The resolver middleware sets the tenant for each request from `TenantOptions`,
 in this precedence:
 
-1. **HTTP header** (`UseHeader`, default on) — `X-Tenant-Id` by default. APIs
-   that set the header always win.
-2. **Cookie** (`UseCookie`, default on) — `va-tenant` by default. Set by the
+1. **The `tenant_id` claim of a valid bearer token** — **authoritative**. The
+   claim is signed, so for a token-authenticated caller the header and cookie
+   are ignored entirely; a mobile / API client cannot leave its own tenant by
+   sending `X-Tenant-Id`. A valid token that carries no tenant resolves to *no
+   tenant* rather than falling back to the header.
+2. **HTTP header** (`UseHeader`, default on) — `X-Tenant-Id` by default. Applies
+   only to callers without a valid bearer token.
+3. **Cookie** (`UseCookie`, default on) — `va-tenant` by default. Set by the
    admin sidebar **tenant switcher** for browser flows.
 
-> **Planned.** Subdomain (`UseSubdomain`) and JWT-claim (`UseClaim`,
-> `ClaimName = "tenant_id"`) resolution are reserved in `TenantOptions` but not
-> yet wired — they land in follow-up releases. Header + cookie ship today.
+> **Why the claim wins.** The header is client-controlled and unauthenticated;
+> the claim is inside a signed token. Trusting the header for an authenticated
+> API caller would let a user of tenant `acme` operate in `globex` simply by
+> setting a request header. See the [security posture](../security.md).
+
+> **Operators may switch tenants.** The admin dashboard signs in with the
+> Identity cookie, whose principal carries no `tenant_id` claim, so it falls
+> through to the cookie switcher and can reach **any** tenant — by design. The
+> dashboard itself is gated by the `VisuAuth.Admin` policy; tighten that policy
+> if your operators should not see every tenant.
+
+> **Planned.** Subdomain resolution (`UseSubdomain`) is reserved in
+> `TenantOptions` but not yet wired.
 
 Set `RequireTenant = true` to reject requests with no resolvable tenant
 (HTTP 400); leave it `false` (default) to let global / admin paths run with

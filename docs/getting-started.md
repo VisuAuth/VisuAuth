@@ -153,17 +153,26 @@ show/hide password toggle and a built-in language switcher (pt-BR / en):
 ![Switching the UI language](assets/screenshots/enduser-lang-switcher.gif)
 
 > **The admin dashboard is protected by default.** Every page under
-> `/visuauth/admin` requires an authenticated user (the `VisuAuth.Admin`
-> policy). To restrict it further — the usual choice — register a policy of
-> that name requiring a role:
+> `/visuauth/admin` requires an authenticated user. That is secure, but usually
+> looser than you want — every signed-in *end user* qualifies. Restrict it to a
+> role in one line:
 >
 > ```csharp
-> using VisuAuth.AdminUi.DependencyInjection;
->
-> builder.Services.AddAuthorizationBuilder()
->     .AddPolicy(VisuAuthAdminUiServiceCollectionExtensions.AdminAuthorizationPolicy,
->         policy => policy.RequireRole("Admin"));
+> builder.Services.AddVisuAuth<ApplicationUser>(admin => admin.RequireRole("Admin"));
 > ```
+>
+> The same argument works on the fluent form
+> (`.AddAdminUi(admin => admin.RequireRole("Admin"))`). For anything beyond
+> roles — claims, custom requirements — use `admin.ConfigurePolicy(...)`:
+>
+> ```csharp
+> .AddAdminUi(admin => admin.ConfigurePolicy(p =>
+>     p.RequireAuthenticatedUser().RequireClaim("department", "it")))
+> ```
+>
+> Registering an authorization policy named
+> `VisuAuthAdminUiServiceCollectionExtensions.AdminAuthorizationPolicy` yourself
+> also works and takes precedence over both.
 >
 > If the dashboard is already fenced off some other way (an upstream gateway,
 > network isolation), call `builder.Services.AllowAnonymousVisuAuthAdmin()` to

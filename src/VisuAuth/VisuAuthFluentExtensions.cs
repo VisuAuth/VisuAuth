@@ -85,10 +85,18 @@ public static class VisuAuthFluentExtensions
     /// Adds the admin dashboard surface (Razor Pages, htmx, default theme,
     /// localization resources). Idempotent — safe to call multiple times.
     /// </summary>
-    public static IVisuAuthBuilder AddAdminUi(this IVisuAuthBuilder builder)
+    /// <param name="configureAdmin">
+    /// Optional gate configuration —
+    /// <c>.AddAdminUi(admin =&gt; admin.RequireRole("Admin"))</c> is the common
+    /// case. Without it the dashboard requires an authenticated user, which is
+    /// secure but admits every signed-in end user.
+    /// </param>
+    public static IVisuAuthBuilder AddAdminUi(
+        this IVisuAuthBuilder builder,
+        Action<VisuAuthAdminOptions>? configureAdmin = null)
     {
         ArgumentNullException.ThrowIfNull(builder);
-        builder.Services.AddVisuAuthAdminUi();
+        builder.Services.AddVisuAuthAdminUi(configureAdmin);
         return builder;
     }
 

@@ -69,7 +69,12 @@ if (!isEntra)
         });
 }
 visuAuthBuilder
-    .AddAdminUi()
+    // Restrict the admin dashboard to the "Admin" role (seeded on
+    // admin@visuauth.dev). Without this argument the dashboard requires an
+    // authenticated user — secure, but every signed-in end user would qualify,
+    // which is rarely what you want. Sign in as alice.silva@example.com to see
+    // the gate reject a non-admin.
+    .AddAdminUi(admin => admin.RequireRole("Admin"))
     .AddEndUserUi();
 
 // Programmatic theme override (CLAUDE.md §8.4 layer 2). The preset list

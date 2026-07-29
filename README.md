@@ -17,7 +17,7 @@ Drop-in admin dashboard, multi-tenancy, and themeable end-user auth pages — wi
 
 </div>
 
-> 🚀 **v0.1.0 is live on NuGet.** First feature release — admin UI, end-user pages, multi-tenancy, the four theming layers, and the mobile JWT / WebView channel. Install via `dotnet add package VisuAuth`. Pre-1.0, breaking changes can land on any `0.x` bump and will always be flagged in the [CHANGELOG](CHANGELOG.md).
+> 🚀 **v0.2.0 is live on NuGet.** Adds the Microsoft Entra ID and Entra External ID adapters, TOTP two-factor, external login providers, and the audit log — on top of everything in `0.1.0`. Install via `dotnet add package VisuAuth`. Pre-1.0, breaking changes can land on any `0.x` bump and are always flagged in the [CHANGELOG](CHANGELOG.md) — including the **admin dashboard now being locked by default**, see [Securing the admin](https://visuauth.github.io/VisuAuth/securing-the-admin/).
 
 ## What it is
 
@@ -61,11 +61,13 @@ More walkthroughs and screenshots in the [documentation site](https://visuauth.g
 ## What it gives you
 
 ### 🖥️ Admin UI (`/visuauth/admin`)
-- List, search, filter users with pagination
+- Dashboard with KPI tiles, a 7-day sign-in chart, and recent activity
+- List, search, filter users with cursor pagination
 - Create, edit, lock, unlock, delete users
-- Reset password, force logout, reset 2FA
-- Manage roles and claims
-- Per-tenant scoped views
+- Reset password, revoke sessions, reset 2FA
+- Manage roles and claims; tenant catalogue
+- Audit log and external-provider configuration
+- **Locked by default** — [restrict it to a role in one line](https://visuauth.github.io/VisuAuth/securing-the-admin/)
 
 ### 🌐 End-user UI
 - `/visuauth/login` — email + password
@@ -73,16 +75,19 @@ More walkthroughs and screenshots in the [documentation site](https://visuauth.g
 - `/visuauth/forgot-password` & `/visuauth/reset-password`
 - `/visuauth/confirm-email`
 - `/visuauth/logout`
-- `/visuauth/two-factor` — *coming in v0.2*
-- `/visuauth/profile` — account self-management, *coming in v0.3*
+- `/visuauth/two-factor/*` — TOTP enrolment, sign-in challenge, recovery codes
+- `/visuauth/external-login/*` — Google / Microsoft / GitHub / Apple sign-in
+- `/visuauth/profile` — account self-management, *not built yet*
 
 ### 🏢 Multi-tenancy
 - `TenantId` column on `AspNetUsers` (and friends)
 - Global query filter applied automatically
-- Tenant resolution via HTTP header (`X-Tenant-Id`) or cookie set by the
-  admin sidebar switcher (subdomain and JWT-claim resolvers planned for v0.2)
+- Tenant resolution from the **signed `tenant_id` JWT claim** (authoritative for
+  token-authenticated callers, so a client can't cross tenants with a header),
+  falling back to `X-Tenant-Id` or the admin sidebar switcher's cookie.
+  Subdomain resolution is still planned
 - Per-tenant branding via the theming layers below
-  (per-tenant password policy / lockout planned for v0.2)
+  (per-tenant password policy / lockout still planned)
 
 ### 🎨 Theming
 - **Layer 1:** Override CSS variables — colors, fonts, logo, radius
@@ -92,12 +97,15 @@ More walkthroughs and screenshots in the [documentation site](https://visuauth.g
 
 ### 📱 Mobile-ready
 - REST API at `/visuauth/api/auth` with JWT (HS256) issuance
+- Opt-in opaque, rotating refresh tokens with reuse detection
+- Signing-key rotation without invalidating tokens in flight
 - WebView flow with deep-link callback for native apps
 
 ### 🔌 Pluggable backend
-- v0.1: ASP.NET Core Identity
-- v0.2: Microsoft Entra ID (admin UI via Microsoft Graph)
-- v0.3: Microsoft Entra External ID
+- ASP.NET Core Identity — the default
+- Microsoft Entra ID (Workforce), admin UI via Microsoft Graph; add
+  `VisuAuth.Entra.Web` for operator sign-in
+- Microsoft Entra External ID (customer / CIAM), with hosted OIDC sign-in
 
 Abstractions (`IUserStore`, `IRoleStore`, `IAuthenticationFlow`, `UserBackendCapabilities`) are shaped from day 1 so adapters plug in cleanly.
 
@@ -126,8 +134,9 @@ VisuAuth is to Identity what **Hangfire is to background jobs**: it adds the das
 |---|---|---|
 | **0.0.1-alpha** | Placeholder, name reserved | ✅ Released |
 | **0.1** | Admin UI + End-user UI + Multi-tenancy + Theming + Mobile | ✅ Released |
-| **0.2** | Microsoft Entra ID adapter, TOTP, external login providers, audit log | 🚧 In development |
-| **0.3** | Entra External ID adapter, profile / sessions management, bulk operations | 📋 Planned |
+| **0.2** | Microsoft Entra ID adapter, TOTP, external login providers, audit log | ✅ Released |
+| **0.3** | Entra External ID adapter, cursor pagination, adapter-config UI *(shipped under the `v0.2.0` tag)* | ✅ Released |
+| **next** | Profile / sessions self-management, bulk operations | 📋 Planned |
 | **1.0** | Production-ready, stable contracts | 📋 Planned |
 
 ## Repository structure
@@ -135,17 +144,22 @@ VisuAuth is to Identity what **Hangfire is to background jobs**: it adds the das
 ```
 visuauth/
 ├── src/
-│   ├── VisuAuth/                  # Meta-package
-│   ├── VisuAuth.Abstractions/     # IUserStore, capabilities, contracts
-│   ├── VisuAuth.Identity/         # ASP.NET Identity adapter
-│   ├── VisuAuth.Entra/            # Microsoft Entra ID adapter — see its own README
-│   ├── VisuAuth.AdminUi/          # Admin dashboard
-│   └── VisuAuth.EndUserUi/        # Login, register, password reset, etc.
+│   ├── VisuAuth/                     # Meta-package
+│   ├── VisuAuth.Abstractions/        # IUserStore, capabilities, contracts
+│   ├── VisuAuth.Identity/            # ASP.NET Identity adapter
+│   ├── VisuAuth.AdminUi/             # Admin dashboard
+│   ├── VisuAuth.EndUserUi/           # Login, register, password reset, etc.
+│   ├── VisuAuth.EntraCore/           # Shared Entra plumbing (Graph client, stubs)
+│   ├── VisuAuth.Entra/               # Entra ID (Workforce) adapter — own README
+│   ├── VisuAuth.Entra.Web/           # Operator OIDC sign-in for Entra ID
+│   ├── VisuAuth.EntraExternal/       # Entra External ID (CIAM) adapter — own README
+│   └── VisuAuth.EntraExternal.Web/   # Customer OIDC sign-in for External ID
 ├── tests/
 ├── samples/
-│   ├── Sample.WebApp/             # Drop-in example (Identity + Entra toggle)
-│   └── Sample.EntraWebApp/        # Minimal Entra-only reference
-└── docs/                          # Documentation site source (MkDocs Material)
+│   ├── Sample.WebApp/                # Drop-in example (Identity + Entra toggle)
+│   ├── Sample.EntraWebApp/           # Minimal Entra ID reference
+│   └── Sample.EntraExternalWebApp/   # Minimal Entra External ID reference
+└── docs/                             # Documentation site source (MkDocs Material)
 ```
 
 ## Getting started

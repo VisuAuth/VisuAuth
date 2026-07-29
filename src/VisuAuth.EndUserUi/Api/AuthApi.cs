@@ -29,7 +29,16 @@ public static class AuthApi
     {
         ArgumentNullException.ThrowIfNull(endpoints);
 
-        var group = endpoints.MapGroup(prefix).WithTags("VisuAuth Auth");
+        // AllowAnonymous is load-bearing, not decorative: these three endpoints
+        // are how a caller *obtains* credentials, so they must stay reachable
+        // without any. A consumer who sets AuthorizationOptions.FallbackPolicy
+        // to RequireAuthenticatedUser — a common hardening move — would
+        // otherwise see /login answer 401 and have no way to ever get a token.
+        // Refresh authenticates via the request body / bearer token itself, not
+        // via the authorization pipeline.
+        var group = endpoints.MapGroup(prefix)
+            .WithTags("VisuAuth Auth")
+            .AllowAnonymous();
 
         group.MapPost("/login", LoginAsync);
         group.MapPost("/register", RegisterAsync);

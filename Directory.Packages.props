@@ -35,6 +35,18 @@
     <PackageVersion Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.0" />
   </ItemGroup>
 
+  <ItemGroup Label="Security advisories">
+    <!-- Transitive-only pin (CentralPackageTransitivePinningEnabled is on).
+         Microsoft.Identity.Web 4.10 pulls System.Security.Cryptography.Xml
+         10.0.7, which carries five known high-severity advisories (NU1903).
+         NuGet audit runs as an error here, so this blocks every build — and
+         it lands transitively in a security library, which is the worst place
+         to carry a known-vulnerable crypto dependency. 10.0.10 is the current
+         .NET 10 servicing patch with the fixes. Revisit when Microsoft.Identity.Web
+         raises its own floor past this. -->
+    <PackageVersion Include="System.Security.Cryptography.Xml" Version="10.0.10" />
+  </ItemGroup>
+
   <ItemGroup Label="Localization">
     <PackageVersion Include="My.Extensions.Localization.Json" Version="4.0.0" />
   </ItemGroup>

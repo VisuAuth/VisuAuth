@@ -18,12 +18,19 @@ Requires the **.NET 10 SDK** (10.0.300 or later, matching `global.json`).
 
 ## Project layout
 
-- `src/VisuAuth.Abstractions/` — Public contracts (`IUserStore`, `IRoleStore`, `UserBackendCapabilities`, etc.). Stable from v0.1.
-- `src/VisuAuth.Identity/` — ASP.NET Core Identity adapter.
+- `src/VisuAuth.Abstractions/` — Public contracts (`IUserStore`, `IRoleStore`, `UserBackendCapabilities`, etc.).
+- `src/VisuAuth.Identity/` — ASP.NET Core Identity adapter (the default backend).
 - `src/VisuAuth.AdminUi/` — Admin dashboard (Razor Pages + htmx).
-- `src/VisuAuth.EndUserUi/` — Login, register, password reset, and other end-user pages.
-- `src/VisuAuth/` — Meta-package depending on the others.
-- `samples/Sample.WebApp/` — Reference consumer app.
+- `src/VisuAuth.EndUserUi/` — Login, register, password reset, two-factor, external logins.
+- `src/VisuAuth/` — Meta-package depending on the four above.
+- `src/VisuAuth.EntraCore/` — Plumbing shared by both Entra adapters (Graph client, no-op stubs).
+- `src/VisuAuth.Entra/` + `src/VisuAuth.Entra.Web/` — Entra ID (Workforce) adapter, and its operator OIDC sign-in.
+- `src/VisuAuth.EntraExternal/` + `src/VisuAuth.EntraExternal.Web/` — Entra External ID (CIAM) adapter, and its customer OIDC sign-in.
+- `samples/Sample.WebApp/` — Reference consumer, and the app the integration tests boot.
+- `samples/Sample.EntraWebApp/`, `samples/Sample.EntraExternalWebApp/` — Minimal per-adapter references.
+
+The `.Web` split keeps `Microsoft.Identity.Web` out of the core adapters, so
+consumers who front the dashboard with their own authentication don't carry it.
 
 ## Branching and commits
 
@@ -250,7 +257,7 @@ Use the GitHub issue templates. Include:
 
 ## Code of conduct
 
-Be respectful. We follow the [Contributor Covenant](https://www.contributor-covenant.org/version/2/1/code_of_conduct/).
+Be respectful. We follow the [Contributor Covenant](https://www.contributor-covenant.org/version/2/1/code_of_conduct/) v2.1 — see [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) for the full text and how to report a concern privately.
 
 ## License
 

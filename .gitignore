@@ -27,6 +27,8 @@ site/
 .dotnet/
 .fake/
 artifacts/
+# Local pack / release smoke-test output (scripts/ and manual runs).
+artifacts-*/
 TestResults/
 coverage*/
 *.coverage

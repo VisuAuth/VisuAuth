@@ -18,8 +18,83 @@ at a single, shared version.
 `<VersionPrefix>` is `0.3.0`, so merges to `main` publish as
 `0.3.0-alpha.<run_number>` pre-releases until the next stable tag.
 
+> **⚠️ Breaking (pre-1.0) — the admin dashboard is now locked by default.**
+> Previously `/visuauth/admin/**` rendered for *any* request, so forgetting to
+> bolt on your own policy shipped a public admin panel. It now requires an
+> authenticated user out of the box. See *Security* below for the migration.
+
+### Security
+
+This release closes several vulnerabilities in the authentication paths. If you
+run VisuAuth in production, **upgrade** — three of these are exploitable
+remotely, and one of them is a pre-auth account takeover.
+
+- **Admin dashboard secured by default** ([#75], [#77]). Every page under
+  `/visuauth/admin` now requires the `VisuAuth.Admin` authorization policy —
+  "an authenticated user" unless you tighten it. The end-user sign-in pages and
+  `api/auth/*` stay anonymous.
+  - **Migration.** Most apps need nothing: sign in and you reach the dashboard.
+    To restrict it to a role — recommended, since otherwise *every* signed-in
+    end user qualifies — pass
+    `AddVisuAuth<ApplicationUser>(admin => admin.RequireRole("Admin"))` (also
+    available on `.AddAdminUi(...)`, plus `admin.ConfigurePolicy(...)` for
+    claims and custom requirements). A policy you register yourself under
+    `VisuAuthAdminUiServiceCollectionExtensions.AdminAuthorizationPolicy` still
+    wins over both. If the dashboard is already fenced off another way, call
+    `services.AllowAnonymousVisuAuthAdmin()` to drop the gate deliberately.
+  - **Microsoft Entra ID consumers must add `VisuAuth.Entra.Web`** — see
+    *Added* below. `AddVisuAuthEntra` authenticates the *app* to Graph and
+    registers no scheme for humans, so the gate would have nothing to challenge
+    with. VisuAuth now refuses to start in that state rather than failing per
+    request.
+- **Pre-auth account takeover on `POST /visuauth/api/auth/refresh`** ([#76]).
+  The endpoint read the presented token without validating its **signature**,
+  then minted a valid token for whatever `sub` it carried — so a forged token
+  yielded a real one for any account. It now validates signature, issuer, and
+  audience (skipping only the lifetime check, which refresh needs).
+- **"Revoke sessions" now actually revokes** ([#78]). Every JWT carries the
+  user's security stamp, but nothing compared it: a revoked token was rejected
+  at protected endpoints yet could be **exchanged at `/refresh` for a fresh
+  one**. The bearer scheme and the refresh path now both compare it, and
+  refresh fails closed (a token with no stamp claim is rejected).
+- **Cross-tenant access via a request header** ([#79]). The tenant came from the
+  client-controlled `X-Tenant-Id` header with no check against the caller, so a
+  user of tenant A could operate in tenant B with their own valid token. For
+  bearer-authenticated callers the signed `tenant_id` claim is now
+  authoritative and the header is ignored. Operators on the admin dashboard
+  keep the cookie switcher and may still reach any tenant, by design.
+- **Sign-in stayed reachable under a global fallback policy** ([#75]). Setting
+  `AuthorizationOptions.FallbackPolicy` to `RequireAuthenticatedUser` — common
+  hardening — gated the sign-in pages themselves: `/visuauth/login` redirected
+  to itself and `POST api/auth/login` answered `401`, locking everyone out of
+  authenticating. Those pages and endpoints now carry explicit anonymous
+  endpoint metadata.
+- **Known-vulnerable transitive dependency.** Pinned
+  `System.Security.Cryptography.Xml` past five high-severity advisories
+  (`NU1903`) that landed on the version `Microsoft.Identity.Web` pulls in.
+
 ### Added
 
+- **`VisuAuth.Entra.Web`** — operator sign-in for the Entra ID (Workforce)
+  adapter, wrapping `Microsoft.Identity.Web`. `AddVisuAuthEntraSignIn(...)`
+  registers the OIDC handler so an operator reaches `/visuauth/admin` with
+  their Microsoft account. Mirrors the existing `VisuAuth.EntraExternal.Web`
+  split, keeping the dependency out of the core adapter for consumers who front
+  the dashboard themselves. Not part of the meta-package.
+- **JWT signing-key rotation** — `JwtOptions.AdditionalValidationKeys` accepts
+  keys for *validation only*, so rotating `SigningKey` no longer invalidates
+  tokens already in flight. Keep the old key listed for one token lifetime,
+  then drop it.
+- **Opaque rotating refresh tokens** (opt-in) —
+  `AddVisuAuthRefreshTokens(...)` replaces the access-token refresh path with
+  single-use tokens stored as SHA-256 hashes in a tenant-scoped
+  `VisuAuthRefreshTokens` table on your own `DbContext`. Replaying a spent
+  token revokes the whole family (theft detection); 30-day sliding default.
+  Enabling it changes the `/refresh` contract to a `{ refreshToken }` body —
+  the old bearer path closes on purpose, since leaving it open would let a
+  leaked access token keep renewing itself.
+- **`docs/security.md`** — the per-flow threat model: for each flow, the
+  threats, the mitigation, and where it is enforced *and tested*.
 - **Built-in light/dark theme** for the admin dashboard and end-user pages.
   Every consumer now gets dark mode for free — no extra wiring.
   - Follows the OS via `prefers-color-scheme` by default; a sun/moon toggle
@@ -908,6 +983,12 @@ Tracks the v0.1 milestone in `CLAUDE.md` §13.
 
 Placeholder release on NuGet to reserve the `VisuAuth` package name. No
 runtime code; pin to `0.1.0+` for real features.
+
+[#75]: https://github.com/VisuAuth/VisuAuth/issues/75
+[#76]: https://github.com/VisuAuth/VisuAuth/issues/76
+[#77]: https://github.com/VisuAuth/VisuAuth/issues/77
+[#78]: https://github.com/VisuAuth/VisuAuth/issues/78
+[#79]: https://github.com/VisuAuth/VisuAuth/issues/79
 
 [Unreleased]: https://github.com/VisuAuth/visuauth/compare/v0.2.0...HEAD
 [0.2.0]: https://github.com/VisuAuth/visuauth/compare/v0.1.0...v0.2.0

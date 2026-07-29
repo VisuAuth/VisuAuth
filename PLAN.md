@@ -8,12 +8,13 @@ immediate next step. Updated as PRs land. Long-term direction lives in
 
 ## Current status
 
-- **Version**: `v0.2.0` **shipped** — the owner pushed the `v0.2.0` tag, CI published nine stable packages to NuGet, and the GitHub Release is live. `VersionPrefix` is now `0.3.0`, so every merge to `main` publishes a `0.3.0-alpha.<run_number>` pre-release until the next stable tag. Latest feature merged on top: **#53** (built-in light/dark theme).
-- **Latest shipped on NuGet**: [`VisuAuth 0.2.0`](https://www.nuget.org/packages/VisuAuth/0.2.0) — nine packages: the five `0.1.0` ones plus `VisuAuth.Entra`, `VisuAuth.EntraCore`, `VisuAuth.EntraExternal`, and `VisuAuth.EntraExternal.Web`.
+- **Version**: `v0.2.0` **shipped** (nine packages). `VersionPrefix` is now `0.3.0`, so every merge to `main` publishes a `0.3.0-alpha.<run_number>` pre-release until the next stable tag.
+- **Unreleased on `main`**: a **security-hardening cycle** plus a tenth package, `VisuAuth.Entra.Web`. See `CHANGELOG.md` `[Unreleased]` — it carries a **breaking change** (the admin dashboard is locked by default) and fixes that warrant a release: a pre-auth account takeover on the token-refresh endpoint, a revocation bypass, and cross-tenant access via a request header.
+- **Latest shipped on NuGet**: [`VisuAuth 0.2.0`](https://www.nuget.org/packages/VisuAuth/0.2.0) — the five `0.1.0` packages plus `VisuAuth.Entra`, `VisuAuth.EntraCore`, `VisuAuth.EntraExternal`, `VisuAuth.EntraExternal.Web`. The next tag will publish **ten**.
 - **Default branch**: `main` at <https://github.com/VisuAuth/visuauth>
 - **Build state**: green (`dotnet build src/VisuAuth.slnx -c Release` → 0 errors, 0 warnings)
-- **Test state**: green on `main` (730 unit + 184 integration = 914 tests)
-- **Backlog**: now tracked as GitHub Issues (#55–#58) + the `v1.0` milestone — see *Next up*.
+- **Test state**: green on `main` (787 unit + 229 integration = 1016 tests)
+- **Backlog**: GitHub Issues + the `v1.0` milestone. #55, #56 and #57 are now closed; **#58** (future ideas) is the only one open — see *Next up*.
 
 ---
 
@@ -86,11 +87,11 @@ immediate next step. Updated as PRs land. Long-term direction lives in
 
 ## In flight
 
-Nothing actively in progress. A package-level UI refresh to the design system
-was attempted (PR #54) and **parked** at the owner's request — the work is
-preserved on the `feat/ui-faithful-to-design-system` branch and tracked in
-issue #55 (the design-system source kit lives outside the repo and will be
-re-imported to resume). `main` is otherwise the current shipped UI.
+Nothing actively in progress.
+
+**The next action is the owner's: cut a release.** `main` carries security fixes
+that consumers on `0.2.0` are exposed to, and the CHANGELOG entry is already
+written. See *Current status*.
 
 ---
 
@@ -98,10 +99,20 @@ re-imported to resume). `main` is otherwise the current shipped UI.
 
 Tracked as **GitHub Issues** so it is shared across contributors / accounts:
 
-- **#55** — UI: resume the design-system refresh _(parked; see In flight)_
-- **#56** — v1.0: stabilize the `VisuAuth.Abstractions` public contracts _(milestone `v1.0`)_
-- **#57** — v1.0: full English documentation site _(milestone `v1.0`)_
 - **#58** — Backlog: future ideas (no commitment) _(see Future ideas below)_
+
+Closed since the last update: **#55** (design-system refresh), **#56**
+(stabilize the `VisuAuth.Abstractions` contracts), **#57** (documentation site
+— now live at <https://visuauth.github.io/VisuAuth/>), plus the security issues
+**#75–#79**.
+
+Known gaps that are tracked in files rather than issues:
+
+- `docs/CAPTURE_CHECKLIST.md` lists the screenshots the docs site still wants —
+  the two-factor, external-provider, and audit-log pages ship text-only until
+  someone captures them.
+- `/visuauth/profile` (self-service account management) is referenced in the
+  roadmap but not built.
 
 Plus the item below, which is **not** filed as an issue because it is blocked
 on an external dependency:

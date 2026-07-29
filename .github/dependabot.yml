@@ -1,0 +1,63 @@
+# Dependency update automation.
+#
+# Added after a set of high-severity advisories (NU1903) landed on
+# System.Security.Cryptography.Xml — a *transitive* dependency of
+# Microsoft.Identity.Web — and blocked every build, because NuGet audit runs as
+# an error here. Nothing had been watching the dependency graph, so the first
+# signal was a red CI run on an unrelated pull request. For a security library,
+# noticing that from Dependabot instead is worth the noise.
+version: 2
+
+updates:
+  # NuGet, driven by Central Package Management: every version lives in
+  # Directory.Packages.props, so Dependabot edits that one file.
+  - package-ecosystem: nuget
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      # Conventional Commits — PR titles become squashed commits on main
+      # (CONTRIBUTING.md), so the prefix has to be right or the title needs
+      # hand-editing before merge.
+      prefix: build
+      prefix-development: build
+      include: scope
+    groups:
+      # The .NET servicing branch moves in lockstep; a PR per package would be
+      # a dozen near-identical reviews every patch cycle.
+      dotnet-runtime:
+        patterns:
+          - "Microsoft.Extensions.*"
+          - "Microsoft.AspNetCore.*"
+          - "System.*"
+      entity-framework:
+        patterns:
+          - "Microsoft.EntityFrameworkCore*"
+          - "SQLitePCLRaw*"
+      identity-and-graph:
+        patterns:
+          - "Microsoft.Identity.*"
+          - "Microsoft.Graph*"
+          - "Azure.Identity"
+      test-tooling:
+        patterns:
+          - "xunit*"
+          - "FluentAssertions"
+          - "Moq"
+          - "coverlet*"
+          - "Microsoft.NET.Test.Sdk"
+
+  # GitHub Actions are pinned to major tags (@v4), which still drift.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: ci
+      include: scope
+    groups:
+      actions:
+        patterns:
+          - "*"

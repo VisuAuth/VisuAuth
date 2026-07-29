@@ -19,6 +19,14 @@ env:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
   SONAR_PROJECT_KEY: VisuAuth_VisuAuth
   SONAR_ORGANIZATION: visuauth
+  # Hoisted to workflow level so the steps below can test it in `if:` —
+  # secrets are not readable from a step-level `if`. It is empty on any run
+  # without access to repository secrets: Dependabot PRs (which use a separate
+  # secret store) and pull requests from forks. The Sonar steps skip in that
+  # case instead of failing the whole job with "sonar.token= is invalid",
+  # which is what blocked every such PR. Build, tests, and pack still run, so
+  # the PR is still genuinely verified — it just carries no Sonar report.
+  SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
 jobs:
   build:
@@ -38,12 +46,14 @@ jobs:
           global-json-file: global.json
 
       - name: Setup Java (required by SonarScanner)
+        if: env.SONAR_TOKEN != ''
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '21'
 
       - name: Cache SonarCloud packages
+        if: env.SONAR_TOKEN != ''
         uses: actions/cache@v4
         with:
           path: ~/.sonar/cache
@@ -52,6 +62,7 @@ jobs:
 
       - name: Cache SonarScanner tool
         id: cache-sonar-scanner
+        if: env.SONAR_TOKEN != ''
         uses: actions/cache@v4
         with:
           path: ./.sonar/scanner
@@ -59,7 +70,7 @@ jobs:
           restore-keys: ${{ runner.os }}-sonar-scanner
 
       - name: Install SonarScanner tool
-        if: steps.cache-sonar-scanner.outputs.cache-hit != 'true'
+        if: env.SONAR_TOKEN != '' && steps.cache-sonar-scanner.outputs.cache-hit != 'true'
         run: |
           mkdir -p ./.sonar/scanner
           dotnet tool update dotnet-sonarscanner --tool-path ./.sonar/scanner
@@ -68,8 +79,8 @@ jobs:
         run: dotnet restore src/VisuAuth.slnx
 
       - name: SonarScanner begin
+        if: env.SONAR_TOKEN != ''
         env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           ./.sonar/scanner/dotnet-sonarscanner begin \
@@ -83,6 +94,7 @@ jobs:
             /d:sonar.cpd.exclusions="**/VisuAuth.EntraExternal/EntraExternalUserStore.cs,**/VisuAuth.EntraExternal/EntraExternalRoleStore.cs,**/VisuAuth.EntraExternal/EntraExternalAuthenticationFlow.cs,**/VisuAuth.EntraExternal/Mapping/EntraExternalUserMapper.cs"
 
       - name: Build
+        id: build
         run: dotnet build src/VisuAuth.slnx --configuration Release --no-restore
 
       - name: Unit tests
@@ -92,18 +104,20 @@ jobs:
             --collect:"XPlat Code Coverage;Format=opencover" --results-directory ./coverage
 
       - name: Integration tests
-        # Run integration even if unit failed so the report shows both
-        # outcomes. The whole job still fails on any test failure.
-        if: '!cancelled()'
+        # Run integration even if unit tests failed, so the report shows both
+        # outcomes; the job still fails on any test failure. Gated on the build
+        # having succeeded, because `--no-build` against a missing build reports
+        # a baffling "the argument ....dll is invalid" that buries the real
+        # cause further up the log.
+        if: "!cancelled() && steps.build.outcome == 'success'"
         run: |
           dotnet test tests/VisuAuth.IntegrationTests/VisuAuth.IntegrationTests.csproj \
             --configuration Release --no-build --verbosity minimal \
             --collect:"XPlat Code Coverage;Format=opencover" --results-directory ./coverage
 
       - name: SonarScanner end
-        if: '!cancelled()'
+        if: "!cancelled() && env.SONAR_TOKEN != ''"
         env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./.sonar/scanner/dotnet-sonarscanner end /d:sonar.token="${SONAR_TOKEN}"
 

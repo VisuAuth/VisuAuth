@@ -79,14 +79,22 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Getting started: getting-started.md
+  - The admin UI: admin-ui.md
   - Concepts:
       - Backend abstraction & capabilities: concepts/backend-abstraction.md
       - Multi-tenancy: concepts/multi-tenancy.md
-  - Theming: theming.md
-  - Mobile & JWT: mobile.md
-  - Security posture: security.md
+  - Features:
+      - Two-factor authentication: two-factor.md
+      - External login providers: external-logins.md
+      - Audit log: audit-log.md
+      - Theming: theming.md
+      - Mobile & JWT: mobile.md
+  - Security:
+      - Securing the admin: securing-the-admin.md
+      - Security posture: security.md
   - Adapters:
       - ASP.NET Core Identity: adapters/aspnet-identity.md
       - Microsoft Entra ID: adapters/entra-id.md
       - Microsoft Entra External ID: adapters/entra-external.md
+  - Release notes: releases.md
   - Contributing: contributing.md

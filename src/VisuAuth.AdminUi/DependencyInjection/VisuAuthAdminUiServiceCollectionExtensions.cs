@@ -36,9 +36,20 @@ public static class VisuAuthAdminUiServiceCollectionExtensions
     /// Registers the admin UI Razor Pages and their services. Pages discovered
     /// from this assembly via <c>AddApplicationPart</c> become routable in the host.
     /// </summary>
-    public static IServiceCollection AddVisuAuthAdminUi(this IServiceCollection services)
+    /// <param name="services">The DI container.</param>
+    /// <param name="configureAdmin">
+    /// Optional gate configuration — <c>admin =&gt; admin.RequireRole("Admin")</c>
+    /// is the common case. Without it the dashboard requires an authenticated
+    /// user, which is secure but admits every signed-in end user.
+    /// </param>
+    public static IServiceCollection AddVisuAuthAdminUi(
+        this IServiceCollection services,
+        Action<VisuAuthAdminOptions>? configureAdmin = null)
     {
         ArgumentNullException.ThrowIfNull(services);
+
+        var adminOptions = new VisuAuthAdminOptions();
+        configureAdmin?.Invoke(adminOptions);
 
         services
             .AddRazorPages()
@@ -91,20 +102,33 @@ public static class VisuAuthAdminUiServiceCollectionExtensions
             }
         });
 
-        // Provide a safe default for the admin policy: an authenticated user.
-        // PostConfigure runs after every Configure, so a consumer that defined
-        // their own "VisuAuth.Admin" policy (e.g. RequireRole("Admin")) wins and
-        // we leave it untouched. AllowAnonymousVisuAuthAdmin() overrides it back
-        // to a permissive policy for consumers fronting the UI themselves.
+        // Resolve the admin policy, in precedence order:
+        //   1. a policy the consumer registered under AdminAuthorizationPolicy
+        //      themselves (most explicit — never overwritten)
+        //   2. what they configured here (RequireRole / ConfigurePolicy)
+        //   3. the secure default: an authenticated user
+        // PostConfigure runs after every Configure, so step 1 is visible by the
+        // time we look. AllowAnonymousVisuAuthAdmin() re-registers a permissive
+        // policy afterwards for consumers fronting the UI themselves.
         services.AddAuthorization();
         services.PostConfigure<AuthorizationOptions>(options =>
         {
-            if (options.GetPolicy(AdminAuthorizationPolicy) is null)
+            if (options.GetPolicy(AdminAuthorizationPolicy) is not null)
             {
-                options.AddPolicy(
-                    AdminAuthorizationPolicy,
-                    policy => policy.RequireAuthenticatedUser());
+                return;
             }
+
+            options.AddPolicy(AdminAuthorizationPolicy, policy =>
+            {
+                if (adminOptions.HasPolicy)
+                {
+                    adminOptions.Apply(policy);
+                }
+                else
+                {
+                    policy.RequireAuthenticatedUser();
+                }
+            });
         });
 
         // Catch "secured admin with nothing to sign in with" at startup rather

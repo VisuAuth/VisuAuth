@@ -57,13 +57,22 @@ public static class VisuAuthBuilderExtensions
     /// </summary>
     /// <typeparam name="TUser">The Identity user type used by the consumer.</typeparam>
     /// <typeparam name="TRole">The Identity role type used by the consumer.</typeparam>
-    public static IServiceCollection AddVisuAuth<TUser, TRole>(this IServiceCollection services)
+    /// <param name="services">The DI container.</param>
+    /// <param name="configureAdmin">
+    /// Optional admin-gate configuration —
+    /// <c>AddVisuAuth&lt;ApplicationUser&gt;(admin =&gt; admin.RequireRole("Admin"))</c>.
+    /// Without it the dashboard requires an authenticated user, which is secure
+    /// but admits every signed-in end user.
+    /// </param>
+    public static IServiceCollection AddVisuAuth<TUser, TRole>(
+        this IServiceCollection services,
+        Action<VisuAuthAdminOptions>? configureAdmin = null)
         where TUser : IdentityUser
         where TRole : IdentityRole, new()
     {
         services.AddVisuAuth()
             .UseAspNetIdentity<TUser, TRole>()
-            .AddAdminUi()
+            .AddAdminUi(configureAdmin)
             .AddEndUserUi();
         return services;
     }
@@ -72,9 +81,11 @@ public static class VisuAuthBuilderExtensions
     /// One-call install of the full VisuAuth stack with the default
     /// <see cref="IdentityRole"/>.
     /// </summary>
-    public static IServiceCollection AddVisuAuth<TUser>(this IServiceCollection services)
+    public static IServiceCollection AddVisuAuth<TUser>(
+        this IServiceCollection services,
+        Action<VisuAuthAdminOptions>? configureAdmin = null)
         where TUser : IdentityUser
-        => services.AddVisuAuth<TUser, IdentityRole>();
+        => services.AddVisuAuth<TUser, IdentityRole>(configureAdmin);
 
     /// <summary>
     /// Maps both the admin dashboard (default prefix <c>/visuauth/admin</c>)

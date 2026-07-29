@@ -25,16 +25,33 @@ sign-in page.
 > **New here?** Jump straight to the **[Getting started](getting-started.md)**
 > guide — it takes you from an empty project to a working `/visuauth/admin`.
 
+## See it working
+
+Live search that filters as you type — server-rendered Razor with htmx, no
+JavaScript framework and no build step on your side:
+
+![Typing in the search box filters the admin user list live, without a page reload](assets/screenshots/admin-user-list-search.gif)
+
+Light and dark ship built in, following the OS with a toggle that remembers the
+visitor's choice:
+
+![The admin dashboard switching between light and dark themes](assets/screenshots/theming-light-dark.gif)
+
+More of the UI, screen by screen, in **[the admin UI tour](admin-ui.md)**.
+
 ## What you get
 
 | Surface | Highlights |
 |---|---|
-| **Admin UI** (`/visuauth/admin`) | List / search / filter users with pagination, create / edit / lock / delete, reset password, force logout, reset 2FA, manage roles & claims, per-tenant scoped views. |
-| **End-user UI** | `/visuauth/login`, `/visuauth/register`, `/visuauth/forgot-password`, `/visuauth/reset-password`, `/visuauth/confirm-email`, `/visuauth/profile`. |
-| **Multi-tenancy** | `TenantId` discriminator on the Identity tables, automatic global query filter, header / cookie / subdomain / JWT-claim resolution. See [Multi-tenancy](concepts/multi-tenancy.md). |
+| **Admin UI** (`/visuauth/admin`) | Dashboard, list / search / filter users with pagination, create / edit / lock / delete, reset password, revoke sessions, reset 2FA, roles, tenants, audit log. Locked by default. See [the tour](admin-ui.md). |
+| **End-user UI** | `/visuauth/login`, `/visuauth/register`, `/visuauth/forgot-password`, `/visuauth/reset-password`, `/visuauth/confirm-email`, `/visuauth/two-factor/*`, `/visuauth/external-login/*`. |
+| **Multi-tenancy** | `TenantId` discriminator on the Identity tables, automatic global query filter, and tenant resolution from the signed JWT claim, a header, or the admin's cookie switcher. See [Multi-tenancy](concepts/multi-tenancy.md). |
 | **Theming** | Four layers — CSS tokens, programmatic `VisuAuthTheme`, Razor view overrides, per-tenant resolvers. See [Theming](theming.md). |
-| **Mobile-ready** | REST API at `/visuauth/api/auth` with HS256 JWT issuance, plus a WebView deep-link flow. See [Mobile & JWT](mobile.md). |
+| **Mobile-ready** | REST API at `/visuauth/api/auth` with HS256 JWT issuance, opaque rotating refresh tokens, plus a WebView deep-link flow. See [Mobile & JWT](mobile.md). |
 | **Pluggable backend** | ASP.NET Core Identity, Microsoft Entra ID, and Microsoft Entra External ID — all behind the same contracts. See [Backend abstraction](concepts/backend-abstraction.md). |
+
+Self-service profile management (`/visuauth/profile`) is planned, not shipped —
+see the [roadmap](https://github.com/VisuAuth/VisuAuth#roadmap).
 
 ## Why it exists
 

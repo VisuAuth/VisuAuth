@@ -8,16 +8,14 @@ owns no tables of its own for the core surfaces — your users stay in
 
 ## The admin UI
 
-List and search users (with pagination), create and edit them, and manage
-roles — all through the standard VisuAuth admin pages.
+This adapter lights up the **full** admin surface — user list and search, create
+and edit, the operator actions, roles, and tenants:
 
 ![Live search filtering the user list (htmx, no page reload)](../assets/screenshots/admin-user-list-search.gif)
 
-![Create-user form, with optional auto-generated temporary password and role pick](../assets/screenshots/admin-user-create.png)
-
-![Roles catalogue with member counts](../assets/screenshots/admin-roles.png)
-
-![Assigning a role to a user inline (htmx, no page reload)](../assets/screenshots/admin-role-assign.gif)
+See [the admin UI tour](../admin-ui.md) for the whole dashboard, screen by
+screen. It's the same UI over every backend; what changes is which controls the
+backend's capabilities allow.
 
 ## Setup
 

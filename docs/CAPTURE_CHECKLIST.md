@@ -75,14 +75,51 @@ real captures as they are produced.
 - [x] `screenshots/theming-per-tenant.png` — layer 4: two tenants rendering
   with different brand colors.
 
+## Two-factor
+
+Wanted by `two-factor.md`, which currently ships text-only.
+
+- [ ] `screenshots/two-factor-setup.png` — `/visuauth/two-factor/setup` with the
+  QR code and manual key visible. Use a throwaway secret; never a real one.
+- [ ] `screenshots/two-factor-verify.png` — the sign-in challenge page.
+- [ ] `screenshots/two-factor-recovery-codes.png` — the recovery-codes screen.
+  Redact or use obviously-fake codes.
+
+## External logins
+
+Wanted by `external-logins.md`, which currently ships text-only.
+
+- [ ] `screenshots/external-providers-admin.png` — `/visuauth/admin/external-providers`
+  with a couple of providers configured and the "from code" / "from DB" source
+  badges visible. **Blank out the client secrets.**
+- [ ] `screenshots/enduser-login-providers.png` — the sign-in page showing the
+  "or sign in with" provider buttons.
+- [ ] `screenshots/external-login-confirm.png` — the first-time confirmation
+  page (`AlwaysConfirm` strategy).
+
+## Audit log
+
+Wanted by `audit-log.md`, which currently ships text-only.
+
+- [ ] `screenshots/audit-log.png` — `/visuauth/admin/audit-log` with a mix of
+  success and failure rows. Seed the data; don't capture real activity.
+- [ ] `screenshots/audit-log-filters.gif` — filtering the log by action / date.
+
 ## Mobile & JWT
 
 - [ ] `screenshots/mobile-webview-callback.png` — the WebView callback preview
   page.
+
+## Securing the admin
+
+- [ ] `screenshots/admin-access-denied.png` — what a signed-in non-admin sees
+  when the dashboard is restricted with `RequireRole(...)`.
 
 ## Adapters (Entra)
 
 - [x] `screenshots/entra-signin-button.png` — the end-user UI showing the
   "Sign in with Microsoft" button (capability-driven, no local form).
 - [ ] `screenshots/entra-config.png` — the DB-backed adapter-config admin page.
-- [ ] `screenshots/entra-audit.png` — the admin audit-log view.
+  **Blank out the client secret.**
+- [ ] `screenshots/entra-audit.png` — the admin audit-log view in Entra mode
+  (reads Graph rather than the local table).

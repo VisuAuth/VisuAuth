@@ -87,3 +87,12 @@ The hosted customer OIDC sign-in is wired by the companion
 `VisuAuth.EntraExternal.Web` package via `AddVisuAuthEntraExternalSignIn(…)` (it
 layers `Microsoft.Identity.Web` under the VisuAuth login page). Without it,
 `/visuauth/login` shows only the "use Microsoft" hint — see that package's README.
+
+Because the adapter declares `SupportsLocalLogin = false`, the login page drops
+the email/password form on its own and offers the Microsoft hand-off instead —
+no template editing, no conditional markup of your own:
+
+![The VisuAuth sign-in page showing "Sign in with Microsoft" instead of a password form](../assets/screenshots/entra-signin-button.png)
+
+That swap is [capability-driven](../concepts/backend-abstraction.md); the admin
+dashboard adapts the same way.

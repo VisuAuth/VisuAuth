@@ -215,6 +215,16 @@ server appends the JWT to the callback URL and redirects to it — so the app
 reuses the same themed pages (including external providers) and still ends up
 with a token.
 
+That means your native sign-in screen *is* the themed web page, with the
+niceties already built in — the show/hide password toggle, for instance:
+
+![Show / hide password toggle on the sign-in form](assets/screenshots/enduser-password-toggle.gif)
+
+It also inherits [theming](theming.md) and the language switcher, so a native
+app gets light/dark and localisation without shipping a second implementation:
+
+![Switching the UI language with the flag switcher](assets/screenshots/enduser-lang-switcher.gif)
+
 Enable it by allow-listing your custom scheme:
 
 ```csharp

@@ -86,6 +86,17 @@ public static class VisuAuthEndUserUiServiceCollectionExtensions
             {
                 options.Conventions.Add(new DemoteVisuAuthPagesConvention(AssemblyMarker.Assembly));
             }
+
+            // Pin the sign-in pages as explicitly anonymous, so a consumer's
+            // global AuthorizationOptions.FallbackPolicy cannot gate the pages
+            // users need in order to authenticate at all — which would deadlock
+            // /visuauth/login into redirecting to itself. Pages that declare
+            // [Authorize] (two-factor setup, recovery codes) keep it.
+            if (!options.Conventions.OfType<PreserveAnonymousAccessConvention>()
+                    .Any(c => c.OwnsAssembly(AssemblyMarker.Assembly)))
+            {
+                options.Conventions.Add(new PreserveAnonymousAccessConvention(AssemblyMarker.Assembly));
+            }
         });
 
         return services;

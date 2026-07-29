@@ -21,6 +21,26 @@ tokens are trusted only *after* signature validation.
 
 ## Flows
 
+### Reachability of the sign-in surface
+
+- **Threat:** locking users out of authentication itself. A consumer who
+  hardens their app with a global
+  `AuthorizationOptions.FallbackPolicy = RequireAuthenticatedUser()` would
+  otherwise gate the very pages needed to sign in — `/visuauth/login` redirects
+  to `/visuauth/login` (a deadlock), and `POST /visuauth/api/auth/login` answers
+  `401`, so no token can ever be obtained.
+- **Mitigation:** the end-user pages and the `api/auth/*` endpoints carry
+  explicit anonymous **endpoint metadata**, which a fallback policy cannot
+  override. This pins each page's existing intent rather than loosening
+  anything: pages that declare `[Authorize]` (two-factor setup, recovery codes)
+  keep it, and the admin surface stays behind its own policy. Note the metadata
+  has to be endpoint metadata, not an MVC filter — the authorization middleware
+  that applies the fallback runs ahead of MVC and only inspects the former.
+- **Enforced in:** `PreserveAnonymousAccessConvention`, `AuthApi` (`.AllowAnonymous()` on the group).
+- **Tested in:** `FallbackPolicyTests` — the auth pages stay reachable and the
+  API still issues a token under a global fallback, while the admin and
+  two-factor setup stay gated.
+
 ### Password sign-in (web + API)
 
 - **Threats:** credential stuffing, user enumeration, brute force.

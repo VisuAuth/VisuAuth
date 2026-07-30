@@ -35,26 +35,26 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # SonarCloud needs the full history for accurate blame / new-code detection.
           fetch-depth: 0
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
 
       - name: Setup Java (required by SonarScanner)
         if: env.SONAR_TOKEN != ''
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '21'
 
       - name: Cache SonarCloud packages
         if: env.SONAR_TOKEN != ''
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.sonar/cache
           key: ${{ runner.os }}-sonar
@@ -63,7 +63,7 @@ jobs:
       - name: Cache SonarScanner tool
         id: cache-sonar-scanner
         if: env.SONAR_TOKEN != ''
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ./.sonar/scanner
           key: ${{ runner.os }}-sonar-scanner
@@ -125,7 +125,7 @@ jobs:
         run: dotnet pack src/VisuAuth.slnx --configuration Release --no-build --output ./artifacts
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: nuget-packages
           path: ./artifacts/*.nupkg
